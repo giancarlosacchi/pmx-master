@@ -3245,8 +3245,16 @@ setRoute(); }, 150);
     setRoute();
   };
   editor.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && type !== 'textarea') { e.preventDefault(); finish(true); }
-    else if (e.key === 'Escape') { e.preventDefault(); td.classList.remove('editing'); td.innerHTML = original; }
+    if (e.key === 'Enter') {
+      // Shift+Enter = a capo (solo in textarea). Enter normale = salva.
+      if (type === 'textarea' && e.shiftKey) return;
+      e.preventDefault();
+      finish(true);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      td.classList.remove('editing');
+      td.innerHTML = original;
+    }
   });
   editor.addEventListener('blur', () => finish(true));
 }
