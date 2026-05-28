@@ -3852,8 +3852,10 @@ function updVessel(id, patch) {
   if (v) {
     const before = { ...v };  // snapshot prima del cambio
     Object.assign(v, patch);
-    // Qualunque modifica → update_date = oggi (resetta il ciclo OFFERS → YDAY OFFERS → LAST OFFERS)
-    if (!('update_date' in patch)) v.update_date = todayIso();
+    // update_date si aggiorna automaticamente SOLO quando modifichi il testo Ideas
+    // (il ciclo OFFERS → YDAY OFFERS → LAST OFFERS riparte da oggi).
+    // Cambi di altri campi (date, flag, status, ecc.) NON resettano YDAY/LAST.
+    if (!('update_date' in patch) && ('ideas' in patch)) v.update_date = todayIso();
     saveVesselHistory(v);
     logUserAction('upd', 'vessels', id, before, v);
     persist();
@@ -3879,8 +3881,10 @@ function updCargo(id, patch) {
   if (c) {
     const before = { ...c };
     Object.assign(c, patch);
-    // Qualunque modifica → update_date = oggi (resetta il ciclo OFFERS → YDAY OFFERS → LAST OFFERS)
-    if (!('update_date' in patch)) c.update_date = todayIso();
+    // update_date si aggiorna automaticamente SOLO quando modifichi il testo Notes
+    // (il ciclo OFFERS → YDAY OFFERS → LAST OFFERS riparte da oggi).
+    // Cambi di altri campi (date, status, ecc.) NON resettano YDAY/LAST.
+    if (!('update_date' in patch) && ('notes' in patch)) c.update_date = todayIso();
     saveCargoHistory(c);
     logUserAction('upd', 'cargoes', id, before, c);
     persist();
@@ -7695,6 +7699,7 @@ document.getElementById("btn-redo").addEventListener("click", redoAction);
 document.addEventListener("keydown", (e) => {
   const mod = e.metaKey || e.ctrlKey;
   if (!mod) return;
+  // Non intercettare se l'utente sta scrivendo in un input/textarea/contenteditable
   // Non intercettare se l'utente sta scrivendo in un input/textarea/contenteditable
   const t = e.target;
   const isEditing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
