@@ -143,6 +143,30 @@ table.admin-tbl tbody tr:hover td { background: rgba(255,255,255,.02); }
 .admin-actions button:hover { border-color: var(--gold); color: var(--gold); }
 .admin-actions button.danger { color: var(--red, #EF5350); border-color: rgba(239,83,80,.3); }
 .admin-actions button.danger:hover { background: rgba(239,83,80,.1); }
+
+/* Version History page */
+.history-panel { padding: 18px; }
+.history-list { display: flex; flex-direction: column; gap: 0; }
+.history-row {
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 14px; border-bottom: 1px solid var(--line-soft);
+  transition: background .15s ease;
+}
+.history-row:hover { background: rgba(255,255,255,.025); }
+.history-row .h-date { font-weight: 700; font-size: 12.5px; min-width: 180px; color: var(--text); }
+.history-row .h-date small { display: block; font-size: 10.5px; font-weight: 500; color: var(--text-mute); margin-top: 2px; }
+.history-row .h-by { font-size: 11.5px; color: var(--text-mute); flex: 1; }
+.history-row .h-counts { font-size: 11px; color: var(--text-mute); font-variant-numeric: tabular-nums; }
+.history-row button.h-restore {
+  padding: 6px 14px; font: inherit; font-size: 12px; font-weight: 600;
+  background: linear-gradient(135deg, #FFE082 0%, #F5B14E 100%);
+  color: #2A2A2A; border: 1px solid rgba(0,0,0,.10);
+  border-radius: 6px; cursor: pointer; letter-spacing: .04em;
+  transition: transform .12s ease, filter .15s ease;
+}
+.history-row button.h-restore:hover { filter: brightness(1.05); }
+.history-row button.h-restore:active { transform: scale(0.96); }
+.history-empty { text-align: center; padding: 40px 20px; color: var(--text-mute); font-size: 12.5px; }
 .nav-section { font-size: 10.5px; text-transform: uppercase; color: var(--text-mute); letter-spacing: .1em; margin: 8px 4px 4px; font-weight: 600; }
 /* Blocchi sidebar — ogni sezione ha un suo accento colore */
 .sb-block {
@@ -2098,6 +2122,7 @@ body:not(.logged-in) .app { visibility: hidden; }
     <nav class="nav">
       <a data-route="accounts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2M16 3.13a4 4 0 0 1 0 7.75M21 21v-2a4 4 0 0 0-3-3.85"/></svg><span class="nav-label">LS Accounts</span></a>
       <a data-route="roadmap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 4v18"/></svg><span class="nav-label">Broker Roadmap</span></a>
+      <a data-route="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="nav-label">Version History</span></a>
       <a data-route="admin" class="admin-only" style="display:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1l9 4v6c0 5.55-3.84 10.74-9 12-5.16-1.26-9-6.45-9-12V5l9-4z"/><path d="M9 12l2 2 4-4"/></svg><span class="nav-label">Admin</span></a>
     </nav>
   </div>
@@ -2188,6 +2213,8 @@ async function bootAppAfterAuth(user, allowedRow) {
   startCloudSync();
   // 4) Start realtime subscription (changes from other users propagate to us)
   startRealtimeSync();
+  // 5) Snapshot orario per la version history (fire-and-forget)
+  setTimeout(() => maybeTakeHourlySnapshot(), 3000);
 }
 
 // ============================================================
@@ -2411,6 +2438,50 @@ function handleErr(label) {
       cloudToast('Save error (' + label + '): ' + error.message, { kind: 'error', duration: 4000 });
     }
   };
+}
+
+// ============================================================
+// VERSION HISTORY — snapshot del DB ogni ora (max 5 giorni)
+// + Ripristino versione precedente in stile Google Sheets.
+// ============================================================
+const SNAPSHOT_INTERVAL_MIN = 60; // min interval tra snapshots (1h)
+
+async function maybeTakeHourlySnapshot() {
+  try {
+    // Recupero l'ultimo snapshot
+    const { data, error } = await sb
+      .from('snapshots')
+      .select('id, created_at')
+      .order('created_at', { ascending: false })
+      .limit(1);
+    if (error) { console.warn('Snapshot check failed:', error); return; }
+    if (data && data.length) {
+      const last = new Date(data[0].created_at).getTime();
+      const mins = (Date.now() - last) / 60000;
+      if (mins < SNAPSHOT_INTERVAL_MIN) return; // ancora troppo presto
+    }
+    await takeSnapshot('Auto');
+  } catch (e) { console.warn('maybeTakeHourlySnapshot:', e); }
+}
+
+async function takeSnapshot(label) {
+  if (!CURRENT_USER) return;
+  try {
+    const payload = {
+      vessels:  DATA.vessels  || [],
+      cargoes:  DATA.cargoes  || [],
+      accounts: DATA.accounts || [],
+      rundowns: DATA.rundowns || {},
+    };
+    const json = JSON.stringify(payload);
+    const { error } = await sb.from('snapshots').insert({
+      taken_by: CURRENT_USER.email || 'unknown',
+      label: label || null,
+      data: payload,
+      size_bytes: json.length
+    });
+    if (error) console.warn('takeSnapshot error:', error);
+  } catch (e) { console.warn('takeSnapshot exception:', e); }
 }
 
 // ============================================================
@@ -7066,6 +7137,138 @@ const ROADMAP_DOCS = {
   },
 };
 
+// ============== VERSION HISTORY PAGE ==============
+// Mostra gli snapshot orari degli ultimi 5 giorni. Ogni utente può ripristinare
+// (con conferma). Il ripristino sostituisce vessels/cargoes/accounts/rundowns
+// con quelli dello snapshot scelto, e prende uno snapshot "pre-restore" per
+// poter tornare indietro se il ripristino è stato un errore.
+routes['history'] = function() {
+  $('#topbar-actions').innerHTML = `
+    <button class="primary" id="btn-snap-now"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>Take snapshot now</button>`;
+  $('#btn-snap-now').onclick = async () => {
+    await takeSnapshot('Manual');
+    cloudToast('Snapshot taken', { kind: 'ok', duration: 1500 });
+    loadAndRenderHistory();
+  };
+  $('#content').innerHTML = `
+    <div class="panel">
+      <div class="history-panel">
+        <h2 style="margin: 0 0 8px; font-size: 16px; letter-spacing: .04em;">Version History</h2>
+        <p style="margin: 0 0 14px; font-size: 12px; color: var(--text-mute);">
+          Snapshots auto-taken at most once per hour. Older than 5 days are deleted automatically.
+          Restoring replaces ALL vessels, cargoes, accounts and rundowns with the version from that moment.
+        </p>
+        <div class="tbl-wrap" style="overflow:auto;">
+          <div class="history-list" id="history-list">
+            <div class="history-empty">Loading…</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  loadAndRenderHistory();
+};
+
+async function loadAndRenderHistory() {
+  try {
+    const { data, error } = await sb
+      .from('snapshots')
+      .select('id, created_at, taken_by, label, size_bytes, data')
+      .order('created_at', { ascending: false })
+      .limit(200);
+    if (error) throw error;
+    renderHistoryList(data || []);
+  } catch (err) {
+    $('#history-list').innerHTML = '<div class="history-empty">Failed to load: ' + esc(err.message || String(err)) + '</div>';
+  }
+}
+
+function renderHistoryList(rows) {
+  const wrap = $('#history-list');
+  if (!wrap) return;
+  if (!rows.length) {
+    wrap.innerHTML = '<div class="history-empty">No snapshots yet. The first one will be taken automatically within the hour, or click "Take snapshot now" above.</div>';
+    return;
+  }
+  const fmt = (iso) => {
+    const d = new Date(iso);
+    const date = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+    const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    return { date: date + ' ' + time, ago: _timeAgo(d) };
+  };
+  wrap.innerHTML = rows.map(r => {
+    const v = (r.data && r.data.vessels) ? r.data.vessels.length : 0;
+    const c = (r.data && r.data.cargoes) ? r.data.cargoes.length : 0;
+    const f = fmt(r.created_at);
+    const who = r.taken_by ? String(r.taken_by).split('@')[0].toUpperCase() : '—';
+    const labelTag = r.label === 'Manual' ? ' <span style="font-size:9.5px; background:rgba(245,177,78,.2); color:var(--gold); padding:1px 6px; border-radius:999px; margin-left:6px;">MANUAL</span>' : '';
+    return `<div class="history-row">
+      <div class="h-date">${esc(f.date)}${labelTag}<small>${esc(f.ago)}</small></div>
+      <div class="h-by">by <b>${esc(who)}</b></div>
+      <div class="h-counts">${v} vessels · ${c} cargoes</div>
+      <button class="h-restore" data-id="${r.id}">Restore</button>
+    </div>`;
+  }).join('');
+  wrap.querySelectorAll('button.h-restore').forEach(btn => {
+    btn.onclick = () => restoreSnapshot(btn.dataset.id);
+  });
+}
+
+function _timeAgo(d) {
+  const sec = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (sec < 60) return 'just now';
+  const min = Math.floor(sec / 60);
+  if (min < 60) return min + ' min ago';
+  const h = Math.floor(min / 60);
+  if (h < 24) return h + ' hour' + (h === 1 ? '' : 's') + ' ago';
+  const dd = Math.floor(h / 24);
+  return dd + ' day' + (dd === 1 ? '' : 's') + ' ago';
+}
+
+async function restoreSnapshot(id) {
+  if (!confirm('Restore this version?\n\nALL current vessels, cargoes, accounts and rundowns will be REPLACED with the version from this moment.\n\nA backup snapshot will be taken first so you can undo this restore.\n\nContinue?')) return;
+  cloudToast('Restoring…', { spinner: true });
+  try {
+    // 1) Prendi snapshot pre-restore (per poter tornare indietro)
+    await takeSnapshot('Pre-restore');
+    // 2) Recupera lo snapshot da ripristinare
+    const { data: snap, error: e1 } = await sb.from('snapshots').select('data').eq('id', id).single();
+    if (e1) throw e1;
+    if (!snap || !snap.data) throw new Error('Snapshot not found');
+    const restored = snap.data;
+    // 3) Pulisci tutto (RLS permette ad ogni allowed user)
+    const [r1, r2, r3] = await Promise.all([
+      sb.from('vessels').delete().gt('id', 0),
+      sb.from('cargoes').delete().gt('id', 0),
+      sb.from('accounts').delete().gt('id', 0),
+    ]);
+    if (r1.error) throw new Error('Clear vessels: ' + r1.error.message);
+    if (r2.error) throw new Error('Clear cargoes: ' + r2.error.message);
+    if (r3.error) throw new Error('Clear accounts: ' + r3.error.message);
+    // 4) Inserisci i dati dallo snapshot
+    const VESSEL_COLS = ['id','vessel','dwt_blt','open_port','open_from','open_to','ideas','ows_brkr','bunker','ls_brkr','update_date','area','basin','status','subs','yard','copy_text','ukr_trader','rus_trader','iran_trader','scr_ftd','ex_our_cp','grain_clean','neo_pnm_ftd','scrbr_ftd','oz_grain','bhp','co2_ftd'];
+    const CARGO_COLS  = ['id','chrtrs','laycan_from','laycan_to','load_port','disch_port','cgo','size','notes','ls_brkr','update_date','date','area','section','basin','status','copy_text'];
+    const ACCOUNT_COLS= ['id','col','city','broker','clients'];
+    const pick = (obj, cols) => { const o = {}; for (const k of cols) if (obj[k] !== undefined && obj[k] !== null) o[k] = obj[k]; return o; };
+    const vs = (restored.vessels || []).map(v => pick(v, VESSEL_COLS));
+    const cs = (restored.cargoes || []).map(c => pick(c, CARGO_COLS));
+    const as = (restored.accounts || []).map(a => pick(a, ACCOUNT_COLS));
+    if (vs.length) { const { error } = await sb.from('vessels').insert(vs); if (error) throw new Error('Insert vessels: ' + error.message); }
+    if (cs.length) { const { error } = await sb.from('cargoes').insert(cs); if (error) throw new Error('Insert cargoes: ' + error.message); }
+    if (as.length) { const { error } = await sb.from('accounts').insert(as); if (error) throw new Error('Insert accounts: ' + error.message); }
+    // 5) Rundowns
+    if (restored.rundowns) {
+      for (const key of ['ecsa','natl','pac']) {
+        const text = restored.rundowns[key];
+        if (text != null) await sb.from('rundowns').upsert({ key, text });
+      }
+    }
+    cloudToast('Restored ✓ Reloading…', { kind: 'ok', duration: 2000 });
+    setTimeout(() => location.reload(), 1200);
+  } catch (err) {
+    cloudToast('Restore failed: ' + (err.message || err), { kind: 'error', duration: 6000 });
+  }
+}
+
 // ============== ADMIN PAGE ==============
 // Visible only to users with role='admin' in allowed_users (CSS .admin-only).
 // Allows admin to add/remove/deactivate colleagues from the allowlist.
@@ -7278,7 +7481,6 @@ routes['roadmap'] = function() {
       DATA.cargoes = upd.cargoes;
       saveData(DATA);
       window.DATA = DATA;
-      localStorage.setItem(FLAG, new Date().toISOString());
       console.log('PMX update v4: applicate ' + upd.vessels.length + ' navi e ' + upd.cargoes.length + ' cargoes');
     }
   } catch(e) { console.error('PMX update v4 failed:', e); }
@@ -7429,6 +7631,7 @@ routes['roadmap'] = function() {
 })();
 
 // One-time fix: deduplica navi SEASIA presenti in entrambi i basin (ATL e PAC).
+// L'Excel le aveva importate doppie. Teniamo la copia PAC, rimuoviamo la ATL.
 // Poi il filtro di renderMasterList mostra le SEASIA in entrambe le viste dal singolo record.
 (function dedupSeasiaCrossBasin() {
   const FLAG = 'pmx_dedup_seasia_crossbasin_v1';
