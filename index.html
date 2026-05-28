@@ -220,6 +220,17 @@ table.admin-tbl tbody tr:hover td { background: rgba(255,255,255,.02); }
   font-size: 10.5px; color: var(--text-mute); margin-top: 6px;
   text-transform: uppercase; letter-spacing: .05em;
 }
+.h-changes { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line-soft); }
+.h-change { font-size: 11.5px; color: var(--text); padding: 2px 0; }
+.h-verb {
+  display: inline-block; padding: 1px 6px; border-radius: 4px;
+  font-size: 9.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+  min-width: 50px; text-align: center; margin-right: 6px;
+}
+.h-verb-added   { background: rgba(45,138,79,.18);  color: #2D8A4F; }
+.h-verb-edited  { background: rgba(74,144,226,.18); color: #4A90E2; }
+.h-verb-deleted { background: rgba(239,83,80,.18);  color: #C5392B; }
+.h-by-who { color: var(--text-mute); font-size: 10.5px; }
 .nav-section { font-size: 10.5px; text-transform: uppercase; color: var(--text-mute); letter-spacing: .1em; margin: 8px 4px 4px; font-weight: 600; }
 /* Blocchi sidebar — ogni sezione ha un suo accento colore */
 .sb-block {
@@ -3742,11 +3753,16 @@ function logUserAction(kind, table, id, before, after) {
   // CLOUD: log to mutation_log for history page (fire-and-forget)
   if (CURRENT_USER && window._cloudSyncActive) {
     try {
+      // Label = nome visibile del record (vessel/chrtrs) — utile per mostrare nella history
+      const row = after || before || {};
+      const label = table === 'vessels' ? (row.vessel || '') : (row.chrtrs || '');
       sb.from('mutation_log').insert({
         user_email: CURRENT_USER.email,
         table_name: table,
         row_id: String(id),
-        action: kind === 'add' ? 'insert' : kind === 'upd' ? 'update' : 'delete'
+        action: kind === 'add' ? 'insert' : kind === 'upd' ? 'update' : 'delete',
+        before: before ? { label } : null,
+        after:  after  ? { label } : null
       }).then(({error}) => { if (error) console.warn('mutation_log:', error); });
     } catch(e) {}
   }
@@ -7266,11 +7282,11 @@ async function loadAndRenderHistory() {
     const oldest = snaps[snaps.length - 1].created_at;
     const { data: muts } = await sb
       .from('mutation_log')
-      .select('user_email, table_name, action, created_at')
+      .select('user_email, table_name, action, before, after, created_at')
       .gte('created_at', oldest)
       .order('created_at', { ascending: false })
       .limit(5000);
-    // Per ogni snapshot calcolo i contributors nell'intervallo (prev, this]
+    // Per ogni snapshot calcolo i contributors e le modifiche nell'intervallo (prev, this]
     for (let i = 0; i < snaps.length; i++) {
       const thisT = new Date(snaps[i].created_at).getTime();
       const prevT = i+1 < snaps.length ? new Date(snaps[i+1].created_at).getTime() : 0;
@@ -7280,10 +7296,18 @@ async function loadAndRenderHistory() {
       });
       const usersSet = new Set();
       inRange.forEach(m => { if (m.user_email) usersSet.add(m.user_email); });
-      // Include anche il taken_by dello snapshot
       if (snaps[i].taken_by) usersSet.add(snaps[i].taken_by);
       snaps[i].contributors = Array.from(usersSet);
       snaps[i].changeCount = inRange.length;
+      // Lista descrittiva delle modifiche
+      snaps[i].changes = inRange.map(m => {
+        const verbMap = { insert: 'Added', update: 'Edited', delete: 'Deleted' };
+        const verb = verbMap[m.action] || m.action;
+        const what = m.table_name === 'vessels' ? 'vessel' : m.table_name === 'cargoes' ? 'cargo' : m.table_name;
+        const label = (m.after && m.after.label) || (m.before && m.before.label) || '';
+        const who = m.user_email ? String(m.user_email).split('@')[0] : '';
+        return { verb, what, label, who };
+      });
     }
     renderHistoryList(snaps);
   } catch (err) {
@@ -7337,6 +7361,14 @@ function renderHistoryList(rows) {
         const short = String(email).split('@')[0];
         return `<div class="h-user"><span class="h-dot" style="background:${_userColor(email)}"></span>${esc(short)}</div>`;
       }).join('');
+      // Lista modifiche dettagliate
+      const changesHtml = (r.changes && r.changes.length)
+        ? r.changes.map(ch => {
+            const labelPart = ch.label ? ` <b>${esc(ch.label)}</b>` : '';
+            const whoPart = ch.who ? ` <span class="h-by-who">by ${esc(ch.who)}</span>` : '';
+            return `<div class="h-change"><span class="h-verb h-verb-${ch.verb.toLowerCase()}">${ch.verb}</span> ${esc(ch.what)}${labelPart}${whoPart}</div>`;
+          }).join('')
+        : '';
       html.push(`
         <div class="h-card ${isCurrent ? 'h-current' : ''}" data-id="${r.id}">
           <div class="h-card-head">
@@ -7344,7 +7376,7 @@ function renderHistoryList(rows) {
             <button class="h-restore" data-id="${r.id}" ${isCurrent ? 'disabled' : ''}>${isCurrent ? '—' : 'Restore'}</button>
           </div>
           <div class="h-users">${dots || '<span style="color:var(--text-mute); font-size:11px;">(no logged changes)</span>'}</div>
-          ${r.changeCount ? `<div class="h-meta">${r.changeCount} change${r.changeCount===1?'':'s'}</div>` : ''}
+          ${changesHtml ? `<div class="h-changes">${changesHtml}</div>` : ''}
         </div>`);
     }
   }
