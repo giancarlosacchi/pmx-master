@@ -121,6 +121,28 @@ body {
 .sidebar { display: flex; flex-direction: column; }
 .sidebar-footer { margin-top: auto; padding: 10px 14px; border-top: 1px solid var(--line-soft); font-family: inherit; }
 .sb-user { font-weight: 700; font-size: 11px; letter-spacing: 0; color: var(--text-mute); text-transform: uppercase; }
+
+/* Admin-only elements: visible only when body has .is-admin (set after login if role='admin') */
+body.is-admin .admin-only { display: flex !important; }
+
+/* Admin page styles */
+.admin-panel { padding: 18px; }
+.admin-form { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 12px; background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 16px; }
+.admin-form input, .admin-form select { padding: 6px 10px; font: inherit; font-size: 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg-3); color: var(--text); }
+.admin-form input[name="email"] { min-width: 280px; }
+.admin-form input[name="name"]  { min-width: 180px; }
+table.admin-tbl { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; }
+table.admin-tbl thead th { text-align: left; padding: 8px 10px; background: var(--bg-1); border-bottom: 1px solid var(--line); text-transform: uppercase; font-size: 10px; letter-spacing: .05em; color: var(--text-mute); }
+table.admin-tbl tbody td { padding: 8px 10px; border-bottom: 1px solid var(--line-soft); }
+table.admin-tbl tbody tr:hover td { background: rgba(255,255,255,.02); }
+.admin-chip { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.admin-chip.admin { background: rgba(245,177,78,.18); color: var(--gold); }
+.admin-chip.broker { background: rgba(74,144,226,.15); color: #4A90E2; }
+.admin-chip.inactive { background: rgba(180,180,180,.18); color: var(--text-mute); }
+.admin-actions button { background: transparent; border: 1px solid var(--line); padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; color: var(--text); margin-right: 4px; }
+.admin-actions button:hover { border-color: var(--gold); color: var(--gold); }
+.admin-actions button.danger { color: var(--red, #EF5350); border-color: rgba(239,83,80,.3); }
+.admin-actions button.danger:hover { background: rgba(239,83,80,.1); }
 .nav-section { font-size: 10.5px; text-transform: uppercase; color: var(--text-mute); letter-spacing: .1em; margin: 8px 4px 4px; font-weight: 600; }
 /* Blocchi sidebar — ogni sezione ha un suo accento colore */
 .sb-block {
@@ -2076,6 +2098,7 @@ body:not(.logged-in) .app { visibility: hidden; }
     <nav class="nav">
       <a data-route="accounts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2M16 3.13a4 4 0 0 1 0 7.75M21 21v-2a4 4 0 0 0-3-3.85"/></svg><span class="nav-label">LS Accounts</span></a>
       <a data-route="roadmap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 4v18"/></svg><span class="nav-label">Broker Roadmap</span></a>
+      <a data-route="admin" class="admin-only" style="display:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1l9 4v6c0 5.55-3.84 10.74-9 12-5.16-1.26-9-6.45-9-12V5l9-4z"/><path d="M9 12l2 2 4-4"/></svg><span class="nav-label">Admin</span></a>
     </nav>
   </div>
   <div class="sidebar-footer" id="sidebar-footer">
@@ -2134,17 +2157,26 @@ window.sb = sb;
 
 // Currently signed-in user (set after successful login)
 let CURRENT_USER = null;
+let CURRENT_USER_ROLE = null;   // 'admin' | 'broker' (from allowed_users)
+let CURRENT_USER_NAME = null;   // display_name (from allowed_users)
 window.CURRENT_USER = CURRENT_USER;
 
 // Boot the rest of the app once auth is verified. We DON'T call setRoute()
 // from the page body — it's called only here, after we know the user is allowed.
 let _appBooted = false;
-async function bootAppAfterAuth(user) {
+async function bootAppAfterAuth(user, allowedRow) {
   if (_appBooted) return;
   _appBooted = true;
   CURRENT_USER = user;
   window.CURRENT_USER = user;
+  if (allowedRow) {
+    CURRENT_USER_ROLE = allowedRow.role || 'broker';
+    CURRENT_USER_NAME = allowedRow.display_name || null;
+    window.CURRENT_USER_ROLE = CURRENT_USER_ROLE;
+    window.CURRENT_USER_NAME = CURRENT_USER_NAME;
+  }
   document.body.classList.add('logged-in');
+  if (CURRENT_USER_ROLE === 'admin') document.body.classList.add('is-admin');
   renderUserChip(user);
   // 1) Load latest data from cloud (with auto-migration if cloud empty)
   await loadDataFromCloud();
@@ -2581,7 +2613,7 @@ function renderUserChip(user) {
         return;
       }
       setMsg('Welcome ' + (rows[0].display_name || user.email), 'ok');
-      bootAppAfterAuth(user);
+      bootAppAfterAuth(user, rows[0]);
     } catch (err) {
       const m = (err && err.message) || String(err);
       setMsg('Invalid or expired code. ' + m, 'error');
@@ -2626,7 +2658,7 @@ function renderUserChip(user) {
       if (m) { m.textContent = 'Access revoked. Contact Giancarlo.'; m.className = 'login-msg error'; }
       return;
     }
-    bootAppAfterAuth(user);
+    bootAppAfterAuth(user, rows[0]);
   } catch (e) { /* leave overlay up */ }
 })();
 
@@ -6961,6 +6993,175 @@ const ROADMAP_DOCS = {
   },
 };
 
+// ============== ADMIN PAGE ==============
+// Visible only to users with role='admin' in allowed_users (CSS .admin-only).
+// Allows admin to add/remove/deactivate colleagues from the allowlist.
+routes['admin'] = function() {
+  // Defense in depth: even if a non-admin types #/admin in URL, redirect away
+  if (CURRENT_USER_ROLE !== 'admin') {
+    location.hash = '#/atl-tng';
+    return;
+  }
+  $('#topbar-actions').innerHTML = '';
+  $('#content').innerHTML = `
+    <div class="panel">
+      <div class="admin-panel">
+        <h2 style="margin: 0 0 8px; font-size: 16px; letter-spacing: .04em;">User access management</h2>
+        <p style="margin: 0 0 14px; font-size: 12px; color: var(--text-mute);">
+          Only people listed here can log in. Active = ON means they can sign in. Toggle OFF to suspend access without deleting the row.
+        </p>
+        <form class="admin-form" id="admin-add-form">
+          <input type="email" name="email" placeholder="name@lightshipchartering.com" required autocomplete="off"/>
+          <input type="text" name="name" placeholder="Display name (e.g. Marco Rossi)" autocomplete="off"/>
+          <select name="role">
+            <option value="broker" selected>Broker</option>
+            <option value="admin">Admin</option>
+          </select>
+          <button class="primary" type="submit">+ Add user</button>
+        </form>
+        <div id="admin-msg" style="min-height:16px; margin-bottom:10px; font-size:11.5px;"></div>
+        <div class="tbl-wrap" style="overflow:auto;">
+          <table class="admin-tbl" id="admin-tbl">
+            <thead><tr>
+              <th>Email</th>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Added</th>
+              <th style="text-align:right;">Actions</th>
+            </tr></thead>
+            <tbody><tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-mute);">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+  $('#admin-add-form').addEventListener('submit', adminAddUser);
+  loadAndRenderAdminTable();
+};
+
+async function loadAndRenderAdminTable() {
+  try {
+    const { data, error } = await sb
+      .from('allowed_users')
+      .select('id, email, role, display_name, active, added_at, added_by')
+      .order('added_at', { ascending: false });
+    if (error) throw error;
+    renderAdminTable(data || []);
+  } catch (err) {
+    setAdminMsg('Failed to load: ' + (err.message || err), 'error');
+  }
+}
+
+function renderAdminTable(rows) {
+  const tbody = $('#admin-tbl tbody');
+  if (!tbody) return;
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-mute);">No users yet.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r => {
+    const roleChip  = `<span class="admin-chip ${r.role==='admin'?'admin':'broker'}">${r.role}</span>`;
+    const statusChip = r.active
+      ? '<span class="admin-chip admin" style="background:rgba(45,138,79,.15); color:#2D8A4F;">active</span>'
+      : '<span class="admin-chip inactive">suspended</span>';
+    const added = r.added_at ? new Date(r.added_at).toISOString().slice(0,10) : '—';
+    const isSelf = String(r.email).toLowerCase() === String((CURRENT_USER && CURRENT_USER.email) || '').toLowerCase();
+    return `<tr data-id="${r.id}">
+      <td><b>${esc(r.email)}</b></td>
+      <td>${esc(r.display_name || '')}</td>
+      <td>${roleChip}</td>
+      <td>${statusChip}</td>
+      <td style="color:var(--text-mute);">${added}</td>
+      <td class="admin-actions" style="text-align:right; white-space:nowrap;">
+        ${isSelf ? '<span style="color:var(--text-mute); font-size:10px;">(you)</span>' : `
+          <button data-act="toggle" data-id="${r.id}" data-active="${r.active}">${r.active ? 'Suspend' : 'Reactivate'}</button>
+          <button data-act="role" data-id="${r.id}" data-role="${r.role}">${r.role === 'admin' ? 'Make broker' : 'Make admin'}</button>
+          <button class="danger" data-act="delete" data-id="${r.id}" data-email="${esc(r.email)}">Delete</button>
+        `}
+      </td>
+    </tr>`;
+  }).join('');
+  // Bind buttons
+  tbody.querySelectorAll('button[data-act]').forEach(btn => {
+    btn.onclick = (e) => {
+      const act = btn.dataset.act;
+      const id  = btn.dataset.id;
+      if (act === 'toggle') adminToggleActive(id, btn.dataset.active !== 'true');
+      else if (act === 'role') adminToggleRole(id, btn.dataset.role === 'admin' ? 'broker' : 'admin');
+      else if (act === 'delete') adminDeleteUser(id, btn.dataset.email);
+    };
+  });
+}
+
+function setAdminMsg(text, kind) {
+  const m = $('#admin-msg');
+  if (!m) return;
+  m.textContent = text || '';
+  m.style.color = kind === 'error' ? '#C5392B' : kind === 'ok' ? '#2D8A4F' : 'var(--text-mute)';
+}
+
+async function adminAddUser(ev) {
+  ev.preventDefault();
+  const f = ev.target;
+  const email = String(f.email.value || '').trim().toLowerCase();
+  const name  = String(f.name.value || '').trim();
+  const role  = f.role.value;
+  if (!email) return;
+  if (!/@lightshipchartering\.com$/.test(email)) {
+    setAdminMsg('Email must end with @lightshipchartering.com', 'error');
+    return;
+  }
+  setAdminMsg('Adding…');
+  try {
+    const { error } = await sb.from('allowed_users').insert({
+      email, role, display_name: name || null,
+      added_by: (CURRENT_USER && CURRENT_USER.email) || 'admin',
+      active: true
+    });
+    if (error) throw error;
+    f.reset();
+    f.role.value = 'broker';
+    setAdminMsg('User added ✓', 'ok');
+    loadAndRenderAdminTable();
+  } catch (err) {
+    setAdminMsg('Error: ' + (err.message || err), 'error');
+  }
+}
+
+async function adminToggleActive(id, newActive) {
+  try {
+    const { error } = await sb.from('allowed_users').update({ active: newActive }).eq('id', id);
+    if (error) throw error;
+    setAdminMsg(newActive ? 'Reactivated ✓' : 'Suspended ✓', 'ok');
+    loadAndRenderAdminTable();
+  } catch (err) {
+    setAdminMsg('Error: ' + (err.message || err), 'error');
+  }
+}
+
+async function adminToggleRole(id, newRole) {
+  try {
+    const { error } = await sb.from('allowed_users').update({ role: newRole }).eq('id', id);
+    if (error) throw error;
+    setAdminMsg('Role updated ✓', 'ok');
+    loadAndRenderAdminTable();
+  } catch (err) {
+    setAdminMsg('Error: ' + (err.message || err), 'error');
+  }
+}
+
+async function adminDeleteUser(id, email) {
+  if (!confirm('Permanently delete ' + email + ' from the allowlist?\n\nThey will lose access immediately. Their data in vessels/cargoes remains untouched.')) return;
+  try {
+    const { error } = await sb.from('allowed_users').delete().eq('id', id);
+    if (error) throw error;
+    setAdminMsg('Deleted ✓', 'ok');
+    loadAndRenderAdminTable();
+  } catch (err) {
+    setAdminMsg('Error: ' + (err.message || err), 'error');
+  }
+}
+
 routes['roadmap'] = function() {
   const tabs = [
     { key: 'roadmap',      label: 'The Broker Roadmap' },
@@ -7121,6 +7322,7 @@ routes['roadmap'] = function() {
   const PERIOD_CARGOES = [
     { chrtrs: 'SEATRANS',     laycan_from: '2026-06-01', laycan_to: '2026-06-07', load_port: 'PMO-JPN',       disch_port: 'INDIA-JPN', size: 'LME/KMX',    notes: '25YRS OLD, LEG OR SP',          ls_brkr: 'CHN', area: 'FEAST'  },
     { chrtrs: 'BG SHIPPING',  laycan_from: '2026-06-05', laycan_to: '2026-06-11', load_port: 'ASIA PACIFIC',  disch_port: '',          size: 'PMX/KMX',    notes: 'FOR 2-3LLS UP TP SP',           ls_brkr: 'BEE', area: 'WCAUS'  },
+    { chrtrs: 'ELEMENT',      laycan_from: '2026-06-10', laycan_to: '2026-06-25', load_port: 'SCHINA',        disch_port: '',          size: 'PMX/KMX',    notes: 'PERIOD 6/9 MONS OR 1 YEAR 5TTL', ls_brkr: 'MPE', area: 'WCAUS'  },
     { chrtrs: 'DOOYANG',      laycan_from: '2026-06-10', laycan_to: '2026-06-29', load_port: 'SGP-JPN',       disch_port: 'PG-JPN',    size: '73-93K DWT', notes: '4/6 MONS, TRY LONGER PERIOD',    ls_brkr: 'NHH', area: 'WCAUS'  },
   ];
   let added = 0;
@@ -7232,3 +7434,4 @@ setRoute();
 
 </body>
 </html>
+html>
