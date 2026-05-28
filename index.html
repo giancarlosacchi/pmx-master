@@ -2447,13 +2447,16 @@ async function syncDirtyToCloud() {
     const h = _hash(v);
     if (!prevV.has(id) || prevV.get(id) !== h) {
       const row = {}; for (const k of VESSEL_COLS) if (v[k] !== undefined) row[k] = v[k];
-      // Upsert by id if id is a number (existing cloud row). If id is a string or local-only, insert new.
       if (typeof v.id === 'number' && v.id > 0) {
+        // ID già del cloud → upsert sicuro
         tasks.push(sb.from('vessels').upsert({ id: v.id, ...row }).then(handleErr('vessel upsert')));
       } else {
+        // ID temporaneo (tmp_...) → INSERT senza id, Postgres assegna l'ID definitivo.
+        // Quando torna la risposta, ripiantiamo l'ID definitivo in DATA, UNDO_STACK, snapshot.
+        const oldId = v.id;
         tasks.push(sb.from('vessels').insert(row).select().single().then(({data, error}) => {
           if (error) return handleErr('vessel insert')({error});
-          if (data) { v.id = data.id; } // patch local with assigned id
+          if (data) _remapId('vessels', oldId, data.id, data);
         }));
       }
     }
@@ -2473,9 +2476,10 @@ async function syncDirtyToCloud() {
       if (typeof c.id === 'number' && c.id > 0) {
         tasks.push(sb.from('cargoes').upsert({ id: c.id, ...row }).then(handleErr('cargo upsert')));
       } else {
+        const oldId = c.id;
         tasks.push(sb.from('cargoes').insert(row).select().single().then(({data, error}) => {
           if (error) return handleErr('cargo insert')({error});
-          if (data) { c.id = data.id; }
+          if (data) _remapId('cargoes', oldId, data.id, data);
         }));
       }
     }
@@ -2502,6 +2506,38 @@ function handleErr(label) {
       cloudToast('Save error (' + label + '): ' + error.message, { kind: 'error', duration: 4000 });
     }
   };
+}
+
+// Quando Postgres assegna un nuovo ID a una insert (al posto del nostro 'tmp_xxx'),
+// propaghiamo il cambio ID a TUTTE le strutture che potrebbero referenziare l'ID vecchio:
+// DATA, UNDO_STACK, REDO_STACK, _lastSyncSnapshot. Così il fix non rompe undo.
+function _remapId(table, oldId, newId, cloudRow) {
+  if (oldId === newId) return;
+  // 1) Aggiorna l'oggetto in DATA con l'ID cloud e i campi di ritorno (updated_at, ecc.)
+  const arr = DATA[table];
+  if (arr) {
+    const idx = arr.findIndex(r => r.id === oldId);
+    if (idx >= 0) {
+      const wasNew = arr[idx].__sessionNew;
+      // Merge: tengo i campi locali + sovrascrivo con cloudRow (ha l'ID corretto)
+      arr[idx] = Object.assign({}, arr[idx], cloudRow);
+      if (wasNew) arr[idx].__sessionNew = true;
+    }
+  }
+  // 2) Aggiorna gli stack undo/redo
+  for (const op of UNDO_STACK) {
+    if (op.table === table && op.id === oldId) op.id = newId;
+  }
+  for (const op of REDO_STACK) {
+    if (op.table === table && op.id === oldId) op.id = newId;
+  }
+  // 3) Aggiorna lo snapshot di sync
+  if (_lastSyncSnapshot && _lastSyncSnapshot[table]) {
+    _lastSyncSnapshot[table].delete(oldId);
+    _lastSyncSnapshot[table].set(newId, _hash(cloudRow));
+  }
+  // 4) Salva il cache localStorage aggiornato
+  try { saveData(DATA); } catch(e) {}
 }
 
 // ============================================================
@@ -3947,8 +3983,12 @@ function lookupCargoHistory(chrtrs, load_port, disch_port) {
 }
 
 function addVessel(v) {
-  v.id = newId(); v.created_at = todayIso();
-  v.__sessionNew = true;  // flag in-memory: bold solo per questa sessione
+  // ID temporaneo string: syncDirtyToCloud farà INSERT su Supabase, riceverà
+  // l'ID definitivo (bigserial) e patchareà v.id. Questo evita collisioni tra
+  // broker che aggiungono navi contemporaneamente.
+  v.id = 'tmp_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+  v.created_at = todayIso();
+  v.__sessionNew = true;
   DATA.vessels.push(v);
   saveVesselHistory(v);
   logUserAction('add', 'vessels', v.id, null, v);
@@ -3977,7 +4017,9 @@ function delVessel(id) {
   persist(); autoUpdateRundowns();
 }
 function addCargo(c) {
-  c.id = newId(); c.created_at = todayIso();
+  // ID temporaneo string — Postgres assegnerà il definitivo via syncDirtyToCloud
+  c.id = 'tmp_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+  c.created_at = todayIso();
   c.__sessionNew = true;
   DATA.cargoes.push(c);
   saveCargoHistory(c);
@@ -7834,7 +7876,6 @@ routes['roadmap'] = function() {
   localStorage.setItem(FLAG, new Date().toISOString());
 })();
 
-// ============== STALE FRESH STATUS CLEANUP ==============
 // Il giorno dopo: tutte le navi/cargoes con status='fresh' diventano vuote.
 // off_mkt e on_subs restano invariati (gestione manuale del broker).
 function clearStaleFreshStatus() {
