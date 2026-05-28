@@ -3623,42 +3623,23 @@ function _isStillMine(currentRow, afterRow) {
 
 function undoAction() {
   if (!UNDO_STACK.length) return;
-  const op = UNDO_STACK[UNDO_STACK.length - 1];
+  const op = UNDO_STACK.pop();
   const arr = DATA[op.table];
-  if (!arr) { UNDO_STACK.pop(); updateUndoButtons(); return; }
+  if (!arr) { updateUndoButtons(); return; }
   const idx = arr.findIndex(r => r.id === op.id);
   _suspendUndo = true;
   try {
     if (op.kind === 'add') {
-      // Inverso di add: rimuovi il record che avevo aggiunto
-      if (idx >= 0) {
-        if (!_isStillMine(arr[idx], op.after)) {
-          cloudToast('Cannot undo: ' + op.table.slice(0,-1) + ' was modified by a colleague after your change', { kind: 'error', duration: 4500 });
-          return;
-        }
-        arr.splice(idx, 1);
-      }
+      // Inverso di add: rimuovi il record che avevo aggiunto (se ancora presente)
+      if (idx >= 0) arr.splice(idx, 1);
     } else if (op.kind === 'upd') {
-      if (idx >= 0) {
-        if (!_isStillMine(arr[idx], op.after)) {
-          cloudToast('Cannot undo: ' + op.table.slice(0,-1) + ' was modified by a colleague after your change', { kind: 'error', duration: 4500 });
-          return;
-        }
-        // Ripristino i campi del record allo stato "before"
-        Object.assign(arr[idx], op.before);
-      } else {
-        // Record non più presente (qualcuno l'ha cancellato): non riesco a fare undo
-        cloudToast('Cannot undo: record was deleted by a colleague', { kind: 'error', duration: 4500 });
-        return;
-      }
+      // Ripristino i campi del record allo stato "before" che avevo prima del cambio
+      if (idx >= 0) Object.assign(arr[idx], op.before);
+      else arr.push(op.before);  // se un collega l'ha cancellato, lo ricreo come era
     } else if (op.kind === 'del') {
       // Inverso di delete: re-inserisco il record
-      if (idx < 0) {
-        arr.push(op.before);
-      }
+      if (idx < 0) arr.push(op.before);
     }
-    // Solo se l'operazione è andata a buon fine, sposto da UNDO a REDO
-    UNDO_STACK.pop();
     REDO_STACK.push(op);
     persist();
     setRoute();
