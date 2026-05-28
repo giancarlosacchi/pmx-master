@@ -2467,23 +2467,17 @@ function applyRtRow(table, payload) {
     if (idx >= 0) {
       arr.splice(idx, 1);
       if (_lastSyncSnapshot && _lastSyncSnapshot[table]) _lastSyncSnapshot[table].delete(id);
-      cloudToast((table === 'vessels' ? 'Vessel' : 'Cargo') + ' deleted by colleague', { kind: 'info', duration: 1800 });
     }
   } else {
     const row = payload.new;
     if (!row || row.id == null) return;
-    const wasMine = _isProbablyMyChange(table, row);
     const idx = arr.findIndex(r => r.id === row.id);
     if (idx >= 0) arr[idx] = row;
     else arr.push(row);
     if (_lastSyncSnapshot && _lastSyncSnapshot[table]) _lastSyncSnapshot[table].set(row.id, _hash(row));
     saveData(DATA);
-    if (!wasMine) {
-      const who = (row.updated_by || row.created_by || 'a colleague');
-      const verb = payload.eventType === 'INSERT' ? 'added' : 'updated';
-      cloudToast((table === 'vessels' ? 'Vessel' : 'Cargo') + ' ' + verb + ' by ' + who, { kind: 'info', duration: 1800 });
-    }
   }
+  // Niente toast: chiunque può lavorare su tutto, le modifiche arrivano silenziose
 }
 
 function applyRtAccount(payload) {
