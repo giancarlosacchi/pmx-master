@@ -2651,6 +2651,22 @@ function applyRtRow(table, payload) {
     if (id == null) return;
     const idx = arr.findIndex(r => r.id === id);
     if (idx >= 0) {
+      // Race protection: se stavo EDITANDO questa riga (inline edit aperto o
+      // modifica recente nello UNDO_STACK), avviso e cancello l'edit in corso.
+      try {
+        const editingCell = document.querySelector('td.editable.editing[data-id="' + String(id) + '"]');
+        if (editingCell) {
+          editingCell.classList.remove('editing');
+          editingCell.innerHTML = '<span style="color:var(--text-mute); font-style:italic;">deleted by colleague</span>';
+        }
+        // Check UNDO_STACK per modifiche recenti (ultimi 10 sec) su questa riga
+        const now = Date.now();
+        const recent = UNDO_STACK.some(op => op.table === table && op.id === id && (now - op.ts) < 10000);
+        if (editingCell || recent) {
+          const what = table === 'vessels' ? 'Vessel' : 'Cargo';
+          cloudToast(what + ' you were editing was deleted by a colleague. Your unsaved edits are lost. Check Version History to recover.', { kind: 'error', duration: 6000 });
+        }
+      } catch(e) { /* defensive */ }
       arr.splice(idx, 1);
       if (_lastSyncSnapshot && _lastSyncSnapshot[table]) _lastSyncSnapshot[table].delete(id);
     }
