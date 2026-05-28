@@ -3576,53 +3576,127 @@ function newId() { return DATA.nextId++; }
 // ===== UNDO / REDO (multi-livello) =====
 // Ogni persist() salva lo snapshot precedente nello stack undo prima di sovrascrivere
 // localStorage. Niente snapshot mentre stiamo applicando undo/redo (_suspendUndo).
+// ===== PER-USER UNDO (Fase 2d) =====
+// Solo le tue modifiche entrano nello stack. Le modifiche realtime dei colleghi
+// NON vengono mai annullate dal tuo undo. Conflict detection: se un collega
+// ha modificato lo stesso record dopo di te, l'undo viene bloccato con avviso.
 const UNDO_LIMIT = 100;
-const UNDO_STACK = [];
+const UNDO_STACK = [];   // [{kind, table, id, before, after, ts}]
 const REDO_STACK = [];
 let _suspendUndo = false;
+
+function logUserAction(kind, table, id, before, after) {
+  if (_suspendUndo) return;
+  // Deep-clone for safety (so future mutations don't change snapshot)
+  UNDO_STACK.push({
+    kind, table, id,
+    before: before ? JSON.parse(JSON.stringify(before)) : null,
+    after:  after  ? JSON.parse(JSON.stringify(after))  : null,
+    ts: Date.now()
+  });
+  if (UNDO_STACK.length > UNDO_LIMIT) UNDO_STACK.shift();
+  REDO_STACK.length = 0;
+  updateUndoButtons();
+}
+
 function persist() {
-  if (!_suspendUndo) {
-    try {
-      const prev = localStorage.getItem(KEY);
-      if (prev) {
-        UNDO_STACK.push(prev);
-        if (UNDO_STACK.length > UNDO_LIMIT) UNDO_STACK.shift();
-        REDO_STACK.length = 0;
-      }
-    } catch(e) {}
-  }
   saveData(DATA);
   updateUndoButtons();
-  // CLOUD: se sync attivo, propaga diff a Supabase (debounced)
   if (window._cloudSyncActive && typeof scheduleCloudSync === 'function') {
     scheduleCloudSync();
   }
 }
-function _applySnapshot(jsonStr) {
-  try {
-    const parsed = JSON.parse(jsonStr);
-    DATA = parsed;
-    window.DATA = DATA;
-    _suspendUndo = true;
-    saveData(DATA);
-    _suspendUndo = false;
-    setRoute();
-    updateUndoButtons();
-    return true;
-  } catch(e) { return false; }
+
+// Stesso record è cambiato da un altro utente?
+// Confronto i campi "data" tra current row e quello che ho lasciato io (op.after).
+// Se sono uguali (a parte updated_at), nessuno l'ha toccato dopo di me → undo safe.
+function _rowFingerprint(row) {
+  if (!row) return '';
+  const o = { ...row };
+  delete o.updated_at; delete o.created_at;
+  delete o.updated_by; delete o.created_by;
+  try { return JSON.stringify(o, Object.keys(o).sort()); } catch(e) { return ''; }
 }
+function _isStillMine(currentRow, afterRow) {
+  return _rowFingerprint(currentRow) === _rowFingerprint(afterRow);
+}
+
 function undoAction() {
   if (!UNDO_STACK.length) return;
-  const prev = UNDO_STACK.pop();
-  REDO_STACK.push(JSON.stringify(DATA));
-  _applySnapshot(prev);
+  const op = UNDO_STACK[UNDO_STACK.length - 1];
+  const arr = DATA[op.table];
+  if (!arr) { UNDO_STACK.pop(); updateUndoButtons(); return; }
+  const idx = arr.findIndex(r => r.id === op.id);
+  _suspendUndo = true;
+  try {
+    if (op.kind === 'add') {
+      // Inverso di add: rimuovi il record che avevo aggiunto
+      if (idx >= 0) {
+        if (!_isStillMine(arr[idx], op.after)) {
+          cloudToast('Cannot undo: ' + op.table.slice(0,-1) + ' was modified by a colleague after your change', { kind: 'error', duration: 4500 });
+          return;
+        }
+        arr.splice(idx, 1);
+      }
+    } else if (op.kind === 'upd') {
+      if (idx >= 0) {
+        if (!_isStillMine(arr[idx], op.after)) {
+          cloudToast('Cannot undo: ' + op.table.slice(0,-1) + ' was modified by a colleague after your change', { kind: 'error', duration: 4500 });
+          return;
+        }
+        // Ripristino i campi del record allo stato "before"
+        Object.assign(arr[idx], op.before);
+      } else {
+        // Record non più presente (qualcuno l'ha cancellato): non riesco a fare undo
+        cloudToast('Cannot undo: record was deleted by a colleague', { kind: 'error', duration: 4500 });
+        return;
+      }
+    } else if (op.kind === 'del') {
+      // Inverso di delete: re-inserisco il record
+      if (idx < 0) {
+        arr.push(op.before);
+      }
+    }
+    // Solo se l'operazione è andata a buon fine, sposto da UNDO a REDO
+    UNDO_STACK.pop();
+    REDO_STACK.push(op);
+    persist();
+    setRoute();
+    cloudToast('Undone', { kind: 'ok', duration: 1500 });
+  } finally {
+    _suspendUndo = false;
+    updateUndoButtons();
+  }
 }
+
 function redoAction() {
   if (!REDO_STACK.length) return;
-  const next = REDO_STACK.pop();
-  UNDO_STACK.push(JSON.stringify(DATA));
-  _applySnapshot(next);
+  const op = REDO_STACK[REDO_STACK.length - 1];
+  const arr = DATA[op.table];
+  if (!arr) { REDO_STACK.pop(); updateUndoButtons(); return; }
+  const idx = arr.findIndex(r => r.id === op.id);
+  _suspendUndo = true;
+  try {
+    if (op.kind === 'add') {
+      // Re-aggiunge il record
+      if (idx < 0) arr.push(op.after);
+    } else if (op.kind === 'upd') {
+      if (idx >= 0) Object.assign(arr[idx], op.after);
+    } else if (op.kind === 'del') {
+      // Re-elimina
+      if (idx >= 0) arr.splice(idx, 1);
+    }
+    REDO_STACK.pop();
+    UNDO_STACK.push(op);
+    persist();
+    setRoute();
+    cloudToast('Redone', { kind: 'ok', duration: 1500 });
+  } finally {
+    _suspendUndo = false;
+    updateUndoButtons();
+  }
 }
+
 function updateUndoButtons() {
   const u = document.getElementById('btn-undo');
   const r = document.getElementById('btn-redo');
@@ -3718,40 +3792,56 @@ function addVessel(v) {
   v.id = newId(); v.created_at = todayIso();
   DATA.vessels.push(v);
   saveVesselHistory(v);
+  logUserAction('add', 'vessels', v.id, null, v);
   persist(); autoUpdateRundowns(); return v;
 }
 function updVessel(id, patch) {
   const v = DATA.vessels.find(x=>x.id===id);
   if (v) {
+    const before = { ...v };  // snapshot prima del cambio
     Object.assign(v, patch);
     // Qualunque modifica → update_date = oggi (resetta il ciclo OFFERS → YDAY OFFERS → LAST OFFERS)
     if (!('update_date' in patch)) v.update_date = todayIso();
     saveVesselHistory(v);
+    logUserAction('upd', 'vessels', id, before, v);
     persist();
     autoUpdateRundowns();
   }
   return v;
 }
-function delVessel(id) { DATA.vessels = DATA.vessels.filter(x=>x.id!==id); persist(); autoUpdateRundowns(); }
+function delVessel(id) {
+  const v = DATA.vessels.find(x=>x.id===id);
+  if (v) logUserAction('del', 'vessels', id, v, null);
+  DATA.vessels = DATA.vessels.filter(x=>x.id!==id);
+  persist(); autoUpdateRundowns();
+}
 function addCargo(c) {
   c.id = newId(); c.created_at = todayIso();
   DATA.cargoes.push(c);
   saveCargoHistory(c);
+  logUserAction('add', 'cargoes', c.id, null, c);
   persist(); autoUpdateRundowns(); return c;
 }
 function updCargo(id, patch) {
   const c = DATA.cargoes.find(x=>x.id===id);
   if (c) {
+    const before = { ...c };
     Object.assign(c, patch);
     // Qualunque modifica → update_date = oggi (resetta il ciclo OFFERS → YDAY OFFERS → LAST OFFERS)
     if (!('update_date' in patch)) c.update_date = todayIso();
     saveCargoHistory(c);
+    logUserAction('upd', 'cargoes', id, before, c);
     persist();
     autoUpdateRundowns();
   }
   return c;
 }
-function delCargo(id) { DATA.cargoes = DATA.cargoes.filter(x=>x.id!==id); persist(); autoUpdateRundowns(); }
+function delCargo(id) {
+  const c = DATA.cargoes.find(x=>x.id===id);
+  if (c) logUserAction('del', 'cargoes', id, c, null);
+  DATA.cargoes = DATA.cargoes.filter(x=>x.id!==id);
+  persist(); autoUpdateRundowns();
+}
 
 const modal = {
   open(title, html) { $('#modal-title').textContent = title; $('#modal-body').innerHTML = html; $('#modal-bg').classList.remove('hidden'); },
@@ -7356,7 +7446,6 @@ routes['roadmap'] = function() {
 })();
 
 // One-time fix: deduplica navi SEASIA presenti in entrambi i basin (ATL e PAC).
-// L'Excel le aveva importate doppie. Teniamo la copia PAC, rimuoviamo la ATL.
 // Poi il filtro di renderMasterList mostra le SEASIA in entrambe le viste dal singolo record.
 (function dedupSeasiaCrossBasin() {
   const FLAG = 'pmx_dedup_seasia_crossbasin_v1';
@@ -7434,4 +7523,3 @@ setRoute();
 
 </body>
 </html>
-html>
