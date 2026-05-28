@@ -167,6 +167,59 @@ table.admin-tbl tbody tr:hover td { background: rgba(255,255,255,.02); }
 .history-row button.h-restore:hover { filter: brightness(1.05); }
 .history-row button.h-restore:active { transform: scale(0.96); }
 .history-empty { text-align: center; padding: 40px 20px; color: var(--text-mute); font-size: 12.5px; }
+
+/* Google Sheets-style version cards */
+.h-day-header {
+  font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--text-mute); padding: 14px 4px 8px; margin-top: 4px;
+}
+.h-day-header:first-child { margin-top: 0; }
+.h-card {
+  padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--bg-2); margin-bottom: 8px;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.h-card:hover { border-color: var(--gold); box-shadow: 0 2px 8px rgba(245,177,78,.12); }
+.h-card.h-current { border-color: var(--gold); background: var(--gold-soft); }
+.h-card-head {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
+}
+.h-time { font-size: 12.5px; font-weight: 700; color: var(--text); }
+.h-current-tag {
+  background: var(--gold); color: #2A2A2A;
+  padding: 1px 7px; border-radius: 999px;
+  font-size: 9.5px; font-weight: 700; letter-spacing: .04em; margin-left: 6px;
+}
+.h-manual {
+  background: rgba(74,144,226,.2); color: #4A90E2;
+  padding: 1px 7px; border-radius: 999px;
+  font-size: 9.5px; font-weight: 700; letter-spacing: .04em; margin-left: 6px;
+}
+.h-pre {
+  background: rgba(239,83,80,.18); color: #C5392B;
+  padding: 1px 7px; border-radius: 999px;
+  font-size: 9.5px; font-weight: 700; letter-spacing: .04em; margin-left: 6px;
+}
+.h-restore {
+  padding: 5px 12px; font: inherit; font-size: 11.5px; font-weight: 600;
+  background: var(--bg-3); color: var(--text);
+  border: 1px solid var(--line); border-radius: 6px; cursor: pointer;
+}
+.h-restore:hover:not(:disabled) {
+  background: linear-gradient(135deg, #FFE082 0%, #F5B14E 100%);
+  color: #2A2A2A; border-color: rgba(0,0,0,.1);
+}
+.h-restore:disabled { opacity: .35; cursor: default; }
+.h-users { display: flex; flex-wrap: wrap; gap: 8px 14px; }
+.h-user { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text); }
+.h-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  display: inline-block; flex-shrink: 0;
+}
+.h-meta {
+  font-size: 10.5px; color: var(--text-mute); margin-top: 6px;
+  text-transform: uppercase; letter-spacing: .05em;
+}
 .nav-section { font-size: 10.5px; text-transform: uppercase; color: var(--text-mute); letter-spacing: .1em; margin: 8px 4px 4px; font-weight: 600; }
 /* Blocchi sidebar — ogni sezione ha un suo accento colore */
 .sb-block {
@@ -2444,11 +2497,19 @@ function handleErr(label) {
 // VERSION HISTORY — snapshot del DB ogni ora (max 5 giorni)
 // + Ripristino versione precedente in stile Google Sheets.
 // ============================================================
-const SNAPSHOT_INTERVAL_MIN = 60; // min interval tra snapshots (1h)
+// Snapshot interval logic:
+// - Debounced 30s dopo ogni modifica (raggruppa burst di click rapidi)
+// - Min interval di 60s tra snapshots (evita di averne troppi in poco tempo)
+const SNAPSHOT_MIN_INTERVAL_SEC = 60;
 
-async function maybeTakeHourlySnapshot() {
+let _snapshotTimer = null;
+function scheduleSnapshot() {
+  if (_snapshotTimer) clearTimeout(_snapshotTimer);
+  _snapshotTimer = setTimeout(maybeTakeSnapshot, 30000);
+}
+
+async function maybeTakeSnapshot() {
   try {
-    // Recupero l'ultimo snapshot
     const { data, error } = await sb
       .from('snapshots')
       .select('id, created_at')
@@ -2457,12 +2518,14 @@ async function maybeTakeHourlySnapshot() {
     if (error) { console.warn('Snapshot check failed:', error); return; }
     if (data && data.length) {
       const last = new Date(data[0].created_at).getTime();
-      const mins = (Date.now() - last) / 60000;
-      if (mins < SNAPSHOT_INTERVAL_MIN) return; // ancora troppo presto
+      const secs = (Date.now() - last) / 1000;
+      if (secs < SNAPSHOT_MIN_INTERVAL_SEC) return;
     }
     await takeSnapshot('Auto');
-  } catch (e) { console.warn('maybeTakeHourlySnapshot:', e); }
+  } catch (e) { console.warn('maybeTakeSnapshot:', e); }
 }
+// Alias retro-compatibile
+const maybeTakeHourlySnapshot = maybeTakeSnapshot;
 
 async function takeSnapshot(label) {
   if (!CURRENT_USER) return;
@@ -3676,6 +3739,19 @@ function logUserAction(kind, table, id, before, after) {
   if (UNDO_STACK.length > UNDO_LIMIT) UNDO_STACK.shift();
   REDO_STACK.length = 0;
   updateUndoButtons();
+  // CLOUD: log to mutation_log for history page (fire-and-forget)
+  if (CURRENT_USER && window._cloudSyncActive) {
+    try {
+      sb.from('mutation_log').insert({
+        user_email: CURRENT_USER.email,
+        table_name: table,
+        row_id: String(id),
+        action: kind === 'add' ? 'insert' : kind === 'upd' ? 'update' : 'delete'
+      }).then(({error}) => { if (error) console.warn('mutation_log:', error); });
+    } catch(e) {}
+  }
+  // Schedule a snapshot debounced after this change (group bursts together)
+  if (typeof scheduleSnapshot === 'function') scheduleSnapshot();
 }
 
 function persist() {
@@ -7182,45 +7258,104 @@ routes['history'] = function() {
 
 async function loadAndRenderHistory() {
   try {
-    const { data, error } = await sb
+    const { data: snaps, error: e1 } = await sb
       .from('snapshots')
-      .select('id, created_at, taken_by, label, size_bytes, data')
+      .select('id, created_at, taken_by, label, size_bytes')
       .order('created_at', { ascending: false })
       .limit(200);
-    if (error) throw error;
-    renderHistoryList(data || []);
+    if (e1) throw e1;
+    if (!snaps || !snaps.length) {
+      $('#history-list').innerHTML = '<div class="history-empty">No snapshots yet. are taken automatically 30 seconds after any change. Or click "Take snapshot now" above.</div>';
+      return;
+    }
+    // Recupero le mutazioni dal mutation_log per associarle agli snapshot
+    const oldest = snaps[snaps.length - 1].created_at;
+    const { data: muts } = await sb
+      .from('mutation_log')
+      .select('user_email, table_name, action, created_at')
+      .gte('created_at', oldest)
+      .order('created_at', { ascending: false })
+      .limit(5000);
+    // Per ogni snapshot calcolo i contributors nell'intervallo (prev, this]
+    for (let i = 0; i < snaps.length; i++) {
+      const thisT = new Date(snaps[i].created_at).getTime();
+      const prevT = i+1 < snaps.length ? new Date(snaps[i+1].created_at).getTime() : 0;
+      const inRange = (muts || []).filter(m => {
+        const t = new Date(m.created_at).getTime();
+        return t > prevT && t <= thisT;
+      });
+      const usersSet = new Set();
+      inRange.forEach(m => { if (m.user_email) usersSet.add(m.user_email); });
+      // Include anche il taken_by dello snapshot
+      if (snaps[i].taken_by) usersSet.add(snaps[i].taken_by);
+      snaps[i].contributors = Array.from(usersSet);
+      snaps[i].changeCount = inRange.length;
+    }
+    renderHistoryList(snaps);
   } catch (err) {
     $('#history-list').innerHTML = '<div class="history-empty">Failed to load: ' + esc(err.message || String(err)) + '</div>';
   }
 }
 
+// Genera un colore stabile a partire dall'email (hash → hue)
+function _userColor(email) {
+  let h = 0;
+  for (let i = 0; i < email.length; i++) h = (h * 31 + email.charCodeAt(i)) >>> 0;
+  return `hsl(${h % 360}, 65%, 55%)`;
+}
+
+function _dayGroup(d) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const yest  = new Date(today); yest.setDate(yest.getDate() - 1);
+  const dd    = new Date(d); dd.setHours(0,0,0,0);
+  if (dd.getTime() === today.getTime()) return 'Today';
+  if (dd.getTime() === yest.getTime())  return 'Yesterday';
+  return dd.toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'long' });
+}
+
 function renderHistoryList(rows) {
   const wrap = $('#history-list');
   if (!wrap) return;
-  if (!rows.length) {
-    wrap.innerHTML = '<div class="history-empty">No snapshots yet. The first one will be taken automatically within the hour, or click "Take snapshot now" above.</div>';
-    return;
+  // Raggruppo per giorno
+  const groups = {};
+  const order = [];
+  for (const r of rows) {
+    const key = _dayGroup(r.created_at);
+    if (!groups[key]) { groups[key] = []; order.push(key); }
+    groups[key].push(r);
   }
-  const fmt = (iso) => {
-    const d = new Date(iso);
-    const date = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
-    const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-    return { date: date + ' ' + time, ago: _timeAgo(d) };
-  };
-  wrap.innerHTML = rows.map(r => {
-    const v = (r.data && r.data.vessels) ? r.data.vessels.length : 0;
-    const c = (r.data && r.data.cargoes) ? r.data.cargoes.length : 0;
-    const f = fmt(r.created_at);
-    const who = r.taken_by ? String(r.taken_by).split('@')[0].toUpperCase() : '—';
-    const labelTag = r.label === 'Manual' ? ' <span style="font-size:9.5px; background:rgba(245,177,78,.2); color:var(--gold); padding:1px 6px; border-radius:999px; margin-left:6px;">MANUAL</span>' : '';
-    return `<div class="history-row">
-      <div class="h-date">${esc(f.date)}${labelTag}<small>${esc(f.ago)}</small></div>
-      <div class="h-by">by <b>${esc(who)}</b></div>
-      <div class="h-counts">${v} vessels · ${c} cargoes</div>
-      <button class="h-restore" data-id="${r.id}">Restore</button>
-    </div>`;
-  }).join('');
-  wrap.querySelectorAll('button.h-restore').forEach(btn => {
+  const html = [];
+  for (const key of order) {
+    html.push(`<div class="h-day-header">${esc(key)}</div>`);
+    const rs = groups[key];
+    for (let i = 0; i < rs.length; i++) {
+      const r = rs[i];
+      const d = new Date(r.created_at);
+      const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      const isCurrent = (rows.indexOf(r) === 0);
+      const v = (r.data && r.data.vessels) ? r.data.vessels.length : '';
+      const labelTag = r.label === 'Manual'
+        ? ' <span class="h-manual">MANUAL</span>'
+        : r.label === 'Pre-restore'
+        ? ' <span class="h-pre">PRE-RESTORE</span>'
+        : '';
+      const dots = (r.contributors || []).map(email => {
+        const short = String(email).split('@')[0];
+        return `<div class="h-user"><span class="h-dot" style="background:${_userColor(email)}"></span>${esc(short)}</div>`;
+      }).join('');
+      html.push(`
+        <div class="h-card ${isCurrent ? 'h-current' : ''}" data-id="${r.id}">
+          <div class="h-card-head">
+            <div class="h-time">${esc(time)}${labelTag}${isCurrent ? ' <span class="h-current-tag">Current version</span>' : ''}</div>
+            <button class="h-restore" data-id="${r.id}" ${isCurrent ? 'disabled' : ''}>${isCurrent ? '—' : 'Restore'}</button>
+          </div>
+          <div class="h-users">${dots || '<span style="color:var(--text-mute); font-size:11px;">(no logged changes)</span>'}</div>
+          ${r.changeCount ? `<div class="h-meta">${r.changeCount} change${r.changeCount===1?'':'s'}</div>` : ''}
+        </div>`);
+    }
+  }
+  wrap.innerHTML = html.join('') || '<div class="history-empty">No snapshots yet.</div>';
+  wrap.querySelectorAll('button.h-restore[data-id]:not([disabled])').forEach(btn => {
     btn.onclick = () => restoreSnapshot(btn.dataset.id);
   });
 }
@@ -7707,7 +7842,6 @@ document.getElementById("btn-redo").addEventListener("click", redoAction);
 document.addEventListener("keydown", (e) => {
   const mod = e.metaKey || e.ctrlKey;
   if (!mod) return;
-  // Non intercettare se l'utente sta scrivendo in un input/textarea/contenteditable
   // Non intercettare se l'utente sta scrivendo in un input/textarea/contenteditable
   const t = e.target;
   const isEditing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
