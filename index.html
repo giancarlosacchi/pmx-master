@@ -7231,20 +7231,14 @@ const ROADMAP_DOCS = {
 // con quelli dello snapshot scelto, e prende uno snapshot "pre-restore" per
 // poter tornare indietro se il ripristino è stato un errore.
 routes['history'] = function() {
-  $('#topbar-actions').innerHTML = `
-    <button class="primary" id="btn-snap-now"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>Take snapshot now</button>`;
-  $('#btn-snap-now').onclick = async () => {
-    await takeSnapshot('Manual');
-    cloudToast('Snapshot taken', { kind: 'ok', duration: 1500 });
-    loadAndRenderHistory();
-  };
+  $('#topbar-actions').innerHTML = '';
   $('#content').innerHTML = `
     <div class="panel">
       <div class="history-panel">
         <h2 style="margin: 0 0 8px; font-size: 16px; letter-spacing: .04em;">Version History</h2>
         <p style="margin: 0 0 14px; font-size: 12px; color: var(--text-mute);">
-          Snapshots auto-taken at most once per hour. Older than 5 days are deleted automatically.
-          Restoring replaces ALL vessels, cargoes, accounts and rundowns with the version from that moment.
+          Snapshots are taken automatically a few seconds after each change. Versions older than 5 days are deleted automatically.
+          Click <b>Restore</b> on any version to bring the broker list back to that state (a pre-restore backup is saved first, so you can undo).
         </p>
         <div class="tbl-wrap" style="overflow:auto;">
           <div class="history-list" id="history-list">
