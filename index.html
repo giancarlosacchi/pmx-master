@@ -2622,8 +2622,14 @@ function applyRtRow(table, payload) {
     // lo snapshot interno e NON ri-faccio re-render: evita flicker su UI.
     const wasMine = _isProbablyMyChange(table, row);
     const idx = arr.findIndex(r => r.id === row.id);
+    // Preserva il flag __sessionNew (in-memory, per il bold "appena aggiunta")
+    const wasSessionNew = idx >= 0 && !!arr[idx].__sessionNew;
     if (idx >= 0) arr[idx] = row;
     else arr.push(row);
+    if (wasSessionNew) {
+      const i2 = arr.findIndex(r => r.id === row.id);
+      if (i2 >= 0) arr[i2].__sessionNew = true;
+    }
     if (_lastSyncSnapshot && _lastSyncSnapshot[table]) _lastSyncSnapshot[table].set(row.id, _hash(row));
     saveData(DATA);
     if (wasMine) return; // marker: salta il re-render scheduler upstream
@@ -3942,6 +3948,7 @@ function lookupCargoHistory(chrtrs, load_port, disch_port) {
 
 function addVessel(v) {
   v.id = newId(); v.created_at = todayIso();
+  v.__sessionNew = true;  // flag in-memory: bold solo per questa sessione
   DATA.vessels.push(v);
   saveVesselHistory(v);
   logUserAction('add', 'vessels', v.id, null, v);
@@ -3971,6 +3978,7 @@ function delVessel(id) {
 }
 function addCargo(c) {
   c.id = newId(); c.created_at = todayIso();
+  c.__sessionNew = true;
   DATA.cargoes.push(c);
   saveCargoHistory(c);
   logUserAction('add', 'cargoes', c.id, null, c);
@@ -4245,11 +4253,11 @@ function renderVesselRow(v, cbCols) {
   const statusCls = !v.status ? 'none' : v.status === 'on_subs' ? 'subs' : v.status === 'off_mkt' ? 'off' : 'fresh';
   const statusLabel = !v.status ? '—' : v.status === 'on_subs' ? 'on subs' : v.status === 'off_mkt' ? 'off mrkt' : 'fresh';
   const E = (f) => `data-kind="v" data-id="${v.id}" data-field="${f}" class="editable" title="Double-click to edit"`;
-  // Riga "nuova" = modificata oggi (update_date === oggi)
-  // Riga in grassetto SOLO se la nave è stata inserita oggi (non solo modificata)
-  // Confronto solo i primi 10 caratteri perché Supabase ritorna timestamp ISO completo
-  // (es. "2026-05-27T15:42:13.123Z") mentre todayIso() ritorna "2026-05-27".
-  const isNew = String(v.created_at || '').slice(0,10) === todayIso();
+  // Riga in grassetto SOLO se la nave è stata aggiunta in questa sessione
+  // (flag in-memory __sessionNew, settato in addVessel). Le navi caricate da cloud
+  // hanno tutte created_at di oggi per via della migrazione e finirebbero tutte in
+  // grassetto — questo flag risolve.
+  const isNew = !!v.__sessionNew;
   return `<tr class="${cls} row-area ${areaClass(v.area)} ${isNew?'row-new':''}" draggable="true" data-row-vessel-id="${v.id}">
     <td data-kind="v" data-id="${v.id}" data-field="vessel" class="editable col-vessel" title="Double-click to edit"><span class="row-drag" draggable="true" title="Drag to another area">⋮⋮</span>${esc(v.vessel)}</td>
     <td data-kind="v" data-id="${v.id}" data-field="dwt_blt" class="editable dim col-dwt" title="Double-click to edit">${esc(v.dwt_blt || '')}</td>
