@@ -2436,6 +2436,9 @@ function scheduleCloudSync() {
 
 async function syncDirtyToCloud() {
   if (!_lastSyncSnapshot) return;
+  // Se è in corso un restore, NON sincronizzare: evita che le modifiche locali
+  // vadano in cloud durante la finestra di delete+insert del restore.
+  if (window._restoring) return;
   const VESSEL_COLS = ['vessel','dwt_blt','open_port','open_from','open_to','ideas','ows_brkr','bunker','ls_brkr','update_date','area','basin','status','subs','yard','copy_text','ukr_trader','rus_trader','iran_trader','scr_ftd','ex_our_cp','grain_clean','neo_pnm_ftd','scrbr_ftd','oz_grain','bhp','co2_ftd'];
   const CARGO_COLS  = ['chrtrs','laycan_from','laycan_to','load_port','disch_port','cgo','size','notes','ls_brkr','update_date','date','area','section','basin','status','copy_text'];
 
@@ -7430,11 +7433,15 @@ function renderHistoryList(rows) {
             return `<div class="h-change"><span class="h-verb h-verb-${ch.verb.toLowerCase()}">${ch.verb}</span> ${esc(ch.what)}${labelPart}${whoPart}</div>`;
           }).join('')
         : '';
+      // Restore disponibile solo agli admin (per evitare che chiunque distrugga
+      // il lavoro di tutti). I non-admin vedono lo storico ma senza bottone attivo.
+      const canRestore = CURRENT_USER_ROLE === 'admin' && !isCurrent;
+      const restoreLabel = isCurrent ? '—' : (CURRENT_USER_ROLE === 'admin' ? 'Restore' : '🔒 Admin only');
       html.push(`
         <div class="h-card ${isCurrent ? 'h-current' : ''}" data-id="${r.id}">
           <div class="h-card-head">
             <div class="h-time">${esc(time)}${labelTag}${isCurrent ? ' <span class="h-current-tag">Current version</span>' : ''}</div>
-            <button class="h-restore" data-id="${r.id}" ${isCurrent ? 'disabled' : ''}>${isCurrent ? '—' : 'Restore'}</button>
+            <button class="h-restore" data-id="${r.id}" ${canRestore ? '' : 'disabled'}>${restoreLabel}</button>
           </div>
           <div class="h-users">${dots || '<span style="color:var(--text-mute); font-size:11px;">(no logged changes)</span>'}</div>
           ${changesHtml ? `<div class="h-changes">${changesHtml}</div>` : ''}
@@ -7458,8 +7465,18 @@ function _timeAgo(d) {
   return dd + ' day' + (dd === 1 ? '' : 's') + ' ago';
 }
 
+// Flag globale: blocca tutti i sync mentre un restore è in corso (evita race).
+window._restoring = false;
+
 async function restoreSnapshot(id) {
-  if (!confirm('Restore this version?\n\nALL current vessels, cargoes, accounts and rundowns will be REPLACED with the version from this moment.\n\nA backup snapshot will be taken first so you can undo this restore.\n\nContinue?')) return;
+  // Solo admin può ripristinare
+  if (CURRENT_USER_ROLE !== 'admin') {
+    cloudToast('Only admins can restore versions. Contact Giancarlo.', { kind: 'error', duration: 4000 });
+    return;
+  }
+  if (!confirm('Restore this version?\n\nALL current vessels, cargoes, accounts and rundowns will be REPLACED with the version from this moment.\n\nA backup snapshot will be taken first so you can undo this restore.\n\nALL OTHER USERS will see the change. Their unsaved local work will be lost.\n\nContinue?')) return;
+  // Lock locale: blocca syncDirtyToCloud per evitare race
+  window._restoring = true;
   cloudToast('Restoring…', { spinner: true });
   try {
     // 1) Prendi snapshot pre-restore (per poter tornare indietro)
@@ -7500,6 +7517,8 @@ async function restoreSnapshot(id) {
     setTimeout(() => location.reload(), 1200);
   } catch (err) {
     cloudToast('Restore failed: ' + (err.message || err), { kind: 'error', duration: 6000 });
+  } finally {
+    window._restoring = false;
   }
 }
 
