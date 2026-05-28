@@ -1930,6 +1930,8 @@ table.grid th.col-c-stato { overflow: hidden; }
 .topbar { background: var(--bg-1) !important; }
 .modal { background: var(--bg-2) !important; }
 .stat-card { background: var(--bg-2) !important; }
+/* Eccezione: Vsl/Cgo Finder empty state — lascia visibile la "carta" a quadretti */
+.panel.finder-empty { background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 .world-map-wrap, .calendar-step, .finder-step { background: var(--bg-2) !important; }
 
 /* ===== Animazioni macOS ===== */
