@@ -2337,8 +2337,10 @@ function startCloudSync() {
 
 let _syncTimer = null;
 function scheduleCloudSync() {
+  // Salvataggio quasi immediato (50ms): permette di batch-are azioni rapide
+  // tipo click multipli su flag, ma per l'utente è impercettibile.
   if (_syncTimer) clearTimeout(_syncTimer);
-  _syncTimer = setTimeout(syncDirtyToCloud, 400);
+  _syncTimer = setTimeout(syncDirtyToCloud, 50);
 }
 
 async function syncDirtyToCloud() {
@@ -2394,12 +2396,12 @@ async function syncDirtyToCloud() {
   }
 
   if (tasks.length === 0) return;
-  cloudToast('Saving…', { spinner: true });
+  // Salvataggio silenzioso: niente toast per non dare percezione di lentezza.
+  // Il toast appare SOLO in caso di errore (vedi handleErr).
   await Promise.all(tasks);
   // Update snapshot
   _lastSyncSnapshot.vessels = new Map((DATA.vessels||[]).map(v => [v.id, _hash(v)]));
   _lastSyncSnapshot.cargoes = new Map((DATA.cargoes||[]).map(c => [c.id, _hash(c)]));
-  cloudToast('Saved', { kind: 'ok', duration: 1200 });
 }
 
 function handleErr(label) {
@@ -2471,11 +2473,15 @@ function applyRtRow(table, payload) {
   } else {
     const row = payload.new;
     if (!row || row.id == null) return;
+    // Se è l'eco della MIA stessa modifica (round-trip cloud), aggiorno solo
+    // lo snapshot interno e NON ri-faccio re-render: evita flicker su UI.
+    const wasMine = _isProbablyMyChange(table, row);
     const idx = arr.findIndex(r => r.id === row.id);
     if (idx >= 0) arr[idx] = row;
     else arr.push(row);
     if (_lastSyncSnapshot && _lastSyncSnapshot[table]) _lastSyncSnapshot[table].set(row.id, _hash(row));
     saveData(DATA);
+    if (wasMine) return; // marker: salta il re-render scheduler upstream
   }
   // Niente toast: chiunque può lavorare su tutto, le modifiche arrivano silenziose
 }
