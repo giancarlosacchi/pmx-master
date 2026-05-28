@@ -2278,7 +2278,7 @@ async function loadDataFromCloud() {
 async function migrateLocalToCloud(local) {
   cloudToast('Migrating ' + ((local.vessels||[]).length + (local.cargoes||[]).length) + ' records to cloud…', { spinner: true });
   // Allowed columns per table — extra fields in localStorage are dropped
-  const VESSEL_COLS = ['vessel','dwt_blt','open_port','open_from','open_to','ideas','ows_brkr','bunker','ls_brkr','update_date','area','basin','status','subs','yard','copy_text','flag_oo','flag_t','flag_yr','flag_pr','flag_ec','flag_x'];
+  const VESSEL_COLS = ['vessel','dwt_blt','open_port','open_from','open_to','ideas','ows_brkr','bunker','ls_brkr','update_date','area','basin','status','subs','yard','copy_text','ukr_trader','rus_trader','iran_trader','scr_ftd','ex_our_cp','grain_clean','neo_pnm_ftd','scrbr_ftd','oz_grain','bhp','co2_ftd'];
   const CARGO_COLS  = ['chrtrs','laycan_from','laycan_to','load_port','disch_port','cgo','size','notes','ls_brkr','update_date','date','area','section','basin','status','copy_text'];
   const ACCOUNT_COLS= ['col','city','broker','clients'];
 
@@ -2343,7 +2343,7 @@ function scheduleCloudSync() {
 
 async function syncDirtyToCloud() {
   if (!_lastSyncSnapshot) return;
-  const VESSEL_COLS = ['vessel','dwt_blt','open_port','open_from','open_to','ideas','ows_brkr','bunker','ls_brkr','update_date','area','basin','status','subs','yard','copy_text','flag_oo','flag_t','flag_yr','flag_pr','flag_ec','flag_x'];
+  const VESSEL_COLS = ['vessel','dwt_blt','open_port','open_from','open_to','ideas','ows_brkr','bunker','ls_brkr','update_date','area','basin','status','subs','yard','copy_text','ukr_trader','rus_trader','iran_trader','scr_ftd','ex_our_cp','grain_clean','neo_pnm_ftd','scrbr_ftd','oz_grain','bhp','co2_ftd'];
   const CARGO_COLS  = ['chrtrs','laycan_from','laycan_to','load_port','disch_port','cgo','size','notes','ls_brkr','update_date','date','area','section','basin','status','copy_text'];
 
   const tasks = [];
@@ -4066,7 +4066,9 @@ function renderVesselRow(v, cbCols) {
   const E = (f) => `data-kind="v" data-id="${v.id}" data-field="${f}" class="editable" title="Double-click to edit"`;
   // Riga "nuova" = modificata oggi (update_date === oggi)
   // Riga in grassetto SOLO se la nave è stata inserita oggi (non solo modificata)
-  const isNew = v.created_at === todayIso();
+  // Confronto solo i primi 10 caratteri perché Supabase ritorna timestamp ISO completo
+  // (es. "2026-05-27T15:42:13.123Z") mentre todayIso() ritorna "2026-05-27".
+  const isNew = String(v.created_at || '').slice(0,10) === todayIso();
   return `<tr class="${cls} row-area ${areaClass(v.area)} ${isNew?'row-new':''}" draggable="true" data-row-vessel-id="${v.id}">
     <td data-kind="v" data-id="${v.id}" data-field="vessel" class="editable col-vessel" title="Double-click to edit"><span class="row-drag" draggable="true" title="Drag to another area">⋮⋮</span>${esc(v.vessel)}</td>
     <td data-kind="v" data-id="${v.id}" data-field="dwt_blt" class="editable dim col-dwt" title="Double-click to edit">${esc(v.dwt_blt || '')}</td>
