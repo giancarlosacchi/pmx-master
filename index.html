@@ -13,7 +13,7 @@
 <title>LS PMX Master — Lightship</title>
 <style>
 /* Glass tokens: usati da panel/sidebar/topbar/modal per effetto vetro satinato.
-   Dark mode: più contrasto → glass-bg più opaco, bordi più visibili, ombre più nette. */
+   Dark mode: più contrasto → glass-bg più opaco, bordi più visibili, ombre hpiù nette. */
 :root {
   --glass-bg: rgba(15, 22, 40, 0.78);
   --glass-bg-strong: rgba(15, 22, 40, 0.90);
@@ -4253,7 +4253,7 @@ function renderMasterTable(rows, cbCols, basin) {
   }
   const byArea = {};
   for (const r of rows) {
-    const key = r.section || r.area || '—';
+    const key = r.section || r.area || 'Other';
     (byArea[key] ??= []).push(r);
   }
   const html = [];
@@ -5009,7 +5009,7 @@ function renderCargoList(basin) {
       return;
     }
     const bySec = {};
-    for (const r of rows) (bySec[r.section || '—'] ??= []).push(r);
+    for (const r of rows) (bySec[r.section || r.area || 'Other'] ??= []).push(r);
     const ordered = areas.filter(a => bySec[a]);
     const otherSecs = Object.keys(bySec).filter(s => !areas.includes(s)).sort();
     const html = [`<table class="grid"><thead><tr>
