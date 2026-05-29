@@ -2061,6 +2061,13 @@ body:not(.logged-in) .app { visibility: hidden; }
 .login-btn:hover:not(:disabled) { filter: brightness(1.05); box-shadow: 0 4px 12px rgba(245,177,78,.4); }
 .login-btn:active:not(:disabled) { transform: scale(0.98); }
 .login-btn:disabled { opacity: .55; cursor: not-allowed; }
+.login-divider { display:flex; align-items:center; gap:8px; width:100%; color: var(--text-mute, #888); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; margin: 2px 0; }
+.login-divider::before, .login-divider::after { content:''; flex:1; height:1px; background: rgba(0,0,0,.08); }
+[data-theme="dark"] .login-divider::before, [data-theme="dark"] .login-divider::after { background: rgba(255,255,255,.12); }
+.login-btn-ms { display:inline-flex; align-items:center; justify-content:center; gap:10px; background:#fff; color:#5e5e5e; border:1px solid #d2d2d2; font-weight:500; }
+.login-btn-ms:hover { background:#f5f5f5; }
+[data-theme="dark"] .login-btn-ms { background:#2b2b2b; color:#eaeaea; border-color:#4a4a4a; }
+[data-theme="dark"] .login-btn-ms:hover { background:#353535; }
 .login-msg { font-size: 11.5px; min-height: 16px; text-align: center; }
 .login-msg.error { color: #C5392B; }
 .login-msg.info  { color: var(--text-mute, #6B6B6B); }
@@ -2126,6 +2133,16 @@ body:not(.logged-in) .app { visibility: hidden; }
     <p>Sign in with your Lightship email.<br/>We'll send you a one-time code.</p>
     <input type="email" id="login-email" class="login-input" placeholder="name@lightshipchartering.com" autocomplete="email" />
     <button id="login-send" class="login-btn">Send code</button>
+    <div class="login-divider"><span>or</span></div>
+    <button id="login-ms" class="login-btn login-btn-ms" type="button">
+      <svg width="16" height="16" viewBox="0 0 23 23" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="1" y="1" width="10" height="10" fill="#F25022"/>
+        <rect x="12" y="1" width="10" height="10" fill="#7FBA00"/>
+        <rect x="1" y="12" width="10" height="10" fill="#00A4EF"/>
+        <rect x="12" y="12" width="10" height="10" fill="#FFB900"/>
+      </svg>
+      <span>Sign in with Microsoft</span>
+    </button>
     <div id="login-otp-wrap" hidden style="width:100%; display:flex; flex-direction:column; gap:10px;">
       <p style="margin-top:6px;">Check your inbox. Paste the code below.</p>
       <input type="text" id="login-otp" class="login-input" placeholder="6-digit code" inputmode="numeric" autocomplete="one-time-code" />
@@ -2744,7 +2761,26 @@ function renderUserChip(user) {
   const $otpWrap = () => document.getElementById('login-otp-wrap');
   const $send    = () => document.getElementById('login-send');
   const $verify  = () => document.getElementById('login-verify');
+  const $ms      = () => document.getElementById('login-ms');
   const $msg     = () => document.getElementById('login-msg');
+
+  async function signInWithMicrosoft() {
+    setBusy($ms(), true, 'Redirecting…');
+    setMsg('', '');
+    try {
+      const { error } = await sb.auth.signInWithOAuth({
+        provider: 'azure',
+        options: {
+          scopes: 'openid email profile',
+          redirectTo: window.location.origin + window.location.pathname
+        }
+      });
+      if (error) throw error;
+    } catch (err) {
+      setMsg('Microsoft sign-in failed: ' + ((err && err.message) || err), 'error');
+      setBusy($ms(), false);
+    }
+  }
 
   function setMsg(text, kind) {
     const m = $msg();
@@ -2832,9 +2868,10 @@ function renderUserChip(user) {
 
   // Wire up buttons after DOM is ready (the script runs in <body>, so it's already ready)
   function wire() {
-    const s = $send(), v = $verify(), e = $email(), o = $otp();
+    const s = $send(), v = $verify(), e = $email(), o = $otp(), m = $ms();
     if (s) s.onclick = sendCode;
     if (v) v.onclick = verifyCode;
+    if (m) m.onclick = signInWithMicrosoft;
     if (e) e.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') sendCode(); });
     if (o) o.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') verifyCode(); });
   }
