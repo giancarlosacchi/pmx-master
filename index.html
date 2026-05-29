@@ -4279,7 +4279,10 @@ function renderMasterTable(rows, cbCols, basin) {
     <th class="col-del"></th>
   </tr></thead><tbody>`);
   // ORDINE AREE: usa row_order dal Sheet — Sheet è source of truth
-  const ordered = Object.keys(byArea).sort((a, b) => areaMinRowOrder[a] - areaMinRowOrder[b]);
+  const canonicalAreaOrder = basin === 'ATL' ? ATL_TNG_AREAS : PAC_TNG_AREAS;
+  const predefinedOrdered = canonicalAreaOrder.filter(a => byArea[a]);
+  const extraOrdered = Object.keys(byArea).filter(a => !canonicalAreaOrder.includes(a)).sort((a, b) => areaMinRowOrder[a] - areaMinRowOrder[b]);
+  const ordered = [...predefinedOrdered, ...extraOrdered];
   // Comparator: ordina per row_order ASC (= ordine nel Sheet), fallback su open_from
   const cmpVessel = (a, b) => {
     if (a.row_order != null && b.row_order != null) return a.row_order - b.row_order;
