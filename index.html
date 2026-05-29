@@ -13,7 +13,7 @@
 <title>LS PMX Master — Lightship</title>
 <style>
 /* Glass tokens: usati da panel/sidebar/topbar/modal per effetto vetro satinato.
-   Dark mode: più contrasto → glass-bg più opaco, bordi più visibili, ombre hpiù nette. */
+   Dark mode: più contrasto → glass-bg più opaco, bordi più visibili, ombre più nette. */
 :root {
   --glass-bg: rgba(15, 22, 40, 0.78);
   --glass-bg-strong: rgba(15, 22, 40, 0.90);
@@ -4256,6 +4256,11 @@ function renderMasterTable(rows, cbCols, basin) {
     const key = r.section || r.area || 'Other';
     (byArea[key] ??= []).push(r);
   }
+  // ORDINE AREE: secondo row_order (= ordine nel Sheet) della prima nave di ciascuna area
+  const areaMinRowOrder = {};
+  for (const a in byArea) {
+    areaMinRowOrder[a] = Math.min(...byArea[a].map(r => r.row_order ?? Infinity));
+  }
   const html = [];
   const colspan = 12;
   const cbHead = cbCols.map(([k,l]) => `<th title="${l}">${l}</th>`).join('');
@@ -4273,10 +4278,13 @@ function renderMasterTable(rows, cbCols, basin) {
     <th class="th-filter col-stato"><input data-col="status" placeholder="Status" value="${attr(F.status||'')}"></th>
     <th class="col-del"></th>
   </tr></thead><tbody>`);
-  const desired = basin === 'ATL' ? ATL_TNG_AREAS : PAC_TNG_AREAS;
-  const ordered = [...desired.filter(a => byArea[a]), ...Object.keys(byArea).filter(a => !desired.includes(a)).sort()];
-  // Comparator: ordina per open_from ASC, a parità di from per open_to ASC (window più corta prima)
-  const cmpVessel = makeDateRangeCmp('open_from', 'open_to');
+  // ORDINE AREE: usa row_order dal Sheet — Sheet è source of truth
+  const ordered = Object.keys(byArea).sort((a, b) => areaMinRowOrder[a] - areaMinRowOrder[b]);
+  // Comparator: ordina per row_order ASC (= ordine nel Sheet), fallback su open_from
+  const cmpVessel = (a, b) => {
+    if (a.row_order != null && b.row_order != null) return a.row_order - b.row_order;
+    return makeDateRangeCmp('open_from', 'open_to')(a, b);
+  };
   for (const area of ordered) {
     byArea[area].sort(cmpVessel);
     html.push(`<tr class="section-area ${areaClass(area)}"><td colspan="${colspan}">${esc(area)}<span class="area-count">${byArea[area].length}</span></td></tr>`);
@@ -5010,8 +5018,11 @@ function renderCargoList(basin) {
     }
     const bySec = {};
     for (const r of rows) (bySec[r.section || r.area || 'Other'] ??= []).push(r);
-    const ordered = areas.filter(a => bySec[a]);
-    const otherSecs = Object.keys(bySec).filter(s => !areas.includes(s)).sort();
+    // ORDINE SEZIONI: usa row_order dal Sheet — Sheet è source of truth
+    const secMinRowOrder = {};
+    for (const s in bySec) secMinRowOrder[s] = Math.min(...bySec[s].map(r => r.row_order ?? Infinity));
+    const ordered = Object.keys(bySec).sort((a, b) => secMinRowOrder[a] - secMinRowOrder[b]);
+    const otherSecs = []; // tutto ordinato in `ordered` via row_order
     const html = [`<table class="grid"><thead><tr>
         <th class="th-filter col-c-chrtrs"><input data-col="chrtrs" placeholder="Chrtrs" value="${attr(F.chrtrs||'')}"></th>
         <th class="th-filter col-c-dates"><input data-col="dates" placeholder="Dates" value="${attr(F.dates||'')}"></th>
@@ -5026,7 +5037,11 @@ function renderCargoList(basin) {
         <th class="col-del"></th>
       </tr></thead><tbody>`];
     // Comparator: laycan_from ASC, a parità laycan_to ASC (finestra più corta prima)
-    const cmpCgo = makeDateRangeCmp('laycan_from', 'laycan_to');
+    // Comparator: row_order ASC (= ordine Sheet), fallback laycan
+    const cmpCgo = (a, b) => {
+      if (a.row_order != null && b.row_order != null) return a.row_order - b.row_order;
+      return makeDateRangeCmp('laycan_from', 'laycan_to')(a, b);
+    };
     for (const sec of [...ordered, ...otherSecs]) {
       bySec[sec].sort(cmpCgo);
       html.push(`<tr class="section-area ${areaClass(sec)}"><td colspan="11">${esc(sec)}<span class="area-count">${bySec[sec].length}</span></td></tr>`);
