@@ -2882,11 +2882,43 @@ function renderUserChip(user) {
 // ============================================================
 // SESSION CHECK on load — if already logged in, skip the overlay
 // ============================================================
+async function trySilentMicrosoftSSO() {
+  // Auto SSO: i PC aziendali sono già loggati con Microsoft, quindi proviamo
+  // il login Azure automaticamente. Se l'utente NON è loggato in Microsoft,
+  // Microsoft mostra il proprio form di login (comportamento accettabile per
+  // un sito interno aziendale).
+  // Skip se l'utente vuole esplicitamente il login manuale (?login=manual)
+  // o se abbiamo già tentato in questa sessione (evita loop infiniti).
+  const url = new URL(window.location.href);
+  if (url.searchParams.get('login') === 'manual') return;
+  if (sessionStorage.getItem('ms_sso_attempted') === '1') {
+    sessionStorage.removeItem('ms_sso_attempted');
+    return; // tentato già, mostriamo overlay come fallback
+  }
+  sessionStorage.setItem('ms_sso_attempted', '1');
+  try {
+    await sb.auth.signInWithOAuth({
+      provider: 'azure',
+      options: {
+        scopes: 'openid email profile',
+        redirectTo: window.location.origin + window.location.pathname
+      }
+    });
+  } catch (e) {
+    sessionStorage.removeItem('ms_sso_attempted');
+  }
+}
+
 (async function checkSessionOnLoad() {
   try {
     const { data } = await sb.auth.getSession();
     const user = data && data.session && data.session.user;
-    if (!user) return; // not logged in: overlay stays visible
+    if (!user) {
+      // Non loggato: tenta SSO Microsoft automatico prima di mostrare l'overlay
+      await trySilentMicrosoftSSO();
+      return;
+    }
+    sessionStorage.removeItem('ms_sso_attempted');
     if (!/@lightshipchartering\.com$/i.test(user.email || '')) {
       await sb.auth.signOut();
       return;
