@@ -2638,9 +2638,11 @@ async function takeSnapshot(label) {
 // ============================================================
 let _realtimeChannel = null;
 let _rtRenderTimer = null;
+let _lastMouseMoveAt = 0;
+document.addEventListener('mousemove', () => { _lastMouseMoveAt = Date.now(); }, true);
 function _scheduleRtRender() {
   if (_rtRenderTimer) clearTimeout(_rtRenderTimer);
-  _rtRenderTimer = setTimeout(_doRtRender, 200);
+  _rtRenderTimer = setTimeout(_doRtRender, 3000);
 }
 function _doRtRender() {
   try {
@@ -2649,11 +2651,16 @@ function _doRtRender() {
       const tag = (active.tagName || '').toLowerCase();
       if (tag === 'select' || tag === 'input' || tag === 'textarea' || active.isContentEditable) {
         if (_rtRenderTimer) clearTimeout(_rtRenderTimer);
-        _rtRenderTimer = setTimeout(_doRtRender, 1500);
+        _rtRenderTimer = setTimeout(_doRtRender, 2000);
         return;
       }
     }
     if (document.querySelector('.dr-popover:not([hidden])')) {
+      if (_rtRenderTimer) clearTimeout(_rtRenderTimer);
+      _rtRenderTimer = setTimeout(_doRtRender, 2000);
+      return;
+    }
+    if (Date.now() - _lastMouseMoveAt < 1000) {
       if (_rtRenderTimer) clearTimeout(_rtRenderTimer);
       _rtRenderTimer = setTimeout(_doRtRender, 1500);
       return;
@@ -2663,7 +2670,7 @@ function _doRtRender() {
 }
 
 function startRealtimeSync() {
-  if (_realtimeChannel) return; // already subscribed
+  if (_realtimeChannel) return;
   _realtimeChannel = sb.channel('pmx-master-list-rt');
 
   _realtimeChannel
@@ -2678,68 +2685,6 @@ function startRealtimeSync() {
         console.warn('[Realtime] status:', status);
       }
     });
-}
-
-// ============================================================
-// AUTO-REFRESH AT WAKE-UP — quando il PC esce da standby o il tab torna
-// attivo dopo essere stato in background, ricarichiamo i dati dal cloud
-// e riconnettiamo il realtime (perché il websocket muore in standby).
-// ============================================================
-(function setupAutoRefreshOnWake() {
-  let lastHiddenAt = null;
-  let isRefreshing = false;
-  async function refreshNow(reason) {
-    if (isRefreshing) return;
-    if (!document.body.classList.contains('logged-in')) return;
-    isRefreshing = true;
-    try {
-      try {
-        if (_realtimeChannel) {
-          try { await sb.removeChannel(_realtimeChannel); } catch(e) {}
-          _realtimeChannel = null;
-        }
-        startRealtimeSync();
-      } catch (e) { console.warn('[wake] realtime reconnect failed:', e); }
-      try { await loadDataFromCloud(); } catch (e) { console.warn('[wake] reload failed:', e); }
-      try { if (typeof setRoute === 'function') setRoute(); } catch(e) {}
-      console.log('[wake] refreshed (' + reason + ')');
-    } finally {
-      isRefreshing = false;
-    }
-  }
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') {
-      lastHiddenAt = Date.now();
-    } else if (document.visibilityState === 'visible') {
-      const hiddenFor = lastHiddenAt ? Date.now() - lastHiddenAt : 0;
-      lastHiddenAt = null;
-      if (hiddenFor > 10000) refreshNow('visibility ' + Math.round(hiddenFor/1000) + 's');
-    }
-  });
-  window.addEventListener('online', () => refreshNow('online'));
-  let lastBlurAt = null;
-  window.addEventListener('blur', () => { lastBlurAt = Date.now(); });
-  window.addEventListener('focus', () => {
-    const blurredFor = lastBlurAt ? Date.now() - lastBlurAt : 0;
-    lastBlurAt = null;
-    if (blurredFor > 10000) refreshNow('focus ' + Math.round(blurredFor/1000) + 's');
-  });
-})();
-
-// Identifico gli eventi causati da me (non mostro toast, ma applico comunque
-// per riallineare ID e timestamp dal server).
-function _isProbablyMyChange(table, row) {
-  if (!_lastSyncSnapshot || !_lastSyncSnapshot[table] || !row || row.id == null) return false;
-  // Se l'hash in snapshot matcha (ignorando updated_at), probabilmente è la mia upsert
-  const prev = _lastSyncSnapshot[table].get(row.id);
-  if (!prev) return false;
-  // Confronto solo i campi non-volatile (escludo updated_at)
-  try {
-    const a = JSON.parse(prev), b = { ...row };
-    delete a.updated_at; delete b.updated_at;
-    delete a.created_at; delete b.created_at;
-    return _hash(a) === _hash(b);
-  } catch(e) { return false; }
 }
 
 function applyRtRow(table, payload) {
