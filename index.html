@@ -2623,9 +2623,26 @@ let _realtimeChannel = null;
 let _rtRenderTimer = null;
 function _scheduleRtRender() {
   if (_rtRenderTimer) clearTimeout(_rtRenderTimer);
-  _rtRenderTimer = setTimeout(() => {
-    try { if (typeof setRoute === 'function') setRoute(); } catch(e) { console.error('rt setRoute:', e); }
-  }, 200);
+  _rtRenderTimer = setTimeout(_doRtRender, 200);
+}
+function _doRtRender() {
+  try {
+    const active = document.activeElement;
+    if (active && active !== document.body) {
+      const tag = (active.tagName || '').toLowerCase();
+      if (tag === 'select' || tag === 'input' || tag === 'textarea' || active.isContentEditable) {
+        if (_rtRenderTimer) clearTimeout(_rtRenderTimer);
+        _rtRenderTimer = setTimeout(_doRtRender, 1500);
+        return;
+      }
+    }
+    if (document.querySelector('.dr-popover:not([hidden])')) {
+      if (_rtRenderTimer) clearTimeout(_rtRenderTimer);
+      _rtRenderTimer = setTimeout(_doRtRender, 1500);
+      return;
+    }
+  } catch(e) {}
+  try { if (typeof setRoute === 'function') setRoute(); } catch(e) { console.error('rt setRoute:', e); }
 }
 
 function startRealtimeSync() {
