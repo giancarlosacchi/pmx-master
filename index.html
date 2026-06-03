@@ -2646,6 +2646,52 @@ function startRealtimeSync() {
     });
 }
 
+// ============================================================
+// AUTO-REFRESH AT WAKE-UP — quando il PC esce da standby o il tab torna
+// attivo dopo essere stato in background, ricarichiamo i dati dal cloud
+// e riconnettiamo il realtime (perché il websocket muore in standby).
+// ============================================================
+(function setupAutoRefreshOnWake() {
+  let lastHiddenAt = null;
+  let isRefreshing = false;
+  async function refreshNow(reason) {
+    if (isRefreshing) return;
+    if (!document.body.classList.contains('logged-in')) return;
+    isRefreshing = true;
+    try {
+      try {
+        if (_realtimeChannel) {
+          try { await sb.removeChannel(_realtimeChannel); } catch(e) {}
+          _realtimeChannel = null;
+        }
+        startRealtimeSync();
+      } catch (e) { console.warn('[wake] realtime reconnect failed:', e); }
+      try { await loadDataFromCloud(); } catch (e) { console.warn('[wake] reload failed:', e); }
+      try { if (typeof setRoute === 'function') setRoute(); } catch(e) {}
+      console.log('[wake] refreshed (' + reason + ')');
+    } finally {
+      isRefreshing = false;
+    }
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      lastHiddenAt = Date.now();
+    } else if (document.visibilityState === 'visible') {
+      const hiddenFor = lastHiddenAt ? Date.now() - lastHiddenAt : 0;
+      lastHiddenAt = null;
+      if (hiddenFor > 10000) refreshNow('visibility ' + Math.round(hiddenFor/1000) + 's');
+    }
+  });
+  window.addEventListener('online', () => refreshNow('online'));
+  let lastBlurAt = null;
+  window.addEventListener('blur', () => { lastBlurAt = Date.now(); });
+  window.addEventListener('focus', () => {
+    const blurredFor = lastBlurAt ? Date.now() - lastBlurAt : 0;
+    lastBlurAt = null;
+    if (blurredFor > 10000) refreshNow('focus ' + Math.round(blurredFor/1000) + 's');
+  });
+})();
+
 // Identifico gli eventi causati da me (non mostro toast, ma applico comunque
 // per riallineare ID e timestamp dal server).
 function _isProbablyMyChange(table, row) {
