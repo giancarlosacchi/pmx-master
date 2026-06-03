@@ -4982,6 +4982,7 @@ routes['ecsa-list'] = function() {
             <div class="group"><label>Status</label>
               <select id="f-status"><option value="">All</option><option value="fresh">Fresh</option><option value="off_mkt">Off mkt</option><option value="on_subs">On subs</option></select></div>
             <span class="count-pill" id="cnt">—</span>
+            <span class="count-pill" id="cnt-buckets" style="display:none;background:rgba(56,189,248,.08);border-color:rgba(56,189,248,.20);color:var(--text);"></span>
           </div>
           <div class="tbl-wrap" id="tbl"></div>
         </div>
@@ -5040,6 +5041,21 @@ routes['ecsa-list'] = function() {
       return true;
     });
     $('#cnt').textContent = `${entries.length} navi`;
+    const bucketCounts = {};
+    for (const e of entries) {
+      const b = bucketFor(e.adjFrom);
+      bucketCounts[b] = (bucketCounts[b] || 0) + 1;
+    }
+    const bucketKeys = Object.keys(bucketCounts).sort(bucketSort);
+    const cntBuckets = $('#cnt-buckets');
+    if (cntBuckets) {
+      if (bucketKeys.length > 0 && entries.length > 0) {
+        cntBuckets.textContent = bucketKeys.map(k => `${k}: ${bucketCounts[k]}`).join(' · ');
+        cntBuckets.style.display = '';
+      } else {
+        cntBuckets.style.display = 'none';
+      }
+    }
     const html = [`<table class="grid"><thead><tr>
       <th class="th-filter"><input data-col="vessel" placeholder="Vessel" value="${attr(F.vessel||'')}"></th>
       <th class="th-filter"><input data-col="dwt_blt" placeholder="DWT" value="${attr(F.dwt_blt||'')}"></th>
