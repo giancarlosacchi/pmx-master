@@ -2259,7 +2259,7 @@ body:not(.logged-in) .app { visibility: hidden; }
 const SUPABASE_URL = 'https://ngtyjxcjodwwznatubjm.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ndHlqeGNqb2R3d3puYXR1YmptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NzkwMzUsImV4cCI6MjA5NTQ1NTAzNX0.xIFSL1dBB9T5A1DrwxZV9Z1TVoLflnEaxLzkYLvTpC8';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'implicit' }
 });
 window.sb = sb;
 
