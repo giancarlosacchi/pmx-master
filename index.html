@@ -487,6 +487,38 @@ html.theme-transitioning table.grid th {
 .filters input:focus, .filters select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-soft); }
 .count-pill { margin-left: auto; background: rgba(56,189,248,.08); color: var(--cyan);
   border: 1px solid rgba(56,189,248,.25); border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
+
+/* READ-ONLY MODE — non-admin */
+body:not(.is-admin) .row-edit,
+body:not(.is-admin) .row-del,
+body:not(.is-admin) .c-edit,
+body:not(.is-admin) .c-del,
+body:not(.is-admin) .btn-del,
+body:not(.is-admin) .col-del,
+body:not(.is-admin) .row-drag,
+body:not(.is-admin) #new-vessel,
+body:not(.is-admin) #new-cargo,
+body:not(.is-admin) button.primary[title*="Aggiungi"],
+body:not(.is-admin) button.primary[title*="Nuovo"],
+body:not(.is-admin) button.primary[title*="Nuova"],
+body:not(.is-admin) .topbar-add-btn,
+body:not(.is-admin) [data-route="admin"] {
+  display: none !important;
+}
+body:not(.is-admin) td.editable { cursor: default !important; }
+body:not(.is-admin) td.editable::after { display: none !important; }
+body:not(.is-admin) .status-menu,
+body:not(.is-admin) .area-menu,
+body:not(.is-admin) .area-change-menu {
+  pointer-events: none !important;
+}
+body:not(.is-admin) .flag-chip {
+  pointer-events: none !important;
+  cursor: default !important;
+}
+body:not(.is-admin) tr[draggable="true"] { -webkit-user-drag: none; }
+body:not(.is-admin) .status-pill,
+body:not(.is-admin) .pill { cursor: default !important; }
 .cnt-with-tooltip { position: relative; cursor: default; }
 .cnt-with-tooltip[data-tooltip]:hover::after {
   content: attr(data-tooltip);
@@ -3491,11 +3523,19 @@ setRoute(); }, 150);
 }
 // Delegation globale dblclick
 document.addEventListener('dblclick', (e) => {
+  if (!document.body.classList.contains('is-admin')) return;
   const td = e.target.closest('td.editable');
   if (!td) return;
   const kind = td.dataset.kind, id = Number(td.dataset.id), field = td.dataset.field;
   if (kind && id && field) inlineEdit(td, kind, id, field);
 });
+
+document.addEventListener('dragstart', (e) => {
+  if (!document.body.classList.contains('is-admin')) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+}, true);
 
 
 // ===== SCROLL FADE INDICATOR (fade in fondo quando c'è altro contenuto da scrollare) =====
