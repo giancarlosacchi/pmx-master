@@ -2679,7 +2679,7 @@ let _lastMouseMoveAt = 0;
 document.addEventListener('mousemove', () => { _lastMouseMoveAt = Date.now(); }, true);
 function _scheduleRtRender() {
   if (_rtRenderTimer) clearTimeout(_rtRenderTimer);
-  _rtRenderTimer = setTimeout(_doRtRender, 3000);
+  _rtRenderTimer = setTimeout(_doRtRender, 800);
 }
 function _doRtRender() {
   try {
