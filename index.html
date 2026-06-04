@@ -3177,8 +3177,8 @@ function createDateRangePicker(opts) {
       }).join('')}
     </div>
     <div class="dr-actions">
-      <button type="button" class="ghost" data-act="clear">Pulisci</button>
-      <button type="button" class="ghost" data-act="close" style="margin-left:auto">Chiudi</button>
+      <button type="button" class="ghost" data-act="clear">Clear</button>
+      <button type="button" class="ghost" data-act="close" style="margin-left:auto">Close</button>
     </div>`;
     popup.innerHTML = html;
     popup.querySelector('[data-act="prev"]').onclick = (e) => { e.stopPropagation(); if (state.viewMonth === 0) { state.viewMonth = 11; state.viewYear--; } else state.viewMonth--; render(); };
@@ -3218,7 +3218,7 @@ function createDateRangePicker(opts) {
 
 // ===== INLINE RANGE PICKER (per filtri colonna nei thead) =====
 // Apre un calendar popup ancorato a `anchor`. 1° click = from, 2° click = to.
-// Singolo giorno: clicca Chiudi dopo il primo click.
+// Singolo giorno: clicca Close dopo il primo click.
 function openFilterDateRange(anchor, currentFrom, currentTo, onApply) {
   // chiudi eventuale altro picker filter aperto
   document.querySelectorAll('.dr-popup.filter-popup').forEach(p => p.remove());
@@ -3403,9 +3403,9 @@ function createSingleDatePicker(opts) {
       }).join('')}
     </div>
     <div class="dr-actions">
-      <button type="button" class="ghost" data-act="clear">Pulisci</button>
-      <button type="button" class="ghost" data-act="today">Oggi</button>
-      <button type="button" class="ghost" data-act="close" style="margin-left:auto">Chiudi</button>
+      <button type="button" class="ghost" data-act="clear">Clear</button>
+      <button type="button" class="ghost" data-act="today">Today</button>
+      <button type="button" class="ghost" data-act="close" style="margin-left:auto">Close</button>
     </div>`;
     popup.innerHTML = html;
     popup.querySelector('[data-act="prev"]').onclick = (e) => { e.stopPropagation(); if (state.viewMonth === 0) { state.viewMonth = 11; state.viewYear--; } else state.viewMonth--; render(); };
@@ -3481,7 +3481,7 @@ function armDelete(btn, onConfirm) {
   if (btn.dataset.armed === '1') {
     btn.dataset.armed = '0';
     btn.classList.remove('armed');
-    btn.title = 'Elimina';
+    btn.title = 'Delete';
     if (btn._timer) { clearTimeout(btn._timer); btn._timer = null; }
     onConfirm();
     return;
@@ -3492,7 +3492,7 @@ function armDelete(btn, onConfirm) {
   btn._timer = setTimeout(() => {
     btn.dataset.armed = '0';
     btn.classList.remove('armed');
-    btn.title = 'Elimina';
+    btn.title = 'Delete';
     btn._timer = null;
   }, 3000);
 }
@@ -3663,7 +3663,7 @@ function checkScrollFade(el) {
 }
 function checkAllScrollFades() {
   document.querySelectorAll(SCROLL_FADE_SEL).forEach(checkScrollFade);
-  // Pulisci eventuali fade residui sui menu a tendina (non li vogliamo sfumati)
+  // Clear eventuali fade residui sui menu a tendina (non li vogliamo sfumati)
   document.querySelectorAll('.area-dd-menu, .dr-popup, .status-menu').forEach(el => el.classList.remove('scroll-fade-bottom'));
 }
 (function() {
@@ -4623,7 +4623,7 @@ function renderVesselRow(v, cbCols) {
         <div class="opt none ${!v.status?'current':''}" data-id="${v.id}" data-status="">Empty</div>
       </div>
     </div></td>
-    <td class="col-del"><button class="icon-btn row-del" data-id="${v.id}" title="Elimina">
+    <td class="col-del"><button class="icon-btn row-del" data-id="${v.id}" title="Delete">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
     </button></td>
   </tr>`;
@@ -5394,7 +5394,7 @@ function renderCgoRow(c) {
         <div class="opt none ${!c.status?'current':''}" data-cid="${c.id}" data-status="">Empty</div>
       </div>
     </div></td>
-    <td class="col-del"><button class="icon-btn c-del" data-id="${c.id}" title="Elimina">
+    <td class="col-del"><button class="icon-btn c-del" data-id="${c.id}" title="Delete">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
     </button></td>
   </tr>`;
@@ -5402,7 +5402,7 @@ function renderCgoRow(c) {
 function renderCgoTable(rows) {
   return `<table class="grid"><thead><tr>
     <th>Chrtrs</th><th>Dates</th><th>Load</th><th>Disch</th><th>Cgo</th><th>Size</th>
-    <th>Notes / Rates</th><th>LS Brkr</th><th>Update</th><th>Stato</th><th></th>
+    <th>Notes / Rates</th><th>LS Brkr</th><th>Update</th><th>Status</th><th></th>
   </tr></thead><tbody>${rows.map(c => renderCgoRow(c)).join('')}</tbody></table>`;
 }
 function openCargoForm(id, basin) {
@@ -5746,7 +5746,7 @@ routes['vsl'] = function() {
     {key:'update_date', label:'Update'},
     {key:'area', label:'Vsl Area'},
     {key:'subs', label:'Subs'},
-    {key:'status', label:'Stato'},
+    {key:'status', label:'Status'},
   ];
   $('#content').innerHTML = `<div class="panel">
     <div class="filters">
@@ -5860,7 +5860,7 @@ routes['vsl'] = function() {
       $('#vf-results').innerHTML = renderVesselsCpView(rows, null);
       return;
     }
-    const colBtn = (k) => `<button class="col-hide-btn" data-col="${k}" title="Nascondi colonna">×</button>`;
+    const colBtn = (k) => `<button class="col-hide-btn" data-col="${k}" title="Hide column">×</button>`;
     const banner = (hiddenRows.size + hiddenCols.size) > 0
       ? `<div class="hidden-banner show"><span>Hidden: <b>${hiddenRows.size}</b> rows ·<b>${hiddenCols.size}</b> columns</span><button id="vf-show-all">Show all</button></div>`
       : '';
@@ -5876,7 +5876,7 @@ routes['vsl'] = function() {
       <th data-col="ls_brkr"><span>LS Brkr</span>${colBtn('ls_brkr')}</th>
       <th data-col="update_date"><span>Update</span>${colBtn('update_date')}</th>
       <th data-col="subs"><span>Subs</span>${colBtn('subs')}</th>
-      <th data-col="status"><span>Stato</span>${colBtn('status')}</th>
+      <th data-col="status"><span>Status</span>${colBtn('status')}</th>
     </tr></thead><tbody>${rows.map(v => `<tr class="${v.status==='on_subs'?'status-subs':v.status==='off_mkt'?'status-off':v.status==='fresh'?'status-fresh':''}">
       <td><button class="row-hide-btn" data-id="${v.id}" title="Hide row">×</button></td>
       <td data-col="vessel"><b>${esc(v.vessel)}</b></td>
@@ -5983,7 +5983,7 @@ routes['vsl'] = function() {
         b.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>Copied!';
       } else {
         // Fallback: prompt con il testo per copia manuale
-        b.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>Apri testo';
+        b.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>Open text';
         showCopyFallback(txt);
       }
       setTimeout(() => b.innerHTML = oldHtml, 1800);
@@ -6099,7 +6099,7 @@ routes['cgo'] = function() {
       $('#cf-results').innerHTML = renderCargoesCpView(rows, null);
       return;
     }
-    const colBtnC = (k) => `<button class="col-hide-btn" data-col="${k}" title="Nascondi colonna">×</button>`;
+    const colBtnC = (k) => `<button class="col-hide-btn" data-col="${k}" title="Hide column">×</button>`;
     const banner = (hiddenCgoRows.size + hiddenCgoCols.size) > 0
       ? `<div class="hidden-banner show"><span>Hidden: <b>${hiddenCgoRows.size}</b> rows ·<b>${hiddenCgoCols.size}</b> columns</span><button id="cf-show-all">Show all</button></div>`
       : '';
@@ -6114,7 +6114,7 @@ routes['cgo'] = function() {
       <th data-col="notes" class="col-ideas"><span>Notes / Rates</span>${colBtnC('notes')}</th>
       <th data-col="ls_brkr" class="th-filter"><input data-col="ls_brkr" placeholder="LS Brkr" value="${attr(CF.ls_brkr||'')}">${colBtnC('ls_brkr')}</th>
       <th data-col="update_date"><span>Update</span>${colBtnC('update_date')}</th>
-      <th data-col="status"><span>Stato</span></th>
+      <th data-col="status"><span>Status</span></th>
       <th></th>
     </tr></thead><tbody>${rows.map(c => `<tr class="row-area ${areaClass(c.section || c.area)} ${c.status==='on_subs'?'status-subs':c.status==='off_mkt'?'status-off':c.status==='fresh'?'status-fresh':''}">
       <td><button class="row-hide-btn" data-id="${c.id}" title="Hide row">×</button></td>
@@ -6136,7 +6136,7 @@ routes['cgo'] = function() {
           <div class="opt none ${!c.status?'current':''}" data-cid="${c.id}" data-status="">Empty</div>
         </div>
       </div></td>
-      <td><button class="icon-btn c-del" data-id="${c.id}" title="Elimina">
+      <td><button class="icon-btn c-del" data-id="${c.id}" title="Delete">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
       </button></td>
     </tr>`).join('')}</tbody></table>`;
@@ -6228,7 +6228,7 @@ routes['cgo'] = function() {
       if (ok) {
         b.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>Copied!';
       } else {
-        b.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>Apri testo';
+        b.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>Open text';
         showCopyFallback(txt);
       }
       setTimeout(() => b.innerHTML = oldHtml, 1800);
@@ -6295,7 +6295,7 @@ function setSelectedAreas(page, set) {
   else localStorage.removeItem('sel-areas-' + page);
 }
 function areaDropdownLabel(sel, allAreas) {
-  if (sel.size === 0) return 'Tutte';
+  if (sel.size === 0) return 'All';
   const arr = allAreas.filter(a => sel.has(a));
   if (arr.length === 1) return arr[0];
   return arr[0]; // mostra solo la prima — il badge col numero indica le altre
@@ -6315,7 +6315,7 @@ function renderAreaDropdown(page, allAreas, label) {
         <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div class="area-dd-menu">
-        <label class="area-dd-opt all"><input type="checkbox" data-area="__ALL__" ${sel.size===0?'checked':''}>Tutte</label>
+        <label class="area-dd-opt all"><input type="checkbox" data-area="__ALL__" ${sel.size===0?'checked':''}>All</label>
         ${opts}
       </div>
     </div></div>`;
@@ -7816,7 +7816,7 @@ async function restoreSnapshot(id) {
     if (e1) throw e1;
     if (!snap || !snap.data) throw new Error('Snapshot not found');
     const restored = snap.data;
-    // 3) Pulisci tutto (RLS permette ad ogni allowed user)
+    // 3) Clear tutto (RLS permette ad ogni allowed user)
     const [r1, r2, r3] = await Promise.all([
       sb.from('vessels').delete().gt('id', 0),
       sb.from('cargoes').delete().gt('id', 0),
