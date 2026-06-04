@@ -3216,6 +3216,115 @@ function createDateRangePicker(opts) {
   return wrap;
 }
 
+// ===== INLINE RANGE PICKER (per filtri colonna nei thead) =====
+// Apre un calendar popup ancorato a `anchor`. 1° click = from, 2° click = to.
+// Singolo giorno: clicca Chiudi dopo il primo click.
+function openFilterDateRange(anchor, currentFrom, currentTo, onApply) {
+  // chiudi eventuale altro picker filter aperto
+  document.querySelectorAll('.dr-popup.filter-popup').forEach(p => p.remove());
+  const popup = document.createElement('div');
+  popup.className = 'dr-popup filter-popup open';
+  document.body.appendChild(popup);
+  const state = { from: currentFrom || '', to: currentTo || '', viewYear: 0, viewMonth: 0, picking: 'from' };
+  if (state.from) { const d = new Date(state.from); state.viewYear = d.getUTCFullYear(); state.viewMonth = d.getUTCMonth(); }
+  else { const d = new Date(); state.viewYear = d.getUTCFullYear(); state.viewMonth = d.getUTCMonth(); }
+  function position() {
+    const r = anchor.getBoundingClientRect();
+    const w = 260;
+    const h = popup.offsetHeight || 340;
+    if (window.innerHeight - r.bottom - 8 < h && r.top > h + 8) popup.style.top = Math.max(8, r.top - h - 6) + 'px';
+    else popup.style.top = (r.bottom + 6) + 'px';
+    popup.style.left = Math.min(r.left, window.innerWidth - w - 8) + 'px';
+  }
+  function close() {
+    popup.remove();
+    document.removeEventListener('mousedown', onOutside, true);
+    window.removeEventListener('scroll', close, true);
+    window.removeEventListener('resize', close);
+  }
+  function onOutside(e) {
+    if (!popup.contains(e.target) && e.target !== anchor) close();
+  }
+  function render() {
+    const y = state.viewYear, m = state.viewMonth;
+    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const first = new Date(Date.UTC(y, m, 1));
+    const firstDow = (first.getUTCDay() + 6) % 7;
+    const daysInMonth = new Date(Date.UTC(y, m+1, 0)).getUTCDate();
+    const prevMonthDays = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    const today = new Date().toISOString().slice(0,10);
+    const cells = [];
+    for (let i = firstDow-1; i >= 0; i--) {
+      const d = prevMonthDays - i;
+      const date = new Date(Date.UTC(y, m-1, d));
+      cells.push({ d, iso: date.toISOString().slice(0,10), outside: true });
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(Date.UTC(y, m, d));
+      cells.push({ d, iso: date.toISOString().slice(0,10) });
+    }
+    while (cells.length < 42) {
+      const i = cells.length - firstDow - daysInMonth + 1;
+      const date = new Date(Date.UTC(y, m+1, i));
+      cells.push({ d: i, iso: date.toISOString().slice(0,10), outside: true });
+    }
+    popup.innerHTML = `<div class="dr-head">
+      <button type="button" class="dr-nav" data-act="prev">‹</button>
+      <span class="dr-head-title">${monthNames[m]} ${y}</span>
+      <button type="button" class="dr-nav" data-act="next">›</button>
+    </div>
+    <div class="dr-grid">
+      ${['L','M','M','G','V','S','D'].map(x=>`<div class="dr-dow">${x}</div>`).join('')}
+      ${cells.map(c => {
+        let cls = 'dr-day';
+        if (c.outside) cls += ' outside';
+        if (c.iso === today) cls += ' today';
+        if (state.from && state.to && c.iso >= state.from && c.iso <= state.to) cls += ' range';
+        if (c.iso === state.from) cls += ' start';
+        if (c.iso === state.to) cls += ' end';
+        return `<div class="${cls}" data-iso="${c.iso}">${c.d}</div>`;
+      }).join('')}
+    </div>
+    <div class="dr-actions">
+      <button type="button" class="ghost" data-act="clear">Clear</button>
+      <button type="button" class="ghost" data-act="apply" style="margin-left:auto">Apply</button>
+    </div>`;
+    popup.querySelector('[data-act="prev"]').onclick = (e) => { e.stopPropagation(); if (state.viewMonth === 0) { state.viewMonth = 11; state.viewYear--; } else state.viewMonth--; render(); position(); };
+    popup.querySelector('[data-act="next"]').onclick = (e) => { e.stopPropagation(); if (state.viewMonth === 11) { state.viewMonth = 0; state.viewYear++; } else state.viewMonth++; render(); position(); };
+    popup.querySelector('[data-act="clear"]').onclick = (e) => { e.stopPropagation(); onApply('', ''); close(); };
+    popup.querySelector('[data-act="apply"]').onclick = (e) => { e.stopPropagation(); onApply(state.from || '', state.to || state.from || ''); close(); };
+    popup.querySelectorAll('.dr-day').forEach(el => el.onclick = (e) => {
+      e.stopPropagation();
+      const iso = el.dataset.iso;
+      if (state.picking === 'from' || !state.from || (state.from && state.to)) {
+        state.from = iso; state.to = ''; state.picking = 'to';
+        render();
+      } else {
+        if (iso < state.from) { state.to = state.from; state.from = iso; }
+        else { state.to = iso; }
+        state.picking = 'from';
+        render();
+        // applica e chiude dopo aver scelto il secondo giorno
+        setTimeout(() => { onApply(state.from, state.to); close(); }, 150);
+      }
+    });
+  }
+  render();
+  position();
+  setTimeout(() => {
+    document.addEventListener('mousedown', onOutside, true);
+    window.addEventListener('scroll', close, { capture: true });
+    window.addEventListener('resize', close);
+  }, 0);
+}
+
+// Helper per visualizzare il range nel filtro
+function fmtFilterDateRange(from, to) {
+  if (!from && !to) return '';
+  if (from && to && from !== to) return `${fmtShort(from)} → ${fmtShort(to)}`;
+  return fmtShort(from || to);
+}
+
 // ===== SINGLE DATE PICKER (per campi Update / date singole) =====
 function createSingleDatePicker(opts) {
   // opts: { value, onChange(iso), placeholder }
@@ -4373,10 +4482,10 @@ function renderMasterTable(rows, cbCols, basin) {
     if (F.open_port && !matchText(v.open_port, F.open_port)) return false;
     if (F.ows_brkr && !matchText(v.ows_brkr, F.ows_brkr)) return false;
     if (F.ls_brkr && !matchText(v.ls_brkr, F.ls_brkr)) return false;
-    if (F.dates) { if (!v.open_from || !v.open_to) return false; if (F.dates < v.open_from || F.dates > v.open_to) return false; }
+    if (F.dates_from) { if (!v.open_from || !v.open_to) return false; const ft = F.dates_to || F.dates_from; if (v.open_from > ft || v.open_to < F.dates_from) return false; }
     if (F.ideas && !matchText(v.ideas, F.ideas)) return false;
     if (F.bunker && !matchText(v.bunker, F.bunker)) return false;
-    if (F.update_date && v.update_date !== F.update_date) return false;
+    if (F.update_from) { if (!v.update_date) return false; const ft = F.update_to || F.update_from; if (v.update_date < F.update_from || v.update_date > ft) return false; }
     if (F.status && !matchText(v.status, F.status)) return false;
     if (F.flags) {
       const q = String(F.flags).trim().toUpperCase();
@@ -4407,12 +4516,12 @@ function renderMasterTable(rows, cbCols, basin) {
     <th class="th-filter col-vessel"><input data-col="vessel" placeholder="Vessel" value="${attr(F.vessel||'')}"></th>
     <th class="th-filter col-dwt"><input data-col="dwt_blt" placeholder="DWT" value="${attr(F.dwt_blt||'')}"></th>
     <th class="th-filter col-open"><input data-col="open_port" placeholder="Open" value="${attr(F.open_port||'')}"></th>
-    <th class="th-filter col-dates"><input type="date" data-col="dates" placeholder="Dates" value="${attr(F.dates||'')}"></th>
+    <th class="th-filter col-dates"><input class="filter-date-range" type="text" readonly data-col="dates" placeholder="Dates" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.dates_from, F.dates_to))}"></th>
     <th class="th-filter col-ideas"><input data-col="ideas" placeholder="Ideas / Info" value="${attr(F.ideas||'')}"></th>
     <th class="th-filter col-ows"><input data-col="ows_brkr" placeholder="Ows" value="${attr(F.ows_brkr||'')}"></th>
     <th class="th-filter col-bunker"><input data-col="bunker" placeholder="Bunker" value="${attr(F.bunker||'')}"></th>
     <th class="th-filter col-lsbrkr"><input data-col="ls_brkr" placeholder="LS" value="${attr(F.ls_brkr||'')}"></th>
-    <th class="th-filter col-update"><input type="date" data-col="update_date" placeholder="Update" value="${attr(F.update_date||'')}"></th>
+    <th class="th-filter col-update"><input class="filter-date-range" type="text" readonly data-col="update_date" placeholder="Update" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.update_from, F.update_to))}"></th>
     <th class="th-filter col-flags" title="${cbCols.map(([,l]) => l).join(' · ')}"><input data-col="flags" placeholder="Flags" value="${attr(F.flags||'')}"></th>
     <th class="th-filter col-stato"><input data-col="status" placeholder="Status" value="${attr(F.status||'')}"></th>
     <th class="col-del"></th>
@@ -4456,8 +4565,20 @@ function renderMasterTable(rows, cbCols, basin) {
     updVessel(id, { [col]: newVal });
     c.classList.toggle('on', !!newVal);
   });
-  $$('#tbl thead th.th-filter input').forEach(inp => {
+  $('#tbl thead th.th-filter input').forEach(inp => {
     if (inp.value) inp.classList.add('filter-active');
+    if (inp.classList.contains('filter-date-range')) {
+      const col = inp.dataset.col;
+      const F = getFilter(page);
+      const fromK = col === 'dates' ? 'dates_from' : 'update_from';
+      const toK = col === 'dates' ? 'dates_to' : 'update_to';
+      inp.onclick = () => openFilterDateRange(inp, F[fromK], F[toK], (from, to) => {
+        F[fromK] = from; F[toK] = to;
+        const cur = location.hash.replace(/^#\//,'') || 'atl-tng';
+        if (routes[cur]) routes[cur]();
+      });
+      return;
+    }
     inp.oninput = debounce((e) => {
       const col = inp.dataset.col;
       const selStart = e.target.selectionStart;
@@ -5036,12 +5157,12 @@ routes['ecsa-list'] = function() {
       if (F.vessel && !matchText(v.vessel, F.vessel)) return false;
       if (F.dwt_blt && !matchDwt(v.dwt_blt, F.dwt_blt)) return false;
       if (F.eta && !matchText(e.eta || '', F.eta)) return false;
-      if (F.dates) { if (!e.adjFrom || !e.adjTo) return false; if (F.dates < e.adjFrom || F.dates > e.adjTo) return false; }
+      if (F.dates_from) { if (!e.adjFrom || !e.adjTo) return false; const ft = F.dates_to || F.dates_from; if (e.adjFrom > ft || e.adjTo < F.dates_from) return false; }
       if (F.ideas && !matchText(v.ideas, F.ideas)) return false;
       if (F.ows_brkr && !matchText(v.ows_brkr, F.ows_brkr)) return false;
       if (F.bunker && !matchText(v.bunker, F.bunker)) return false;
       if (F.ls_brkr && !matchText(v.ls_brkr, F.ls_brkr)) return false;
-      if (F.update_date && v.update_date !== F.update_date) return false;
+      if (F.update_from) { if (!v.update_date) return false; const ft = F.update_to || F.update_from; if (v.update_date < F.update_from || v.update_date > ft) return false; }
       if (F.status && !matchText(v.status, F.status)) return false;
       return true;
     });
@@ -5064,12 +5185,12 @@ routes['ecsa-list'] = function() {
       <th class="th-filter"><input data-col="vessel" placeholder="Vessel" value="${attr(F.vessel||'')}"></th>
       <th class="th-filter"><input data-col="dwt_blt" placeholder="DWT" value="${attr(F.dwt_blt||'')}"></th>
       <th class="th-filter"><input data-col="eta" placeholder="ETA" value="${attr(F.eta||'')}"></th>
-      <th class="th-filter"><input type="date" data-col="dates" placeholder="Dates" value="${attr(F.dates||'')}"></th>
+      <th class="th-filter"><input class="filter-date-range" type="text" readonly data-col="dates" placeholder="Dates" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.dates_from, F.dates_to))}"></th>
       <th class="th-filter col-ideas"><input data-col="ideas" placeholder="Ideas / Info" value="${attr(F.ideas||'')}"></th>
       <th class="th-filter"><input data-col="ows_brkr" placeholder="Ows" value="${attr(F.ows_brkr||'')}"></th>
       <th class="th-filter"><input data-col="bunker" placeholder="Bunker" value="${attr(F.bunker||'')}"></th>
       <th class="th-filter"><input data-col="ls_brkr" placeholder="LS" value="${attr(F.ls_brkr||'')}"></th>
-      <th class="th-filter"><input type="date" data-col="update_date" placeholder="Update" value="${attr(F.update_date||'')}"></th>
+      <th class="th-filter"><input class="filter-date-range" type="text" readonly data-col="update_date" placeholder="Update" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.update_from, F.update_to))}"></th>
       <th class="th-filter"><input data-col="status" placeholder="Status" value="${attr(F.status||'')}"></th>
     </tr></thead><tbody>`];
     for (const e of entries) html.push(renderEcsaRow(e));
@@ -5083,8 +5204,18 @@ routes['ecsa-list'] = function() {
       refresh();
     });
     // Hook filtri per colonna (inline negli header)
-    $$('#tbl thead th.th-filter input').forEach(inp => {
+    $('#tbl thead th.th-filter input').forEach(inp => {
       if (inp.value) inp.classList.add('filter-active');
+      if (inp.classList.contains('filter-date-range')) {
+        const col = inp.dataset.col;
+        const F = getFilter('ecsa-list');
+        const fromK = col === 'dates' ? 'dates_from' : 'update_from';
+        const toK = col === 'dates' ? 'dates_to' : 'update_to';
+        inp.onclick = () => openFilterDateRange(inp, F[fromK], F[toK], (from, to) => {
+          F[fromK] = from; F[toK] = to; refresh();
+        });
+        return;
+      }
       inp.oninput = debounce((e) => {
         const col = inp.dataset.col;
         const selStart = e.target.selectionStart;
@@ -5160,9 +5291,9 @@ function renderCargoList(basin) {
       if (F.cgo && !matchText(c.cgo, F.cgo)) return false;
       if (F.size && !matchText(c.size, F.size)) return false;
       if (F.ls_brkr && !matchText(c.ls_brkr, F.ls_brkr)) return false;
-      if (F.dates) { if (!c.laycan_from || !c.laycan_to) return false; if (F.dates < c.laycan_from || F.dates > c.laycan_to) return false; }
+      if (F.dates_from) { if (!c.laycan_from || !c.laycan_to) return false; const ft = F.dates_to || F.dates_from; if (c.laycan_from > ft || c.laycan_to < F.dates_from) return false; }
       if (F.notes && !matchText(c.notes, F.notes)) return false;
-      if (F.update_date && (c.update_date || c.date) !== F.update_date) return false;
+      if (F.update_from) { const d = c.update_date || c.date; if (!d) return false; const ft = F.update_to || F.update_from; if (d < F.update_from || d > ft) return false; }
       if (F.status && !matchText(c.status, F.status)) return false;
       return true;
     });
@@ -5181,14 +5312,14 @@ function renderCargoList(basin) {
     const otherSecs = []; // tutto ordinato in `ordered` via row_order
     const html = [`<table class="grid"><thead><tr>
         <th class="th-filter col-c-chrtrs"><input data-col="chrtrs" placeholder="Chrtrs" value="${attr(F.chrtrs||'')}"></th>
-        <th class="th-filter col-c-dates"><input type="date" data-col="dates" placeholder="Dates" value="${attr(F.dates||'')}"></th>
+        <th class="th-filter col-c-dates"><input class="filter-date-range" type="text" readonly data-col="dates" placeholder="Dates" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.dates_from, F.dates_to))}"></th>
         <th class="th-filter col-c-port"><input data-col="load_port" placeholder="Load" value="${attr(F.load_port||'')}"></th>
         <th class="th-filter col-c-port"><input data-col="disch_port" placeholder="Disch" value="${attr(F.disch_port||'')}"></th>
         <th class="th-filter col-c-cgo"><input data-col="cgo" placeholder="Cgo" value="${attr(F.cgo||'')}"></th>
         <th class="th-filter col-c-size"><input data-col="size" placeholder="Size" value="${attr(F.size||'')}"></th>
         <th class="th-filter col-ideas"><input data-col="notes" placeholder="Notes / Rates" value="${attr(F.notes||'')}"></th>
         <th class="th-filter col-lsbrkr"><input data-col="ls_brkr" placeholder="LS" value="${attr(F.ls_brkr||'')}"></th>
-        <th class="th-filter col-c-update"><input type="date" data-col="update_date" placeholder="Update" value="${attr(F.update_date||'')}"></th>
+        <th class="th-filter col-c-update"><input class="filter-date-range" type="text" readonly data-col="update_date" placeholder="Update" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.update_from, F.update_to))}"></th>
         <th class="th-filter col-c-stato"><input data-col="status" placeholder="Status" value="${attr(F.status||'')}"></th>
         <th class="col-del"></th>
       </tr></thead><tbody>`];
@@ -5214,8 +5345,18 @@ function renderCargoList(basin) {
       refresh();
     });
 /* c-del handled by global delegation */
-    $$('#ca-tbl thead th.th-filter input').forEach(inp => {
+    $('#ca-tbl thead th.th-filter input').forEach(inp => {
       if (inp.value) inp.classList.add('filter-active');
+      if (inp.classList.contains('filter-date-range')) {
+        const col = inp.dataset.col;
+        const F = getFilter(page);
+        const fromK = col === 'dates' ? 'dates_from' : 'update_from';
+        const toK = col === 'dates' ? 'dates_to' : 'update_to';
+        inp.onclick = () => openFilterDateRange(inp, F[fromK], F[toK], (from, to) => {
+          F[fromK] = from; F[toK] = to; refresh();
+        });
+        return;
+      }
       inp.oninput = debounce((e) => {
         const col = inp.dataset.col;
         const selStart = e.target.selectionStart;
