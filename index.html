@@ -1320,6 +1320,8 @@ pre.rundown { white-space: pre-wrap; font-family: inherit;
   overflow: hidden;
 }
 .ecsa-list-col { display: flex; flex-direction: column; min-height: 0; }
+.ecsa-list-col .panel { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.ecsa-list-col .tbl-wrap { flex: 1; overflow: auto; }
 /* Rundown col: si adatta al contenuto (non riempie verticalmente) — spazio sotto resta vuoto */
 .ecsa-rundown-col { align-self: start; max-height: 100%; display: flex; flex-direction: column; min-height: 0; }
 .ecsa-rundown-col .panel { display: flex; flex-direction: column; min-height: 0; flex: 0 1 auto; }
@@ -3437,7 +3439,7 @@ function createSingleDatePicker(opts) {
 
 
 function showCopyFallback(text) {
-  modal.open('Copy list navi', `
+  modal.open('Copy vessels list', `
     <p class="muted" style="margin:0 0 8px;font-size:12px">Seleziona il testo qui sotto e premi Ctrl+C (o Cmd+C su Mac) per copiarlo.</p>
     <textarea id="copy-area" style="width:100%;min-height:300px;background:var(--bg-3);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:10px;font-family:monospace;font-size:12px;resize:vertical">${esc(text)}</textarea>
     <div class="form-actions full">
@@ -4446,7 +4448,7 @@ function renderMasterList(basin) {
         ${renderAreaDropdown(_pg, areas, 'Area')}
         <div class="group"><label>Status</label>
           <select id="f-status"><option value="">All</option><option value="fresh">Fresh</option><option value="off_mkt">Off mkt</option><option value="on_subs">On subs</option></select></div>
-        <span class="count-pill" id="f-count" style="display:none">— navi</span>
+        <span class="count-pill" id="f-count" style="display:none">— vessels</span>
         ${cpToggleBtn(_pg)}
       </div>
     </div>
@@ -4460,7 +4462,7 @@ function renderMasterList(basin) {
     if (selAreas.size > 0) rows = rows.filter(v => selAreas.has(v.area));
     if (status) rows = rows.filter(v => v.status === status);
     if (q) rows = rows.filter(v => (v.vessel||'').toLowerCase().includes(q) || (v.ideas||'').toLowerCase().includes(q) || (v.ows_brkr||'').toLowerCase().includes(q));
-    $('#f-count').textContent = `${rows.length} navi`;
+    $('#f-count').textContent = `${rows.length} vessels`;
     renderMasterTable(rows, cbCols, basin);
   };
   bindAreaDropdown(_pg, areas, refresh);
@@ -5120,7 +5122,7 @@ routes['ecsa-list'] = function() {
             <span class="cp-header-title">ECSA Rundown</span>
             <button class="cp-copy-btn" id="ecsa-rd-copy">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-              Copia
+              Copy
             </button>
           </div>
           <pre class="rundown" id="ecsa-rd-text"></pre>
@@ -5167,7 +5169,7 @@ routes['ecsa-list'] = function() {
       if (F.status && !matchText(v.status, F.status)) return false;
       return true;
     });
-    $('#cnt').textContent = `${entries.length} navi`;
+    $('#cnt').textContent = `${entries.length} vessels`;
     const bucketCounts = {};
     for (const e of entries) {
       const b = bucketFor(e.adjFrom);
@@ -5756,11 +5758,11 @@ routes['vsl'] = function() {
       <div class="group"><label>Laycan</label><div id="vf-daterange"></div></div>
       <div class="group"><label>Search</label><input id="vf-q" placeholder="vessel / ideas / owner…"/></div>
       <button class="ghost" id="vf-reset">Reset</button>
-      <button class="primary" id="vf-copy" title="Copia la lista filtrata negli appunti">
+      <button class="primary" id="vf-copy" title="Copy filtered list to clipboard">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         Copy list
       </button>
-      <span class="count-pill" id="vf-count" style="display:none">— navi</span>
+      <span class="count-pill" id="vf-count" style="display:none">— vessels</span>
     </div>
     <div id="vf-summary" style="padding:10px 14px;font-size:11.5px;color:var(--text-dim);border-bottom:1px solid var(--line-soft);background:rgba(255,255,255,.015)"></div>
     <div class="tbl-wrap" id="vf-results"></div></div>`;
@@ -5786,7 +5788,7 @@ routes['vsl'] = function() {
       panel.classList.remove('finder-cgo');
     }
     if (isEmpty) {
-      $('#vf-count').textContent = '— navi';
+      $('#vf-count').textContent = '— vessels';
       const sm = $('#vf-summary'); if (sm) sm.style.display = 'none';
       const res = $('#vf-results'); if (res) res.innerHTML = '';
       return;
@@ -5833,7 +5835,7 @@ routes['vsl'] = function() {
     rows.sort((a,b) => (a.eta_from||'').localeCompare(b.eta_from||''));
     // Escludo righe nascoste
     rows = rows.filter(v => !hiddenRows.has(v.id));
-    $('#vf-count').textContent = `${rows.length} navi`;
+    $('#vf-count').textContent = `${rows.length} vessels`;
     lastVfRows = rows;
     lastVfArea = cgoArea;
     lastVfFrom = from;
@@ -6004,7 +6006,7 @@ routes['cgo'] = function() {
       <div class="group"><label>Laycan</label><div id="cf-daterange"></div></div>
       <div class="group"><label>Search</label><input id="cf-q" placeholder="cargo / chrtr / load…"/></div>
       <button class="ghost" id="cf-reset">Reset</button>
-      <button class="primary" id="cf-copy" title="Copia la lista cargoes negli appunti">
+      <button class="primary" id="cf-copy" title="Copy cargoes list to clipboard">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         Copy list
       </button>
@@ -6440,7 +6442,7 @@ function rowStatusCls(item) {
 function cpCopyButton() {
   return `<button class="cp-copy-btn" id="cp-copy">
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-    Copia
+    Copy
   </button>`;
 }
 // Costruisce il testo da copiare con header sezioni (senza righe on subs)
