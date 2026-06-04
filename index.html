@@ -8287,6 +8287,27 @@ document.addEventListener("keydown", (e) => {
 });
 updateUndoButtons();
 setRoute();
+
+// SAFETY NET POLLING - refetch ogni 30s se visibile
+(function setupSafetyNetPolling(){
+  let _isPolling=false;
+  setInterval(async () => {
+    if (document.visibilityState !== 'visible') return;
+    if (_isPolling) return;
+    const active=document.activeElement;
+    if (active && (active.tagName==='INPUT'||active.tagName==='TEXTAREA'||active.tagName==='SELECT'||active.isContentEditable)) return;
+    if (document.querySelector('.dr-popup.open, .modal[style*="display: flex"]')) return;
+    _isPolling=true;
+    try {
+      if (typeof loadDataFromCloud==='function') {
+        await loadDataFromCloud();
+        if (typeof _scheduleRtRender==='function') _scheduleRtRender();
+        else if (typeof setRoute==='function') setRoute();
+      }
+    } catch(e) { console.warn('[safety-poll] fail:', e); }
+    finally { _isPolling=false; }
+  }, 30000);
+})();
 </script>
 
 </body>
