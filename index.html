@@ -4565,7 +4565,7 @@ function renderMasterTable(rows, cbCols, basin) {
     updVessel(id, { [col]: newVal });
     c.classList.toggle('on', !!newVal);
   });
-  $('#tbl thead th.th-filter input').forEach(inp => {
+  $$('#tbl thead th.th-filter input').forEach(inp => {
     if (inp.value) inp.classList.add('filter-active');
     if (inp.classList.contains('filter-date-range')) {
       const col = inp.dataset.col;
@@ -5204,7 +5204,7 @@ routes['ecsa-list'] = function() {
       refresh();
     });
     // Hook filtri per colonna (inline negli header)
-    $('#tbl thead th.th-filter input').forEach(inp => {
+    $$('#tbl thead th.th-filter input').forEach(inp => {
       if (inp.value) inp.classList.add('filter-active');
       if (inp.classList.contains('filter-date-range')) {
         const col = inp.dataset.col;
@@ -5345,7 +5345,7 @@ function renderCargoList(basin) {
       refresh();
     });
 /* c-del handled by global delegation */
-    $('#ca-tbl thead th.th-filter input').forEach(inp => {
+    $$('#ca-tbl thead th.th-filter input').forEach(inp => {
       if (inp.value) inp.classList.add('filter-active');
       if (inp.classList.contains('filter-date-range')) {
         const col = inp.dataset.col;
