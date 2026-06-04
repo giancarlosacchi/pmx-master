@@ -487,6 +487,11 @@ html.theme-transitioning table.grid th {
 .filters input:focus, .filters select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-soft); }
 .count-pill { margin-left: auto; background: rgba(56,189,248,.08); color: var(--cyan);
   border: 1px solid rgba(56,189,248,.25); border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
+.th-filter input[type="date"] { font-family: inherit; font-size: inherit; color-scheme: light dark; }
+.th-filter input[type="date"]:not([value]),
+.th-filter input[type="date"][value=""] { color: var(--text-mute); }
+.th-filter input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: .7; }
+.th-filter input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
 
 /* READ-ONLY MODE — non-admin */
 body:not(.is-admin) .row-edit,
@@ -4368,10 +4373,10 @@ function renderMasterTable(rows, cbCols, basin) {
     if (F.open_port && !matchText(v.open_port, F.open_port)) return false;
     if (F.ows_brkr && !matchText(v.ows_brkr, F.ows_brkr)) return false;
     if (F.ls_brkr && !matchText(v.ls_brkr, F.ls_brkr)) return false;
-    if (F.dates && !matchText(fmtDateRange(v.open_from, v.open_to), F.dates)) return false;
+    if (F.dates) { if (!v.open_from || !v.open_to) return false; if (F.dates < v.open_from || F.dates > v.open_to) return false; }
     if (F.ideas && !matchText(v.ideas, F.ideas)) return false;
     if (F.bunker && !matchText(v.bunker, F.bunker)) return false;
-    if (F.update_date && !matchText(fmtUpdate(v.update_date), F.update_date)) return false;
+    if (F.update_date && v.update_date !== F.update_date) return false;
     if (F.status && !matchText(v.status, F.status)) return false;
     if (F.flags) {
       const q = String(F.flags).trim().toUpperCase();
@@ -4402,12 +4407,12 @@ function renderMasterTable(rows, cbCols, basin) {
     <th class="th-filter col-vessel"><input data-col="vessel" placeholder="Vessel" value="${attr(F.vessel||'')}"></th>
     <th class="th-filter col-dwt"><input data-col="dwt_blt" placeholder="DWT" value="${attr(F.dwt_blt||'')}"></th>
     <th class="th-filter col-open"><input data-col="open_port" placeholder="Open" value="${attr(F.open_port||'')}"></th>
-    <th class="th-filter col-dates"><input data-col="dates" placeholder="Dates" value="${attr(F.dates||'')}"></th>
+    <th class="th-filter col-dates"><input type="date" data-col="dates" placeholder="Dates" value="${attr(F.dates||'')}"></th>
     <th class="th-filter col-ideas"><input data-col="ideas" placeholder="Ideas / Info" value="${attr(F.ideas||'')}"></th>
     <th class="th-filter col-ows"><input data-col="ows_brkr" placeholder="Ows" value="${attr(F.ows_brkr||'')}"></th>
     <th class="th-filter col-bunker"><input data-col="bunker" placeholder="Bunker" value="${attr(F.bunker||'')}"></th>
     <th class="th-filter col-lsbrkr"><input data-col="ls_brkr" placeholder="LS" value="${attr(F.ls_brkr||'')}"></th>
-    <th class="th-filter col-update"><input data-col="update_date" placeholder="Update" value="${attr(F.update_date||'')}"></th>
+    <th class="th-filter col-update"><input type="date" data-col="update_date" placeholder="Update" value="${attr(F.update_date||'')}"></th>
     <th class="th-filter col-flags" title="${cbCols.map(([,l]) => l).join(' · ')}"><input data-col="flags" placeholder="Flags" value="${attr(F.flags||'')}"></th>
     <th class="th-filter col-stato"><input data-col="status" placeholder="Status" value="${attr(F.status||'')}"></th>
     <th class="col-del"></th>
@@ -5031,12 +5036,12 @@ routes['ecsa-list'] = function() {
       if (F.vessel && !matchText(v.vessel, F.vessel)) return false;
       if (F.dwt_blt && !matchDwt(v.dwt_blt, F.dwt_blt)) return false;
       if (F.eta && !matchText(e.eta || '', F.eta)) return false;
-      if (F.dates && !matchText(fmtDateRange(e.adjFrom, e.adjTo), F.dates)) return false;
+      if (F.dates) { if (!e.adjFrom || !e.adjTo) return false; if (F.dates < e.adjFrom || F.dates > e.adjTo) return false; }
       if (F.ideas && !matchText(v.ideas, F.ideas)) return false;
       if (F.ows_brkr && !matchText(v.ows_brkr, F.ows_brkr)) return false;
       if (F.bunker && !matchText(v.bunker, F.bunker)) return false;
       if (F.ls_brkr && !matchText(v.ls_brkr, F.ls_brkr)) return false;
-      if (F.update_date && !matchText(fmtUpdate(v.update_date), F.update_date)) return false;
+      if (F.update_date && v.update_date !== F.update_date) return false;
       if (F.status && !matchText(v.status, F.status)) return false;
       return true;
     });
@@ -5059,12 +5064,12 @@ routes['ecsa-list'] = function() {
       <th class="th-filter"><input data-col="vessel" placeholder="Vessel" value="${attr(F.vessel||'')}"></th>
       <th class="th-filter"><input data-col="dwt_blt" placeholder="DWT" value="${attr(F.dwt_blt||'')}"></th>
       <th class="th-filter"><input data-col="eta" placeholder="ETA" value="${attr(F.eta||'')}"></th>
-      <th class="th-filter"><input data-col="dates" placeholder="Dates" value="${attr(F.dates||'')}"></th>
+      <th class="th-filter"><input type="date" data-col="dates" placeholder="Dates" value="${attr(F.dates||'')}"></th>
       <th class="th-filter col-ideas"><input data-col="ideas" placeholder="Ideas / Info" value="${attr(F.ideas||'')}"></th>
       <th class="th-filter"><input data-col="ows_brkr" placeholder="Ows" value="${attr(F.ows_brkr||'')}"></th>
       <th class="th-filter"><input data-col="bunker" placeholder="Bunker" value="${attr(F.bunker||'')}"></th>
       <th class="th-filter"><input data-col="ls_brkr" placeholder="LS" value="${attr(F.ls_brkr||'')}"></th>
-      <th class="th-filter"><input data-col="update_date" placeholder="Update" value="${attr(F.update_date||'')}"></th>
+      <th class="th-filter"><input type="date" data-col="update_date" placeholder="Update" value="${attr(F.update_date||'')}"></th>
       <th class="th-filter"><input data-col="status" placeholder="Status" value="${attr(F.status||'')}"></th>
     </tr></thead><tbody>`];
     for (const e of entries) html.push(renderEcsaRow(e));
@@ -5155,9 +5160,9 @@ function renderCargoList(basin) {
       if (F.cgo && !matchText(c.cgo, F.cgo)) return false;
       if (F.size && !matchText(c.size, F.size)) return false;
       if (F.ls_brkr && !matchText(c.ls_brkr, F.ls_brkr)) return false;
-      if (F.dates && !matchText(fmtDateRange(c.laycan_from, c.laycan_to), F.dates)) return false;
+      if (F.dates) { if (!c.laycan_from || !c.laycan_to) return false; if (F.dates < c.laycan_from || F.dates > c.laycan_to) return false; }
       if (F.notes && !matchText(c.notes, F.notes)) return false;
-      if (F.update_date && !matchText(fmtUpdate(c.update_date || c.date), F.update_date)) return false;
+      if (F.update_date && (c.update_date || c.date) !== F.update_date) return false;
       if (F.status && !matchText(c.status, F.status)) return false;
       return true;
     });
@@ -5176,14 +5181,14 @@ function renderCargoList(basin) {
     const otherSecs = []; // tutto ordinato in `ordered` via row_order
     const html = [`<table class="grid"><thead><tr>
         <th class="th-filter col-c-chrtrs"><input data-col="chrtrs" placeholder="Chrtrs" value="${attr(F.chrtrs||'')}"></th>
-        <th class="th-filter col-c-dates"><input data-col="dates" placeholder="Dates" value="${attr(F.dates||'')}"></th>
+        <th class="th-filter col-c-dates"><input type="date" data-col="dates" placeholder="Dates" value="${attr(F.dates||'')}"></th>
         <th class="th-filter col-c-port"><input data-col="load_port" placeholder="Load" value="${attr(F.load_port||'')}"></th>
         <th class="th-filter col-c-port"><input data-col="disch_port" placeholder="Disch" value="${attr(F.disch_port||'')}"></th>
         <th class="th-filter col-c-cgo"><input data-col="cgo" placeholder="Cgo" value="${attr(F.cgo||'')}"></th>
         <th class="th-filter col-c-size"><input data-col="size" placeholder="Size" value="${attr(F.size||'')}"></th>
         <th class="th-filter col-ideas"><input data-col="notes" placeholder="Notes / Rates" value="${attr(F.notes||'')}"></th>
         <th class="th-filter col-lsbrkr"><input data-col="ls_brkr" placeholder="LS" value="${attr(F.ls_brkr||'')}"></th>
-        <th class="th-filter col-c-update"><input data-col="update_date" placeholder="Update" value="${attr(F.update_date||'')}"></th>
+        <th class="th-filter col-c-update"><input type="date" data-col="update_date" placeholder="Update" value="${attr(F.update_date||'')}"></th>
         <th class="th-filter col-c-stato"><input data-col="status" placeholder="Status" value="${attr(F.status||'')}"></th>
         <th class="col-del"></th>
       </tr></thead><tbody>`];
