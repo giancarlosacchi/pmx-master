@@ -1313,7 +1313,7 @@ pre.rundown { white-space: pre-wrap; font-family: inherit;
 /* ===== ECSA LIST LAYOUT (lista a sinistra + rundown a destra) ===== */
 .ecsa-layout {
   display: grid;
-  grid-template-columns: 1fr minmax(380px, 480px);
+  grid-template-columns: 1fr minmax(460px, 600px);
   gap: 14px;
   flex: 1;
   min-height: 0;
@@ -1346,15 +1346,15 @@ pre.rundown { white-space: pre-wrap; font-family: inherit;
 .ecsa-list-col table.grid tbody td { padding-top: 5px; padding-bottom: 5px; }
 .ecsa-list-col table.grid thead th { padding-top: 7px; padding-bottom: 7px; font-size: 9.5px; }
 /* Larghezze: tutto stretto tranne Ideas che prende il resto. Niente Subs/Delete/Area. */
-.ecsa-list-col table.grid th:nth-child(1)  { width: 13%; } /* Vessel */
-.ecsa-list-col table.grid th:nth-child(2)  { width: 7%;  } /* DWT/BLT */
+.ecsa-list-col table.grid th:nth-child(1)  { width: 10%; } /* Vessel */
+.ecsa-list-col table.grid th:nth-child(2)  { width: 5%;  } /* DWT/BLT */
 .ecsa-list-col table.grid th:nth-child(3)  { width: 7%;  } /* ETA */
 .ecsa-list-col table.grid th:nth-child(4)  { width: 9%;  } /* Dates */
 .ecsa-list-col table.grid th:nth-child(5)  { width: auto;} /* Ideas/Info → resto */
 .ecsa-list-col table.grid th:nth-child(6)  { width: 7%;  } /* Ows/Brkr */
 .ecsa-list-col table.grid th:nth-child(7)  { width: 9%;  } /* Bunker (più largo, wrap) */
 .ecsa-list-col table.grid th:nth-child(8)  { width: 5%;  } /* LS Brkr */
-.ecsa-list-col table.grid th:nth-child(9)  { width: 6%;  } /* Update */
+.ecsa-list-col table.grid th:nth-child(9)  { width: 5%;  } /* Update */
 .ecsa-list-col table.grid th:nth-child(10) { width: 6%;  } /* Stato */
 /* Bunker: permetti wrap del testo per vedere tutto */
 .ecsa-list-col table.grid tbody td:nth-child(7) {
@@ -5116,7 +5116,7 @@ routes['ecsa-list'] = function() {
       <div class="ecsa-rundown-col">
         <div class="panel">
           <div class="cp-header">
-            <span class="cp-header-title">ECSA Rundown · Oggi</span>
+            <span class="cp-header-title">ECSA Rundown</span>
             <button class="cp-copy-btn" id="ecsa-rd-copy">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
               Copia
