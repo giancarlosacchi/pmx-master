@@ -5229,7 +5229,7 @@ function renderCgoRow(c) {
   // Riga "nuova" = modificata oggi
   // Riga in grassetto SOLO se il cargo è stato inserito oggi (non solo modificato)
   const isNew = c.created_at === todayIso();
-  return `<tr class="row-area ${areaClass(c.section || c.area)} ${c.status==='on_subs'?'status-subs':c.status==='off_mkt'?'status-off':'status-fresh'} ${isNew?'row-new':''}">
+  return `<tr class="row-area ${areaClass(c.section || c.area)} ${c.status==='on_subs'?'status-subs':c.status==='off_mkt'?'status-off':c.status==='fresh'?'status-fresh':''} ${isNew?'row-new':''}">
     <td data-kind="c" data-id="${c.id}" data-field="chrtrs" class="editable col-c-chrtrs" title="Double-click to edit">${esc(c.chrtrs)}</td>
     <td data-kind="c" data-id="${c.id}" data-field="laycan_from" class="editable col-c-dates" title="Double-click to edit (laycan from)">${fmtDateRange(c.laycan_from,c.laycan_to)}</td>
     <td data-kind="c" data-id="${c.id}" data-field="load_port" class="editable col-c-port" title="Double-click to edit">${esc(c.load_port||'')}</td>
@@ -5731,7 +5731,7 @@ routes['vsl'] = function() {
       <th data-col="update_date"><span>Update</span>${colBtn('update_date')}</th>
       <th data-col="subs"><span>Subs</span>${colBtn('subs')}</th>
       <th data-col="status"><span>Stato</span>${colBtn('status')}</th>
-    </tr></thead><tbody>${rows.map(v => `<tr class="${v.status==='on_subs'?'status-subs':v.status==='off_mkt'?'status-off':'status-fresh'}">
+    </tr></thead><tbody>${rows.map(v => `<tr class="${v.status==='on_subs'?'status-subs':v.status==='off_mkt'?'status-off':v.status==='fresh'?'status-fresh':''}">
       <td><button class="row-hide-btn" data-id="${v.id}" title="Hide row">×</button></td>
       <td data-col="vessel"><b>${esc(v.vessel)}</b></td>
       <td data-col="dwt_blt" class="dim">${esc(v.dwt_blt||'')}</td>
@@ -5970,7 +5970,7 @@ routes['cgo'] = function() {
       <th data-col="update_date"><span>Update</span>${colBtnC('update_date')}</th>
       <th data-col="status"><span>Stato</span></th>
       <th></th>
-    </tr></thead><tbody>${rows.map(c => `<tr class="row-area ${areaClass(c.section || c.area)} ${c.status==='on_subs'?'status-subs':c.status==='off_mkt'?'status-off':'status-fresh'}">
+    </tr></thead><tbody>${rows.map(c => `<tr class="row-area ${areaClass(c.section || c.area)} ${c.status==='on_subs'?'status-subs':c.status==='off_mkt'?'status-off':c.status==='fresh'?'status-fresh':''}">
       <td><button class="row-hide-btn" data-id="${c.id}" title="Hide row">×</button></td>
       <td data-col="chrtrs"><b>${esc(c.chrtrs)}</b></td>
       <td data-col="dates">${fmtDateRange(c.laycan_from,c.laycan_to)}</td>
