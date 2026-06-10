@@ -487,13 +487,13 @@ html.theme-transitioning table.grid th {
 .filters input:focus, .filters select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-soft); }
 .count-pill { margin-left: auto; background: rgba(56,189,248,.08); color: var(--cyan);
   border: 1px solid rgba(56,189,248,.25); border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
-.th-filter input[type="date"] { font-family: inherit; font-size: inherit; color-scheme: light dark; }
-.th-filter input[type="date"]:not([value]),
-.th-filter input[type="date"][value=""] { color: var(--text-mute); }
-.th-filter input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: .7; }
-.th-filter input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; }
+/* Filtri colonna data: input readonly che mostra range, click apre calendar */
+.th-filter input.filter-date-range { cursor: pointer; }
+.th-filter input.filter-date-range::-webkit-search-cancel-button { display: none; }
 
-/* READ-ONLY MODE — non-admin */
+/* ============================================================
+   READ-ONLY MODE — utenti non-admin: nascondi modifiche
+   ============================================================ */
 body:not(.is-admin) .row-edit,
 body:not(.is-admin) .row-del,
 body:not(.is-admin) .c-edit,
@@ -510,7 +510,9 @@ body:not(.is-admin) .topbar-add-btn,
 body:not(.is-admin) [data-route="admin"] {
   display: none !important;
 }
-body:not(.is-admin) td.editable { cursor: default !important; }
+body:not(.is-admin) td.editable {
+  cursor: default !important;
+}
 body:not(.is-admin) td.editable::after { display: none !important; }
 body:not(.is-admin) .status-menu,
 body:not(.is-admin) .area-menu,
@@ -521,9 +523,14 @@ body:not(.is-admin) .flag-chip {
   pointer-events: none !important;
   cursor: default !important;
 }
-body:not(.is-admin) tr[draggable="true"] { -webkit-user-drag: none; }
+body:not(.is-admin) tr[draggable="true"] {
+  -webkit-user-drag: none;
+}
 body:not(.is-admin) .status-pill,
-body:not(.is-admin) .pill { cursor: default !important; }
+body:not(.is-admin) .pill {
+  cursor: default !important;
+}
+/* Tooltip custom su count-pill con data-tooltip */
 .cnt-with-tooltip { position: relative; cursor: default; }
 .cnt-with-tooltip[data-tooltip]:hover::after {
   content: attr(data-tooltip);
@@ -2682,10 +2689,13 @@ let _lastMouseMoveAt = 0;
 document.addEventListener('mousemove', () => { _lastMouseMoveAt = Date.now(); }, true);
 function _scheduleRtRender() {
   if (_rtRenderTimer) clearTimeout(_rtRenderTimer);
+  // Debounce 800ms: abbastanza basso da sentire l'update istantaneo
+  // dopo edit su Sheet, alto abbastanza da raggruppare i burst di fullSync.
   _rtRenderTimer = setTimeout(_doRtRender, 800);
 }
 function _doRtRender() {
   try {
+    // Skip se l'utente sta interagendo (input/select/textarea/contenteditable)
     const active = document.activeElement;
     if (active && active !== document.body) {
       const tag = (active.tagName || '').toLowerCase();
@@ -2695,11 +2705,14 @@ function _doRtRender() {
         return;
       }
     }
+    // Skip se c'è un date-range picker aperto
     if (document.querySelector('.dr-popover:not([hidden])')) {
       if (_rtRenderTimer) clearTimeout(_rtRenderTimer);
       _rtRenderTimer = setTimeout(_doRtRender, 2000);
       return;
     }
+    // Skip se l'utente sta muovendo il mouse (sta navigando l'interfaccia
+    // e non vogliamo flicker). Riprova quando è fermo da almeno 1 secondo.
     if (Date.now() - _lastMouseMoveAt < 1000) {
       if (_rtRenderTimer) clearTimeout(_rtRenderTimer);
       _rtRenderTimer = setTimeout(_doRtRender, 1500);
@@ -2710,7 +2723,7 @@ function _doRtRender() {
 }
 
 function startRealtimeSync() {
-  if (_realtimeChannel) return;
+  if (_realtimeChannel) return; // already subscribed
   _realtimeChannel = sb.channel('pmx-master-list-rt');
 
   _realtimeChannel
@@ -2725,6 +2738,93 @@ function startRealtimeSync() {
         console.warn('[Realtime] status:', status);
       }
     });
+}
+
+// ============================================================
+// AUTO-REFRESH AT WAKE-UP — quando il PC esce da standby o il tab torna
+// attivo dopo essere stato in background, ricarichiamo i dati dal cloud
+// e riconnettiamo il realtime (perché il websocket muore in standby).
+// ============================================================
+(function setupAutoRefreshOnWake() {
+  let lastHiddenAt = null;
+  let isRefreshing = false;
+  async function refreshNow(reason) {
+    if (isRefreshing) return;
+    if (!document.body.classList.contains('logged-in')) return;
+    isRefreshing = true;
+    try {
+      // 1) Riconnetti realtime (il vecchio channel è probabilmente morto)
+      try {
+        if (_realtimeChannel) {
+          try { await sb.removeChannel(_realtimeChannel); } catch(e) {}
+          _realtimeChannel = null;
+        }
+        startRealtimeSync();
+      } catch (e) { console.warn('[wake] realtime reconnect failed:', e); }
+      // 2) Ricarica i dati dal cloud (vessels, cargoes, accounts, rundowns)
+      try { await loadDataFromCloud(); } catch (e) { console.warn('[wake] reload failed:', e); }
+      // 3) Ridisegna la pagina corrente
+      try { if (typeof setRoute === 'function') setRoute(); } catch(e) {}
+      console.log('[wake] refreshed (' + reason + ')');
+    } finally {
+      isRefreshing = false;
+    }
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      lastHiddenAt = Date.now();
+    } else if (document.visibilityState === 'visible') {
+      const hiddenFor = lastHiddenAt ? Date.now() - lastHiddenAt : 0;
+      lastHiddenAt = null;
+      // Se è stato nascosto per più di 10s assumiamo standby/tab background
+      if (hiddenFor > 10000) refreshNow('visibility ' + Math.round(hiddenFor/1000) + 's');
+    }
+  });
+  // Quando la rete torna online (es. dopo standby con WiFi disconnesso)
+  window.addEventListener('online', () => refreshNow('online'));
+  // Window focus come ulteriore safety net (alcuni browser non triggerano visibilitychange)
+  let lastBlurAt = null;
+  window.addEventListener('blur', () => { lastBlurAt = Date.now(); });
+  window.addEventListener('focus', () => {
+    const blurredFor = lastBlurAt ? Date.now() - lastBlurAt : 0;
+    lastBlurAt = null;
+    if (blurredFor > 10000) refreshNow('focus ' + Math.round(blurredFor/1000) + 's');
+  });
+  // SAFETY NET POLLING — ogni 30s, se la pagina è visibile, refetch silenzioso
+  // dal cloud così se realtime perde un evento o un trigger Apps Script fallisce
+  // l'utente vede comunque i dati aggiornati al massimo dopo 30s.
+  // Non tocca il canale realtime — solo loadDataFromCloud + re-render leggero.
+  setInterval(async () => {
+    if (document.visibilityState !== 'visible') return;
+    if (!document.body.classList.contains('logged-in')) return;
+    if (isRefreshing) return;
+    // Skip se utente sta interagendo
+    const active = document.activeElement;
+    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT' || active.isContentEditable)) return;
+    if (document.querySelector('.dr-popup.open, .modal[style*="display: flex"], .status-menu:hover')) return;
+    try {
+      await loadDataFromCloud();
+      _scheduleRtRender();
+    } catch (e) {
+      console.warn('[poll] safety net refresh failed:', e);
+    }
+  }, 30000);
+})();
+
+// Identifico gli eventi causati da me (non mostro toast, ma applico comunque
+// per riallineare ID e timestamp dal server).
+function _isProbablyMyChange(table, row) {
+  if (!_lastSyncSnapshot || !_lastSyncSnapshot[table] || !row || row.id == null) return false;
+  // Se l'hash in snapshot matcha (ignorando updated_at), probabilmente è la mia upsert
+  const prev = _lastSyncSnapshot[table].get(row.id);
+  if (!prev) return false;
+  // Confronto solo i campi non-volatile (escludo updated_at)
+  try {
+    const a = JSON.parse(prev), b = { ...row };
+    delete a.updated_at; delete b.updated_at;
+    delete a.created_at; delete b.created_at;
+    return _hash(a) === _hash(b);
+  } catch(e) { return false; }
 }
 
 function applyRtRow(table, payload) {
@@ -2841,6 +2941,7 @@ function renderUserChip(user) {
         }
       });
       if (error) throw error;
+      // browser is being redirected to Microsoft now
     } catch (err) {
       setMsg('Microsoft sign-in failed: ' + ((err && err.message) || err), 'error');
       setBusy($ms(), false);
@@ -2969,6 +3070,7 @@ async function trySilentMicrosoftSSO() {
         redirectTo: window.location.origin + window.location.pathname
       }
     });
+    // browser sta facendo il redirect ora
   } catch (e) {
     sessionStorage.removeItem('ms_sso_attempted');
   }
@@ -2983,6 +3085,7 @@ async function trySilentMicrosoftSSO() {
       await trySilentMicrosoftSSO();
       return;
     }
+    // Loggato — clear silent SSO flag così se fa logout, ritenterà SSO al prossimo accesso
     sessionStorage.removeItem('ms_sso_attempted');
     if (!/@lightshipchartering\.com$/i.test(user.email || '')) {
       await sb.auth.signOut();
@@ -3221,7 +3324,7 @@ function createDateRangePicker(opts) {
 
 // ===== INLINE RANGE PICKER (per filtri colonna nei thead) =====
 // Apre un calendar popup ancorato a `anchor`. 1° click = from, 2° click = to.
-// Singolo giorno: clicca Close dopo il primo click.
+// Singolo giorno: clicca Chiudi dopo il primo click.
 function openFilterDateRange(anchor, currentFrom, currentTo, onApply) {
   // chiudi eventuale altro picker filter aperto
   document.querySelectorAll('.dr-popup.filter-popup').forEach(p => p.remove());
@@ -3640,6 +3743,7 @@ setRoute(); }, 150);
 }
 // Delegation globale dblclick
 document.addEventListener('dblclick', (e) => {
+  // Read-only mode per non-admin: blocca inline edit
   if (!document.body.classList.contains('is-admin')) return;
   const td = e.target.closest('td.editable');
   if (!td) return;
@@ -3647,6 +3751,7 @@ document.addEventListener('dblclick', (e) => {
   if (kind && id && field) inlineEdit(td, kind, id, field);
 });
 
+// Read-only guard globale: blocca drag&drop e altri eventi di modifica per non-admin
 document.addEventListener('dragstart', (e) => {
   if (!document.body.classList.contains('is-admin')) {
     e.preventDefault();
@@ -3666,7 +3771,7 @@ function checkScrollFade(el) {
 }
 function checkAllScrollFades() {
   document.querySelectorAll(SCROLL_FADE_SEL).forEach(checkScrollFade);
-  // Clear eventuali fade residui sui menu a tendina (non li vogliamo sfumati)
+  // Pulisci eventuali fade residui sui menu a tendina (non li vogliamo sfumati)
   document.querySelectorAll('.area-dd-menu, .dr-popup, .status-menu').forEach(el => el.classList.remove('scroll-fade-bottom'));
 }
 (function() {
@@ -4529,7 +4634,7 @@ function renderMasterTable(rows, cbCols, basin) {
     <th class="th-filter col-stato"><input data-col="status" placeholder="Status" value="${attr(F.status||'')}"></th>
     <th class="col-del"></th>
   </tr></thead><tbody>`);
-  // ORDINE AREE: usa row_order dal Sheet — Sheet è source of truth
+  // ORDINE AREE: usa l'ordine canonico per le aree predefinite, row_order per le extra
   const canonicalAreaOrder = basin === 'ATL' ? ATL_TNG_AREAS : PAC_TNG_AREAS;
   const predefinedOrdered = canonicalAreaOrder.filter(a => byArea[a]);
   const extraOrdered = Object.keys(byArea).filter(a => !canonicalAreaOrder.includes(a)).sort((a, b) => areaMinRowOrder[a] - areaMinRowOrder[b]);
@@ -5170,6 +5275,7 @@ routes['ecsa-list'] = function() {
       return true;
     });
     $('#cnt').textContent = `${entries.length} vessels`;
+    // Conteggio per bucket 1H/2H mese — visibile come tooltip on hover
     const bucketCounts = {};
     for (const e of entries) {
       const b = bucketFor(e.adjFrom);
@@ -5822,8 +5928,20 @@ routes['vsl'] = function() {
       return {...v, eta_from, eta_to, etaDays: days};
     });
     if (cgoArea) rows = rows.filter(v => v.etaDays != null);
-    if (from) rows = rows.filter(v => !v.eta_to || v.eta_to >= from);
-    if (to)   rows = rows.filter(v => !v.eta_from || v.eta_from <= to);
+    // Allineato al Google Sheet (Vsl Finder): overlap "stretto" — replica esatta della formula del foglio
+    //   ABS(ABS(eta_to-eta_from) - ABS(eta_to-to) - ABS(from-eta_to)) <= (to-from)
+    if (from && to) {
+      const _d = s => s ? Math.round(Date.parse(s) / 86400000) : null;
+      const B = _d(from), C = _d(to);
+      rows = rows.filter(v => {
+        const Z = _d(v.eta_from), AA = _d(v.eta_to);
+        if (Z == null || AA == null) return false;
+        return Math.abs(Math.abs(AA - Z) - Math.abs(AA - C) - Math.abs(B - AA)) <= (C - B);
+      });
+    } else {
+      if (from) rows = rows.filter(v => !v.eta_to || v.eta_to >= from);
+      if (to)   rows = rows.filter(v => !v.eta_from || v.eta_from <= to);
+    }
     // Calcolo le aree disponibili PRIMA di applicare l'esclusione (per il summary)
     const availableAreas = {};
     for (const v of rows) {
@@ -6066,8 +6184,24 @@ routes['cgo'] = function() {
     });
     // Filtra cargoes raggiungibili usando matrice Distances CGO (vessel_open → load_area, percorsi commerciali)
     if (vslArea) rows = rows.filter(c => DATA.distances_cgo[vslArea + '__' + c.area] != null);
-    if (from) rows = rows.filter(c => !c.laycan_to || c.laycan_to >= from);
-    if (to)   rows = rows.filter(c => !c.laycan_from || c.laycan_from <= to);
+    // Allineato al Google Sheet (Cgo Finder): mostra i cargo che la nave aperta in vslArea
+    // riesce a RAGGIUNGERE prima che il cargo cancelli. La nave arriva all'area del cargo dopo
+    // N giorni (matrice Distances CGO) → arrivo = open_from + N; il cargo e' valido se la nave
+    // arriva entro il laycan_to (puo' arrivare prima e aspettare). Esclude i cargo gia' cancellati.
+    if (from && to) {
+      const _d = s => s ? Math.round(Date.parse(s) / 86400000) : null;
+      const B = _d(from);
+      rows = rows.filter(c => {
+        const lf = _d(c.laycan_from), lt = _d(c.laycan_to);
+        if (lt == null) return false;
+        const days = vslArea ? (DATA.distances_cgo[vslArea + '__' + c.area] ?? 0) : 0;
+        const arrivo = B + days;        // prima data di arrivo della nave all'area del cargo
+        return arrivo <= lt;            // arriva entro il cancelling del cargo
+      });
+    } else {
+      if (from) rows = rows.filter(c => !c.laycan_to || c.laycan_to >= from);
+      if (to)   rows = rows.filter(c => !c.laycan_from || c.laycan_from <= to);
+    }
     rows.sort((a,b) => (a.laycan_from||'').localeCompare(b.laycan_from||''));
     // Aree disponibili PRIMA dell'esclusione
     const availableCgoAreas = {};
@@ -6491,7 +6625,7 @@ function renderVesselsCpView(rows, basin) {
   // Stesso comparator della master list: open_from ASC, a parità open_to ASC
   const cmpVessel = makeDateRangeCmp('open_from', 'open_to');
   const groups = [];
-  let html = `<div class="cp-view"><div class="cp-header"><span class="cp-header-title">Copy &amp; Paste List · ${rows.length} navi</span>${cpCopyButton()}</div>`;
+  let html = `<div class="cp-view"><div class="cp-header"><span class="cp-header-title">Copy &amp; Paste List · ${rows.length} vessels</span>${cpCopyButton()}</div>`;
   for (const a of areas) {
     const list = rows.filter(v => (v.area || '—') === a).slice().sort(cmpVessel);
     if (!list.length) continue;
@@ -7819,7 +7953,7 @@ async function restoreSnapshot(id) {
     if (e1) throw e1;
     if (!snap || !snap.data) throw new Error('Snapshot not found');
     const restored = snap.data;
-    // 3) Clear tutto (RLS permette ad ogni allowed user)
+    // 3) Pulisci tutto (RLS permette ad ogni allowed user)
     const [r1, r2, r3] = await Promise.all([
       sb.from('vessels').delete().gt('id', 0),
       sb.from('cargoes').delete().gt('id', 0),
@@ -8290,27 +8424,6 @@ document.addEventListener("keydown", (e) => {
 });
 updateUndoButtons();
 setRoute();
-
-// SAFETY NET POLLING - refetch ogni 30s se visibile
-(function setupSafetyNetPolling(){
-  let _isPolling=false;
-  setInterval(async () => {
-    if (document.visibilityState !== 'visible') return;
-    if (_isPolling) return;
-    const active=document.activeElement;
-    if (active && (active.tagName==='INPUT'||active.tagName==='TEXTAREA'||active.tagName==='SELECT'||active.isContentEditable)) return;
-    if (document.querySelector('.dr-popup.open, .modal[style*="display: flex"]')) return;
-    _isPolling=true;
-    try {
-      if (typeof loadDataFromCloud==='function') {
-        await loadDataFromCloud();
-        if (typeof _scheduleRtRender==='function') _scheduleRtRender();
-        else if (typeof setRoute==='function') setRoute();
-      }
-    } catch(e) { console.warn('[safety-poll] fail:', e); }
-    finally { _isPolling=false; }
-  }, 30000);
-})();
 </script>
 
 </body>
