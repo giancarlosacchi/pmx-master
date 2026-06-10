@@ -121,116 +121,6 @@ body {
 .sidebar { display: flex; flex-direction: column; }
 .sidebar-footer { margin-top: auto; padding: 10px 14px; border-top: 1px solid var(--line-soft); font-family: inherit; }
 .sb-user { font-weight: 700; font-size: 11px; letter-spacing: 0; color: var(--text-mute); text-transform: uppercase; }
-
-/* Admin-only elements: visible only when body has .is-admin (set after login if role='admin') */
-body.is-admin .admin-only { display: flex !important; }
-
-/* Admin page styles */
-.admin-panel { padding: 18px; }
-.admin-form { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 12px; background: var(--bg-2); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 16px; }
-.admin-form input, .admin-form select { padding: 6px 10px; font: inherit; font-size: 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg-3); color: var(--text); }
-.admin-form input[name="email"] { min-width: 280px; }
-.admin-form input[name="name"]  { min-width: 180px; }
-table.admin-tbl { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; }
-table.admin-tbl thead th { text-align: left; padding: 8px 10px; background: var(--bg-1); border-bottom: 1px solid var(--line); text-transform: uppercase; font-size: 10px; letter-spacing: .05em; color: var(--text-mute); }
-table.admin-tbl tbody td { padding: 8px 10px; border-bottom: 1px solid var(--line-soft); }
-table.admin-tbl tbody tr:hover td { background: rgba(255,255,255,.02); }
-.admin-chip { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
-.admin-chip.admin { background: rgba(245,177,78,.18); color: var(--gold); }
-.admin-chip.broker { background: rgba(74,144,226,.15); color: #4A90E2; }
-.admin-chip.inactive { background: rgba(180,180,180,.18); color: var(--text-mute); }
-.admin-actions button { background: transparent; border: 1px solid var(--line); padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; color: var(--text); margin-right: 4px; }
-.admin-actions button:hover { border-color: var(--gold); color: var(--gold); }
-.admin-actions button.danger { color: var(--red, #EF5350); border-color: rgba(239,83,80,.3); }
-.admin-actions button.danger:hover { background: rgba(239,83,80,.1); }
-
-/* Version History page */
-.history-panel { padding: 18px; }
-.history-list { display: flex; flex-direction: column; gap: 0; }
-.history-row {
-  display: flex; align-items: center; gap: 16px;
-  padding: 12px 14px; border-bottom: 1px solid var(--line-soft);
-  transition: background .15s ease;
-}
-.history-row:hover { background: rgba(255,255,255,.025); }
-.history-row .h-date { font-weight: 700; font-size: 12.5px; min-width: 180px; color: var(--text); }
-.history-row .h-date small { display: block; font-size: 10.5px; font-weight: 500; color: var(--text-mute); margin-top: 2px; }
-.history-row .h-by { font-size: 11.5px; color: var(--text-mute); flex: 1; }
-.history-row .h-counts { font-size: 11px; color: var(--text-mute); font-variant-numeric: tabular-nums; }
-.history-row button.h-restore {
-  padding: 6px 14px; font: inherit; font-size: 12px; font-weight: 600;
-  background: linear-gradient(135deg, #FFE082 0%, #F5B14E 100%);
-  color: #2A2A2A; border: 1px solid rgba(0,0,0,.10);
-  border-radius: 6px; cursor: pointer; letter-spacing: .04em;
-  transition: transform .12s ease, filter .15s ease;
-}
-.history-row button.h-restore:hover { filter: brightness(1.05); }
-.history-row button.h-restore:active { transform: scale(0.96); }
-.history-empty { text-align: center; padding: 40px 20px; color: var(--text-mute); font-size: 12.5px; }
-
-/* Google Sheets-style version cards */
-.h-day-header {
-  font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
-  color: var(--text-mute); padding: 14px 4px 8px; margin-top: 4px;
-}
-.h-day-header:first-child { margin-top: 0; }
-.h-card {
-  padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px;
-  background: var(--bg-2); margin-bottom: 8px;
-  transition: border-color .15s ease, box-shadow .15s ease;
-}
-.h-card:hover { border-color: var(--gold); box-shadow: 0 2px 8px rgba(245,177,78,.12); }
-.h-card.h-current { border-color: var(--gold); background: var(--gold-soft); }
-.h-card-head {
-  display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
-}
-.h-time { font-size: 12.5px; font-weight: 700; color: var(--text); }
-.h-current-tag {
-  background: var(--gold); color: #2A2A2A;
-  padding: 1px 7px; border-radius: 999px;
-  font-size: 9.5px; font-weight: 700; letter-spacing: .04em; margin-left: 6px;
-}
-.h-manual {
-  background: rgba(74,144,226,.2); color: #4A90E2;
-  padding: 1px 7px; border-radius: 999px;
-  font-size: 9.5px; font-weight: 700; letter-spacing: .04em; margin-left: 6px;
-}
-.h-pre {
-  background: rgba(239,83,80,.18); color: #C5392B;
-  padding: 1px 7px; border-radius: 999px;
-  font-size: 9.5px; font-weight: 700; letter-spacing: .04em; margin-left: 6px;
-}
-.h-restore {
-  padding: 5px 12px; font: inherit; font-size: 11.5px; font-weight: 600;
-  background: var(--bg-3); color: var(--text);
-  border: 1px solid var(--line); border-radius: 6px; cursor: pointer;
-}
-.h-restore:hover:not(:disabled) {
-  background: linear-gradient(135deg, #FFE082 0%, #F5B14E 100%);
-  color: #2A2A2A; border-color: rgba(0,0,0,.1);
-}
-.h-restore:disabled { opacity: .35; cursor: default; }
-.h-users { display: flex; flex-wrap: wrap; gap: 8px 14px; }
-.h-user { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text); }
-.h-dot {
-  width: 9px; height: 9px; border-radius: 50%;
-  display: inline-block; flex-shrink: 0;
-}
-.h-meta {
-  font-size: 10.5px; color: var(--text-mute); margin-top: 6px;
-  text-transform: uppercase; letter-spacing: .05em;
-}
-.h-changes { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line-soft); }
-.h-change { font-size: 11.5px; color: var(--text); padding: 2px 0; }
-.h-verb {
-  display: inline-block; padding: 1px 6px; border-radius: 4px;
-  font-size: 9.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
-  min-width: 50px; text-align: center; margin-right: 6px;
-}
-.h-verb-added   { background: rgba(45,138,79,.18);  color: #2D8A4F; }
-.h-verb-edited  { background: rgba(74,144,226,.18); color: #4A90E2; }
-.h-verb-deleted { background: rgba(239,83,80,.18);  color: #C5392B; }
-.h-by-who { color: var(--text-mute); font-size: 10.5px; }
 .nav-section { font-size: 10.5px; text-transform: uppercase; color: var(--text-mute); letter-spacing: .1em; margin: 8px 4px 4px; font-weight: 600; }
 /* Blocchi sidebar — ogni sezione ha un suo accento colore */
 .sb-block {
@@ -487,66 +377,6 @@ html.theme-transitioning table.grid th {
 .filters input:focus, .filters select:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-soft); }
 .count-pill { margin-left: auto; background: rgba(56,189,248,.08); color: var(--cyan);
   border: 1px solid rgba(56,189,248,.25); border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
-/* Filtri colonna data: input readonly che mostra range, click apre calendar */
-.th-filter input.filter-date-range { cursor: pointer; }
-.th-filter input.filter-date-range::-webkit-search-cancel-button { display: none; }
-
-/* ============================================================
-   READ-ONLY MODE — utenti non-admin: nascondi modifiche
-   ============================================================ */
-body:not(.is-admin) .row-edit,
-body:not(.is-admin) .row-del,
-body:not(.is-admin) .c-edit,
-body:not(.is-admin) .c-del,
-body:not(.is-admin) .btn-del,
-body:not(.is-admin) .col-del,
-body:not(.is-admin) .row-drag,
-body:not(.is-admin) #new-vessel,
-body:not(.is-admin) #new-cargo,
-body:not(.is-admin) button.primary[title*="Aggiungi"],
-body:not(.is-admin) button.primary[title*="Nuovo"],
-body:not(.is-admin) button.primary[title*="Nuova"],
-body:not(.is-admin) .topbar-add-btn,
-body:not(.is-admin) [data-route="admin"] {
-  display: none !important;
-}
-body:not(.is-admin) td.editable {
-  cursor: default !important;
-}
-body:not(.is-admin) td.editable::after { display: none !important; }
-body:not(.is-admin) .status-menu,
-body:not(.is-admin) .area-menu,
-body:not(.is-admin) .area-change-menu {
-  pointer-events: none !important;
-}
-body:not(.is-admin) .flag-chip {
-  pointer-events: none !important;
-  cursor: default !important;
-}
-body:not(.is-admin) tr[draggable="true"] {
-  -webkit-user-drag: none;
-}
-body:not(.is-admin) .status-pill,
-body:not(.is-admin) .pill {
-  cursor: default !important;
-}
-/* Tooltip custom su count-pill con data-tooltip */
-.cnt-with-tooltip { position: relative; cursor: default; }
-.cnt-with-tooltip[data-tooltip]:hover::after {
-  content: attr(data-tooltip);
-  position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%);
-  background: var(--text); color: var(--bg-0);
-  padding: 6px 10px; border-radius: 6px;
-  font-size: 11.5px; font-weight: 600; line-height: 1.45;
-  white-space: pre; z-index: 1000;
-  box-shadow: 0 4px 14px rgba(0,0,0,.18);
-  pointer-events: none;
-}
-.cnt-with-tooltip[data-tooltip]:hover::before {
-  content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
-  border: 6px solid transparent; border-bottom-color: var(--text);
-  pointer-events: none; z-index: 1000;
-}
 button, .btn { background: var(--bg-3); border: 1px solid var(--line); color: var(--text); padding: 6px 11px;
   border-radius: var(--radius-sm); cursor: pointer; font: inherit; font-size: 12px; font-weight: 500;
   transition: all 120ms ease; display: inline-flex; align-items: center; gap: 5px; height: 30px; }
@@ -565,7 +395,6 @@ table.grid thead th { position: sticky; top: 0; z-index: 2; background: var(--bg
 table.grid tbody td { padding: 2px 8px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
 table.grid tbody tr:hover td { background: rgba(255,255,255,.025); }
 tr.status-fresh td:first-child { border-left: 2px solid var(--green); }
-tr.status-fresh td, tr.status-fresh td b, tr.status-fresh td .ideas-text { font-weight: 700; }
 /* Righe inserite oggi: tutto il testo in grassetto (resta tale solo per il giorno corrente) */
 tr.row-new td, tr.row-new td b, tr.row-new td .ideas-text { font-weight: 700; }
 /* Cella Ideas/Info bold quando inizia per OFFERS (oggi). YDAY/LAST OFFERS → no bold. */
@@ -1320,15 +1149,13 @@ pre.rundown { white-space: pre-wrap; font-family: inherit;
 /* ===== ECSA LIST LAYOUT (lista a sinistra + rundown a destra) ===== */
 .ecsa-layout {
   display: grid;
-  grid-template-columns: 1fr minmax(460px, 600px);
+  grid-template-columns: 1fr minmax(380px, 480px);
   gap: 14px;
   flex: 1;
   min-height: 0;
   overflow: hidden;
 }
 .ecsa-list-col { display: flex; flex-direction: column; min-height: 0; }
-.ecsa-list-col .panel { flex: 1; display: flex; flex-direction: column; min-height: 0; }
-.ecsa-list-col .tbl-wrap { flex: 1; overflow: auto; }
 /* Rundown col: si adatta al contenuto (non riempie verticalmente) — spazio sotto resta vuoto */
 .ecsa-rundown-col { align-self: start; max-height: 100%; display: flex; flex-direction: column; min-height: 0; }
 .ecsa-rundown-col .panel { display: flex; flex-direction: column; min-height: 0; flex: 0 1 auto; }
@@ -1356,15 +1183,14 @@ pre.rundown { white-space: pre-wrap; font-family: inherit;
 .ecsa-list-col table.grid thead th { padding-top: 7px; padding-bottom: 7px; font-size: 9.5px; }
 /* Larghezze: tutto stretto tranne Ideas che prende il resto. Niente Subs/Delete/Area. */
 .ecsa-list-col table.grid th:nth-child(1)  { width: 13%; } /* Vessel */
-.ecsa-list-col table.grid th:nth-child(2)  { width: 5%;  } /* DWT/BLT */
+.ecsa-list-col table.grid th:nth-child(2)  { width: 7%;  } /* DWT/BLT */
 .ecsa-list-col table.grid th:nth-child(3)  { width: 7%;  } /* ETA */
 .ecsa-list-col table.grid th:nth-child(4)  { width: 9%;  } /* Dates */
-.ecsa-list-col table.grid td:nth-child(4) { white-space: nowrap; }
 .ecsa-list-col table.grid th:nth-child(5)  { width: auto;} /* Ideas/Info → resto */
 .ecsa-list-col table.grid th:nth-child(6)  { width: 7%;  } /* Ows/Brkr */
 .ecsa-list-col table.grid th:nth-child(7)  { width: 9%;  } /* Bunker (più largo, wrap) */
 .ecsa-list-col table.grid th:nth-child(8)  { width: 5%;  } /* LS Brkr */
-.ecsa-list-col table.grid th:nth-child(9)  { width: 5%;  } /* Update */
+.ecsa-list-col table.grid th:nth-child(9)  { width: 6%;  } /* Update */
 .ecsa-list-col table.grid th:nth-child(10) { width: 6%;  } /* Stato */
 /* Bunker: permetti wrap del testo per vedere tutto */
 .ecsa-list-col table.grid tbody td:nth-child(7) {
@@ -1994,8 +1820,6 @@ table.grid th.col-c-stato { overflow: hidden; }
 .topbar { background: var(--bg-1) !important; }
 .modal { background: var(--bg-2) !important; }
 .stat-card { background: var(--bg-2) !important; }
-/* Eccezione: Vsl/Cgo Finder empty state — lascia visibile la "carta" a quadretti */
-.panel.finder-empty { background: transparent !important; border: none !important; box-shadow: none !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 .world-map-wrap, .calendar-step, .finder-step { background: var(--bg-2) !important; }
 
 /* ===== Animazioni macOS ===== */
@@ -2125,13 +1949,6 @@ body:not(.logged-in) .app { visibility: hidden; }
 .login-btn:hover:not(:disabled) { filter: brightness(1.05); box-shadow: 0 4px 12px rgba(245,177,78,.4); }
 .login-btn:active:not(:disabled) { transform: scale(0.98); }
 .login-btn:disabled { opacity: .55; cursor: not-allowed; }
-.login-divider { display:flex; align-items:center; gap:8px; width:100%; color: var(--text-mute, #888); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; margin: 2px 0; }
-.login-divider::before, .login-divider::after { content:''; flex:1; height:1px; background: rgba(0,0,0,.08); }
-[data-theme="dark"] .login-divider::before, [data-theme="dark"] .login-divider::after { background: rgba(255,255,255,.12); }
-.login-btn-ms { display:inline-flex; align-items:center; justify-content:center; gap:10px; background:#fff; color:#5e5e5e; border:1px solid #d2d2d2; font-weight:500; }
-.login-btn-ms:hover { background:#f5f5f5; }
-[data-theme="dark"] .login-btn-ms { background:#2b2b2b; color:#eaeaea; border-color:#4a4a4a; }
-[data-theme="dark"] .login-btn-ms:hover { background:#353535; }
 .login-msg { font-size: 11.5px; min-height: 16px; text-align: center; }
 .login-msg.error { color: #C5392B; }
 .login-msg.info  { color: var(--text-mute, #6B6B6B); }
@@ -2197,16 +2014,6 @@ body:not(.logged-in) .app { visibility: hidden; }
     <p>Sign in with your Lightship email.<br/>We'll send you a one-time code.</p>
     <input type="email" id="login-email" class="login-input" placeholder="name@lightshipchartering.com" autocomplete="email" />
     <button id="login-send" class="login-btn">Send code</button>
-    <div class="login-divider"><span>or</span></div>
-    <button id="login-ms" class="login-btn login-btn-ms" type="button">
-      <svg width="16" height="16" viewBox="0 0 23 23" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <rect x="1" y="1" width="10" height="10" fill="#F25022"/>
-        <rect x="12" y="1" width="10" height="10" fill="#7FBA00"/>
-        <rect x="1" y="12" width="10" height="10" fill="#00A4EF"/>
-        <rect x="12" y="12" width="10" height="10" fill="#FFB900"/>
-      </svg>
-      <span>Sign in with Microsoft</span>
-    </button>
     <div id="login-otp-wrap" hidden style="width:100%; display:flex; flex-direction:column; gap:10px;">
       <p style="margin-top:6px;">Check your inbox. Paste the code below.</p>
       <input type="text" id="login-otp" class="login-input" placeholder="6-digit code" inputmode="numeric" autocomplete="one-time-code" />
@@ -2269,8 +2076,6 @@ body:not(.logged-in) .app { visibility: hidden; }
     <nav class="nav">
       <a data-route="accounts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2M16 3.13a4 4 0 0 1 0 7.75M21 21v-2a4 4 0 0 0-3-3.85"/></svg><span class="nav-label">LS Accounts</span></a>
       <a data-route="roadmap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 4v18"/></svg><span class="nav-label">Broker Roadmap</span></a>
-      <a data-route="history"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span class="nav-label">Version History</span></a>
-      <a data-route="admin" class="admin-only" style="display:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1l9 4v6c0 5.55-3.84 10.74-9 12-5.16-1.26-9-6.45-9-12V5l9-4z"/><path d="M9 12l2 2 4-4"/></svg><span class="nav-label">Admin</span></a>
     </nav>
   </div>
   <div class="sidebar-footer" id="sidebar-footer">
@@ -2323,32 +2128,23 @@ body:not(.logged-in) .app { visibility: hidden; }
 const SUPABASE_URL = 'https://ngtyjxcjodwwznatubjm.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ndHlqeGNqb2R3d3puYXR1YmptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NzkwMzUsImV4cCI6MjA5NTQ1NTAzNX0.xIFSL1dBB9T5A1DrwxZV9Z1TVoLflnEaxLzkYLvTpC8';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'implicit' }
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
 });
 window.sb = sb;
 
 // Currently signed-in user (set after successful login)
 let CURRENT_USER = null;
-let CURRENT_USER_ROLE = null;   // 'admin' | 'broker' (from allowed_users)
-let CURRENT_USER_NAME = null;   // display_name (from allowed_users)
 window.CURRENT_USER = CURRENT_USER;
 
 // Boot the rest of the app once auth is verified. We DON'T call setRoute()
 // from the page body — it's called only here, after we know the user is allowed.
 let _appBooted = false;
-async function bootAppAfterAuth(user, allowedRow) {
+async function bootAppAfterAuth(user) {
   if (_appBooted) return;
   _appBooted = true;
   CURRENT_USER = user;
   window.CURRENT_USER = user;
-  if (allowedRow) {
-    CURRENT_USER_ROLE = allowedRow.role || 'broker';
-    CURRENT_USER_NAME = allowedRow.display_name || null;
-    window.CURRENT_USER_ROLE = CURRENT_USER_ROLE;
-    window.CURRENT_USER_NAME = CURRENT_USER_NAME;
-  }
   document.body.classList.add('logged-in');
-  if (CURRENT_USER_ROLE === 'admin') document.body.classList.add('is-admin');
   renderUserChip(user);
   // 1) Load latest data from cloud (with auto-migration if cloud empty)
   await loadDataFromCloud();
@@ -2360,8 +2156,6 @@ async function bootAppAfterAuth(user, allowedRow) {
   startCloudSync();
   // 4) Start realtime subscription (changes from other users propagate to us)
   startRealtimeSync();
-  // 5) Snapshot orario per la version history (fire-and-forget)
-  setTimeout(() => maybeTakeHourlySnapshot(), 3000);
 }
 
 // ============================================================
@@ -2452,7 +2246,7 @@ async function loadDataFromCloud() {
 async function migrateLocalToCloud(local) {
   cloudToast('Migrating ' + ((local.vessels||[]).length + (local.cargoes||[]).length) + ' records to cloud…', { spinner: true });
   // Allowed columns per table — extra fields in localStorage are dropped
-  const VESSEL_COLS = ['vessel','dwt_blt','open_port','open_from','open_to','ideas','ows_brkr','bunker','ls_brkr','update_date','area','basin','status','subs','yard','copy_text','ukr_trader','rus_trader','iran_trader','scr_ftd','ex_our_cp','grain_clean','neo_pnm_ftd','scrbr_ftd','oz_grain','bhp','co2_ftd'];
+  const VESSEL_COLS = ['vessel','dwt_blt','open_port','open_from','open_to','ideas','ows_brkr','bunker','ls_brkr','update_date','area','basin','status','subs','yard','copy_text','flag_oo','flag_t','flag_yr','flag_pr','flag_ec','flag_x'];
   const CARGO_COLS  = ['chrtrs','laycan_from','laycan_to','load_port','disch_port','cgo','size','notes','ls_brkr','update_date','date','area','section','basin','status','copy_text'];
   const ACCOUNT_COLS= ['col','city','broker','clients'];
 
@@ -2511,18 +2305,13 @@ function startCloudSync() {
 
 let _syncTimer = null;
 function scheduleCloudSync() {
-  // Salvataggio quasi immediato (50ms): permette di batch-are azioni rapide
-  // tipo click multipli su flag, ma per l'utente è impercettibile.
   if (_syncTimer) clearTimeout(_syncTimer);
-  _syncTimer = setTimeout(syncDirtyToCloud, 50);
+  _syncTimer = setTimeout(syncDirtyToCloud, 400);
 }
 
 async function syncDirtyToCloud() {
   if (!_lastSyncSnapshot) return;
-  // Se è in corso un restore, NON sincronizzare: evita che le modifiche locali
-  // vadano in cloud durante la finestra di delete+insert del restore.
-  if (window._restoring) return;
-  const VESSEL_COLS = ['vessel','dwt_blt','open_port','open_from','open_to','ideas','ows_brkr','bunker','ls_brkr','update_date','area','basin','status','subs','yard','copy_text','ukr_trader','rus_trader','iran_trader','scr_ftd','ex_our_cp','grain_clean','neo_pnm_ftd','scrbr_ftd','oz_grain','bhp','co2_ftd'];
+  const VESSEL_COLS = ['vessel','dwt_blt','open_port','open_from','open_to','ideas','ows_brkr','bunker','ls_brkr','update_date','area','basin','status','subs','yard','copy_text','flag_oo','flag_t','flag_yr','flag_pr','flag_ec','flag_x'];
   const CARGO_COLS  = ['chrtrs','laycan_from','laycan_to','load_port','disch_port','cgo','size','notes','ls_brkr','update_date','date','area','section','basin','status','copy_text'];
 
   const tasks = [];
@@ -2533,16 +2322,13 @@ async function syncDirtyToCloud() {
     const h = _hash(v);
     if (!prevV.has(id) || prevV.get(id) !== h) {
       const row = {}; for (const k of VESSEL_COLS) if (v[k] !== undefined) row[k] = v[k];
+      // Upsert by id if id is a number (existing cloud row). If id is a string or local-only, insert new.
       if (typeof v.id === 'number' && v.id > 0) {
-        // ID già del cloud → upsert sicuro
         tasks.push(sb.from('vessels').upsert({ id: v.id, ...row }).then(handleErr('vessel upsert')));
       } else {
-        // ID temporaneo (tmp_...) → INSERT senza id, Postgres assegna l'ID definitivo.
-        // Quando torna la risposta, ripiantiamo l'ID definitivo in DATA, UNDO_STACK, snapshot.
-        const oldId = v.id;
         tasks.push(sb.from('vessels').insert(row).select().single().then(({data, error}) => {
           if (error) return handleErr('vessel insert')({error});
-          if (data) _remapId('vessels', oldId, data.id, data);
+          if (data) { v.id = data.id; } // patch local with assigned id
         }));
       }
     }
@@ -2562,10 +2348,9 @@ async function syncDirtyToCloud() {
       if (typeof c.id === 'number' && c.id > 0) {
         tasks.push(sb.from('cargoes').upsert({ id: c.id, ...row }).then(handleErr('cargo upsert')));
       } else {
-        const oldId = c.id;
         tasks.push(sb.from('cargoes').insert(row).select().single().then(({data, error}) => {
           if (error) return handleErr('cargo insert')({error});
-          if (data) _remapId('cargoes', oldId, data.id, data);
+          if (data) { c.id = data.id; }
         }));
       }
     }
@@ -2577,12 +2362,12 @@ async function syncDirtyToCloud() {
   }
 
   if (tasks.length === 0) return;
-  // Salvataggio silenzioso: niente toast per non dare percezione di lentezza.
-  // Il toast appare SOLO in caso di errore (vedi handleErr).
+  cloudToast('Saving…', { spinner: true });
   await Promise.all(tasks);
   // Update snapshot
   _lastSyncSnapshot.vessels = new Map((DATA.vessels||[]).map(v => [v.id, _hash(v)]));
   _lastSyncSnapshot.cargoes = new Map((DATA.cargoes||[]).map(c => [c.id, _hash(c)]));
+  cloudToast('Saved', { kind: 'ok', duration: 1200 });
 }
 
 function handleErr(label) {
@@ -2594,132 +2379,16 @@ function handleErr(label) {
   };
 }
 
-// Quando Postgres assegna un nuovo ID a una insert (al posto del nostro 'tmp_xxx'),
-// propaghiamo il cambio ID a TUTTE le strutture che potrebbero referenziare l'ID vecchio:
-// DATA, UNDO_STACK, REDO_STACK, _lastSyncSnapshot. Così il fix non rompe undo.
-function _remapId(table, oldId, newId, cloudRow) {
-  if (oldId === newId) return;
-  // 1) Aggiorna l'oggetto in DATA con l'ID cloud e i campi di ritorno (updated_at, ecc.)
-  const arr = DATA[table];
-  if (arr) {
-    const idx = arr.findIndex(r => r.id === oldId);
-    if (idx >= 0) {
-      const wasNew = arr[idx].__sessionNew;
-      // Merge: tengo i campi locali + sovrascrivo con cloudRow (ha l'ID corretto)
-      arr[idx] = Object.assign({}, arr[idx], cloudRow);
-      if (wasNew) arr[idx].__sessionNew = true;
-    }
-  }
-  // 2) Aggiorna gli stack undo/redo
-  for (const op of UNDO_STACK) {
-    if (op.table === table && op.id === oldId) op.id = newId;
-  }
-  for (const op of REDO_STACK) {
-    if (op.table === table && op.id === oldId) op.id = newId;
-  }
-  // 3) Aggiorna lo snapshot di sync
-  if (_lastSyncSnapshot && _lastSyncSnapshot[table]) {
-    _lastSyncSnapshot[table].delete(oldId);
-    _lastSyncSnapshot[table].set(newId, _hash(cloudRow));
-  }
-  // 4) Salva il cache localStorage aggiornato
-  try { saveData(DATA); } catch(e) {}
-}
-
-// ============================================================
-// VERSION HISTORY — snapshot del DB ogni ora (max 5 giorni)
-// + Ripristino versione precedente in stile Google Sheets.
-// ============================================================
-// Snapshot interval logic:
-// - Debounced 30s dopo ogni modifica (raggruppa burst di click rapidi)
-// - Min interval di 60s tra snapshots (evita di averne troppi in poco tempo)
-const SNAPSHOT_MIN_INTERVAL_SEC = 60;
-
-let _snapshotTimer = null;
-function scheduleSnapshot() {
-  if (_snapshotTimer) clearTimeout(_snapshotTimer);
-  _snapshotTimer = setTimeout(maybeTakeSnapshot, 30000);
-}
-
-async function maybeTakeSnapshot() {
-  try {
-    const { data, error } = await sb
-      .from('snapshots')
-      .select('id, created_at')
-      .order('created_at', { ascending: false })
-      .limit(1);
-    if (error) { console.warn('Snapshot check failed:', error); return; }
-    if (data && data.length) {
-      const last = new Date(data[0].created_at).getTime();
-      const secs = (Date.now() - last) / 1000;
-      if (secs < SNAPSHOT_MIN_INTERVAL_SEC) return;
-    }
-    await takeSnapshot('Auto');
-  } catch (e) { console.warn('maybeTakeSnapshot:', e); }
-}
-// Alias retro-compatibile
-const maybeTakeHourlySnapshot = maybeTakeSnapshot;
-
-async function takeSnapshot(label) {
-  if (!CURRENT_USER) return;
-  try {
-    const payload = {
-      vessels:  DATA.vessels  || [],
-      cargoes:  DATA.cargoes  || [],
-      accounts: DATA.accounts || [],
-      rundowns: DATA.rundowns || {},
-    };
-    const json = JSON.stringify(payload);
-    const { error } = await sb.from('snapshots').insert({
-      taken_by: CURRENT_USER.email || 'unknown',
-      label: label || null,
-      data: payload,
-      size_bytes: json.length
-    });
-    if (error) console.warn('takeSnapshot error:', error);
-  } catch (e) { console.warn('takeSnapshot exception:', e); }
-}
-
 // ============================================================
 // REALTIME SYNC — propagate other users' changes to local DATA
 // ============================================================
 let _realtimeChannel = null;
 let _rtRenderTimer = null;
-let _lastMouseMoveAt = 0;
-document.addEventListener('mousemove', () => { _lastMouseMoveAt = Date.now(); }, true);
 function _scheduleRtRender() {
   if (_rtRenderTimer) clearTimeout(_rtRenderTimer);
-  // Debounce 800ms: abbastanza basso da sentire l'update istantaneo
-  // dopo edit su Sheet, alto abbastanza da raggruppare i burst di fullSync.
-  _rtRenderTimer = setTimeout(_doRtRender, 800);
-}
-function _doRtRender() {
-  try {
-    // Skip se l'utente sta interagendo (input/select/textarea/contenteditable)
-    const active = document.activeElement;
-    if (active && active !== document.body) {
-      const tag = (active.tagName || '').toLowerCase();
-      if (tag === 'select' || tag === 'input' || tag === 'textarea' || active.isContentEditable) {
-        if (_rtRenderTimer) clearTimeout(_rtRenderTimer);
-        _rtRenderTimer = setTimeout(_doRtRender, 2000);
-        return;
-      }
-    }
-    // Skip se c'è un date-range picker aperto
-    if (document.querySelector('.dr-popover:not([hidden])')) {
-      if (_rtRenderTimer) clearTimeout(_rtRenderTimer);
-      _rtRenderTimer = setTimeout(_doRtRender, 2000);
-      return;
-    }
-    // Skip se l'utente sta muovendo il mouse (sta navigando l'interfaccia
-    // e non vogliamo flicker). Riprova quando è fermo da almeno 1 secondo.
-    if (Date.now() - _lastMouseMoveAt < 1000) {
-      if (_rtRenderTimer) clearTimeout(_rtRenderTimer);
-      _rtRenderTimer = setTimeout(_doRtRender, 1500);
-      return;
-    }
-  } catch(e) {}
-  try { if (typeof setRoute === 'function') setRoute(); } catch(e) { console.error('rt setRoute:', e); }
+  _rtRenderTimer = setTimeout(() => {
+    try { if (typeof setRoute === 'function') setRoute(); } catch(e) { console.error('rt setRoute:', e); }
+  }, 200);
 }
 
 function startRealtimeSync() {
@@ -2739,77 +2408,6 @@ function startRealtimeSync() {
       }
     });
 }
-
-// ============================================================
-// AUTO-REFRESH AT WAKE-UP — quando il PC esce da standby o il tab torna
-// attivo dopo essere stato in background, ricarichiamo i dati dal cloud
-// e riconnettiamo il realtime (perché il websocket muore in standby).
-// ============================================================
-(function setupAutoRefreshOnWake() {
-  let lastHiddenAt = null;
-  let isRefreshing = false;
-  async function refreshNow(reason) {
-    if (isRefreshing) return;
-    if (!document.body.classList.contains('logged-in')) return;
-    isRefreshing = true;
-    try {
-      // 1) Riconnetti realtime (il vecchio channel è probabilmente morto)
-      try {
-        if (_realtimeChannel) {
-          try { await sb.removeChannel(_realtimeChannel); } catch(e) {}
-          _realtimeChannel = null;
-        }
-        startRealtimeSync();
-      } catch (e) { console.warn('[wake] realtime reconnect failed:', e); }
-      // 2) Ricarica i dati dal cloud (vessels, cargoes, accounts, rundowns)
-      try { await loadDataFromCloud(); } catch (e) { console.warn('[wake] reload failed:', e); }
-      // 3) Ridisegna la pagina corrente
-      try { if (typeof setRoute === 'function') setRoute(); } catch(e) {}
-      console.log('[wake] refreshed (' + reason + ')');
-    } finally {
-      isRefreshing = false;
-    }
-  }
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') {
-      lastHiddenAt = Date.now();
-    } else if (document.visibilityState === 'visible') {
-      const hiddenFor = lastHiddenAt ? Date.now() - lastHiddenAt : 0;
-      lastHiddenAt = null;
-      // Se è stato nascosto per più di 10s assumiamo standby/tab background
-      if (hiddenFor > 10000) refreshNow('visibility ' + Math.round(hiddenFor/1000) + 's');
-    }
-  });
-  // Quando la rete torna online (es. dopo standby con WiFi disconnesso)
-  window.addEventListener('online', () => refreshNow('online'));
-  // Window focus come ulteriore safety net (alcuni browser non triggerano visibilitychange)
-  let lastBlurAt = null;
-  window.addEventListener('blur', () => { lastBlurAt = Date.now(); });
-  window.addEventListener('focus', () => {
-    const blurredFor = lastBlurAt ? Date.now() - lastBlurAt : 0;
-    lastBlurAt = null;
-    if (blurredFor > 10000) refreshNow('focus ' + Math.round(blurredFor/1000) + 's');
-  });
-  // SAFETY NET POLLING — ogni 30s, se la pagina è visibile, refetch silenzioso
-  // dal cloud così se realtime perde un evento o un trigger Apps Script fallisce
-  // l'utente vede comunque i dati aggiornati al massimo dopo 30s.
-  // Non tocca il canale realtime — solo loadDataFromCloud + re-render leggero.
-  setInterval(async () => {
-    if (document.visibilityState !== 'visible') return;
-    if (!document.body.classList.contains('logged-in')) return;
-    if (isRefreshing) return;
-    // Skip se utente sta interagendo
-    const active = document.activeElement;
-    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT' || active.isContentEditable)) return;
-    if (document.querySelector('.dr-popup.open, .modal[style*="display: flex"], .status-menu:hover')) return;
-    try {
-      await loadDataFromCloud();
-      _scheduleRtRender();
-    } catch (e) {
-      console.warn('[poll] safety net refresh failed:', e);
-    }
-  }, 30000);
-})();
 
 // Identifico gli eventi causati da me (non mostro toast, ma applico comunque
 // per riallineare ID e timestamp dal server).
@@ -2835,45 +2433,25 @@ function applyRtRow(table, payload) {
     if (id == null) return;
     const idx = arr.findIndex(r => r.id === id);
     if (idx >= 0) {
-      // Race protection: se stavo EDITANDO questa riga (inline edit aperto o
-      // modifica recente nello UNDO_STACK), avviso e cancello l'edit in corso.
-      try {
-        const editingCell = document.querySelector('td.editable.editing[data-id="' + String(id) + '"]');
-        if (editingCell) {
-          editingCell.classList.remove('editing');
-          editingCell.innerHTML = '<span style="color:var(--text-mute); font-style:italic;">deleted by colleague</span>';
-        }
-        // Check UNDO_STACK per modifiche recenti (ultimi 10 sec) su questa riga
-        const now = Date.now();
-        const recent = UNDO_STACK.some(op => op.table === table && op.id === id && (now - op.ts) < 10000);
-        if (editingCell || recent) {
-          const what = table === 'vessels' ? 'Vessel' : 'Cargo';
-          cloudToast(what + ' you were editing was deleted by a colleague. Your unsaved edits are lost. Check Version History to recover.', { kind: 'error', duration: 6000 });
-        }
-      } catch(e) { /* defensive */ }
       arr.splice(idx, 1);
       if (_lastSyncSnapshot && _lastSyncSnapshot[table]) _lastSyncSnapshot[table].delete(id);
+      cloudToast((table === 'vessels' ? 'Vessel' : 'Cargo') + ' deleted by colleague', { kind: 'info', duration: 1800 });
     }
   } else {
     const row = payload.new;
     if (!row || row.id == null) return;
-    // Se è l'eco della MIA stessa modifica (round-trip cloud), aggiorno solo
-    // lo snapshot interno e NON ri-faccio re-render: evita flicker su UI.
     const wasMine = _isProbablyMyChange(table, row);
     const idx = arr.findIndex(r => r.id === row.id);
-    // Preserva il flag __sessionNew (in-memory, per il bold "appena aggiunta")
-    const wasSessionNew = idx >= 0 && !!arr[idx].__sessionNew;
     if (idx >= 0) arr[idx] = row;
     else arr.push(row);
-    if (wasSessionNew) {
-      const i2 = arr.findIndex(r => r.id === row.id);
-      if (i2 >= 0) arr[i2].__sessionNew = true;
-    }
     if (_lastSyncSnapshot && _lastSyncSnapshot[table]) _lastSyncSnapshot[table].set(row.id, _hash(row));
     saveData(DATA);
-    if (wasMine) return; // marker: salta il re-render scheduler upstream
+    if (!wasMine) {
+      const who = (row.updated_by || row.created_by || 'a colleague');
+      const verb = payload.eventType === 'INSERT' ? 'added' : 'updated';
+      cloudToast((table === 'vessels' ? 'Vessel' : 'Cargo') + ' ' + verb + ' by ' + who, { kind: 'info', duration: 1800 });
+    }
   }
-  // Niente toast: chiunque può lavorare su tutto, le modifiche arrivano silenziose
 }
 
 function applyRtAccount(payload) {
@@ -2926,27 +2504,7 @@ function renderUserChip(user) {
   const $otpWrap = () => document.getElementById('login-otp-wrap');
   const $send    = () => document.getElementById('login-send');
   const $verify  = () => document.getElementById('login-verify');
-  const $ms      = () => document.getElementById('login-ms');
   const $msg     = () => document.getElementById('login-msg');
-
-  async function signInWithMicrosoft() {
-    setBusy($ms(), true, 'Redirecting…');
-    setMsg('', '');
-    try {
-      const { error } = await sb.auth.signInWithOAuth({
-        provider: 'azure',
-        options: {
-          scopes: 'openid email profile',
-          redirectTo: window.location.origin + window.location.pathname
-        }
-      });
-      if (error) throw error;
-      // browser is being redirected to Microsoft now
-    } catch (err) {
-      setMsg('Microsoft sign-in failed: ' + ((err && err.message) || err), 'error');
-      setBusy($ms(), false);
-    }
-  }
 
   function setMsg(text, kind) {
     const m = $msg();
@@ -3023,7 +2581,7 @@ function renderUserChip(user) {
         return;
       }
       setMsg('Welcome ' + (rows[0].display_name || user.email), 'ok');
-      bootAppAfterAuth(user, rows[0]);
+      bootAppAfterAuth(user);
     } catch (err) {
       const m = (err && err.message) || String(err);
       setMsg('Invalid or expired code. ' + m, 'error');
@@ -3034,10 +2592,9 @@ function renderUserChip(user) {
 
   // Wire up buttons after DOM is ready (the script runs in <body>, so it's already ready)
   function wire() {
-    const s = $send(), v = $verify(), e = $email(), o = $otp(), m = $ms();
+    const s = $send(), v = $verify(), e = $email(), o = $otp();
     if (s) s.onclick = sendCode;
     if (v) v.onclick = verifyCode;
-    if (m) m.onclick = signInWithMicrosoft;
     if (e) e.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') sendCode(); });
     if (o) o.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') verifyCode(); });
   }
@@ -3048,45 +2605,11 @@ function renderUserChip(user) {
 // ============================================================
 // SESSION CHECK on load — if already logged in, skip the overlay
 // ============================================================
-async function trySilentMicrosoftSSO() {
-  // Auto SSO: i PC aziendali sono già loggati con Microsoft, quindi proviamo
-  // il login Azure automaticamente. Se l'utente NON è loggato in Microsoft,
-  // Microsoft mostra il proprio form di login (comportamento accettabile per
-  // un sito interno aziendale).
-  // Skip se l'utente vuole esplicitamente il login manuale (?login=manual)
-  // o se abbiamo già tentato in questa sessione (evita loop infiniti).
-  const url = new URL(window.location.href);
-  if (url.searchParams.get('login') === 'manual') return;
-  if (sessionStorage.getItem('ms_sso_attempted') === '1') {
-    sessionStorage.removeItem('ms_sso_attempted');
-    return; // tentato già, mostriamo overlay come fallback
-  }
-  sessionStorage.setItem('ms_sso_attempted', '1');
-  try {
-    await sb.auth.signInWithOAuth({
-      provider: 'azure',
-      options: {
-        scopes: 'openid email profile',
-        redirectTo: window.location.origin + window.location.pathname
-      }
-    });
-    // browser sta facendo il redirect ora
-  } catch (e) {
-    sessionStorage.removeItem('ms_sso_attempted');
-  }
-}
-
 (async function checkSessionOnLoad() {
   try {
     const { data } = await sb.auth.getSession();
     const user = data && data.session && data.session.user;
-    if (!user) {
-      // Non loggato: tenta SSO Microsoft automatico prima di mostrare l'overlay
-      await trySilentMicrosoftSSO();
-      return;
-    }
-    // Loggato — clear silent SSO flag così se fa logout, ritenterà SSO al prossimo accesso
-    sessionStorage.removeItem('ms_sso_attempted');
+    if (!user) return; // not logged in: overlay stays visible
     if (!/@lightshipchartering\.com$/i.test(user.email || '')) {
       await sb.auth.signOut();
       return;
@@ -3103,7 +2626,7 @@ async function trySilentMicrosoftSSO() {
       if (m) { m.textContent = 'Access revoked. Contact Giancarlo.'; m.className = 'login-msg error'; }
       return;
     }
-    bootAppAfterAuth(user, rows[0]);
+    bootAppAfterAuth(user);
   } catch (e) { /* leave overlay up */ }
 })();
 
@@ -3283,8 +2806,8 @@ function createDateRangePicker(opts) {
       }).join('')}
     </div>
     <div class="dr-actions">
-      <button type="button" class="ghost" data-act="clear">Clear</button>
-      <button type="button" class="ghost" data-act="close" style="margin-left:auto">Close</button>
+      <button type="button" class="ghost" data-act="clear">Pulisci</button>
+      <button type="button" class="ghost" data-act="close" style="margin-left:auto">Chiudi</button>
     </div>`;
     popup.innerHTML = html;
     popup.querySelector('[data-act="prev"]').onclick = (e) => { e.stopPropagation(); if (state.viewMonth === 0) { state.viewMonth = 11; state.viewYear--; } else state.viewMonth--; render(); };
@@ -3320,115 +2843,6 @@ function createDateRangePicker(opts) {
   _obs.observe(document.body, { childList: true, subtree: true });
   render();
   return wrap;
-}
-
-// ===== INLINE RANGE PICKER (per filtri colonna nei thead) =====
-// Apre un calendar popup ancorato a `anchor`. 1° click = from, 2° click = to.
-// Singolo giorno: clicca Chiudi dopo il primo click.
-function openFilterDateRange(anchor, currentFrom, currentTo, onApply) {
-  // chiudi eventuale altro picker filter aperto
-  document.querySelectorAll('.dr-popup.filter-popup').forEach(p => p.remove());
-  const popup = document.createElement('div');
-  popup.className = 'dr-popup filter-popup open';
-  document.body.appendChild(popup);
-  const state = { from: currentFrom || '', to: currentTo || '', viewYear: 0, viewMonth: 0, picking: 'from' };
-  if (state.from) { const d = new Date(state.from); state.viewYear = d.getUTCFullYear(); state.viewMonth = d.getUTCMonth(); }
-  else { const d = new Date(); state.viewYear = d.getUTCFullYear(); state.viewMonth = d.getUTCMonth(); }
-  function position() {
-    const r = anchor.getBoundingClientRect();
-    const w = 260;
-    const h = popup.offsetHeight || 340;
-    if (window.innerHeight - r.bottom - 8 < h && r.top > h + 8) popup.style.top = Math.max(8, r.top - h - 6) + 'px';
-    else popup.style.top = (r.bottom + 6) + 'px';
-    popup.style.left = Math.min(r.left, window.innerWidth - w - 8) + 'px';
-  }
-  function close() {
-    popup.remove();
-    document.removeEventListener('mousedown', onOutside, true);
-    window.removeEventListener('scroll', close, true);
-    window.removeEventListener('resize', close);
-  }
-  function onOutside(e) {
-    if (!popup.contains(e.target) && e.target !== anchor) close();
-  }
-  function render() {
-    const y = state.viewYear, m = state.viewMonth;
-    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    const first = new Date(Date.UTC(y, m, 1));
-    const firstDow = (first.getUTCDay() + 6) % 7;
-    const daysInMonth = new Date(Date.UTC(y, m+1, 0)).getUTCDate();
-    const prevMonthDays = new Date(Date.UTC(y, m, 0)).getUTCDate();
-    const today = new Date().toISOString().slice(0,10);
-    const cells = [];
-    for (let i = firstDow-1; i >= 0; i--) {
-      const d = prevMonthDays - i;
-      const date = new Date(Date.UTC(y, m-1, d));
-      cells.push({ d, iso: date.toISOString().slice(0,10), outside: true });
-    }
-    for (let d = 1; d <= daysInMonth; d++) {
-      const date = new Date(Date.UTC(y, m, d));
-      cells.push({ d, iso: date.toISOString().slice(0,10) });
-    }
-    while (cells.length < 42) {
-      const i = cells.length - firstDow - daysInMonth + 1;
-      const date = new Date(Date.UTC(y, m+1, i));
-      cells.push({ d: i, iso: date.toISOString().slice(0,10), outside: true });
-    }
-    popup.innerHTML = `<div class="dr-head">
-      <button type="button" class="dr-nav" data-act="prev">‹</button>
-      <span class="dr-head-title">${monthNames[m]} ${y}</span>
-      <button type="button" class="dr-nav" data-act="next">›</button>
-    </div>
-    <div class="dr-grid">
-      ${['L','M','M','G','V','S','D'].map(x=>`<div class="dr-dow">${x}</div>`).join('')}
-      ${cells.map(c => {
-        let cls = 'dr-day';
-        if (c.outside) cls += ' outside';
-        if (c.iso === today) cls += ' today';
-        if (state.from && state.to && c.iso >= state.from && c.iso <= state.to) cls += ' range';
-        if (c.iso === state.from) cls += ' start';
-        if (c.iso === state.to) cls += ' end';
-        return `<div class="${cls}" data-iso="${c.iso}">${c.d}</div>`;
-      }).join('')}
-    </div>
-    <div class="dr-actions">
-      <button type="button" class="ghost" data-act="clear">Clear</button>
-      <button type="button" class="ghost" data-act="apply" style="margin-left:auto">Apply</button>
-    </div>`;
-    popup.querySelector('[data-act="prev"]').onclick = (e) => { e.stopPropagation(); if (state.viewMonth === 0) { state.viewMonth = 11; state.viewYear--; } else state.viewMonth--; render(); position(); };
-    popup.querySelector('[data-act="next"]').onclick = (e) => { e.stopPropagation(); if (state.viewMonth === 11) { state.viewMonth = 0; state.viewYear++; } else state.viewMonth++; render(); position(); };
-    popup.querySelector('[data-act="clear"]').onclick = (e) => { e.stopPropagation(); onApply('', ''); close(); };
-    popup.querySelector('[data-act="apply"]').onclick = (e) => { e.stopPropagation(); onApply(state.from || '', state.to || state.from || ''); close(); };
-    popup.querySelectorAll('.dr-day').forEach(el => el.onclick = (e) => {
-      e.stopPropagation();
-      const iso = el.dataset.iso;
-      if (state.picking === 'from' || !state.from || (state.from && state.to)) {
-        state.from = iso; state.to = ''; state.picking = 'to';
-        render();
-      } else {
-        if (iso < state.from) { state.to = state.from; state.from = iso; }
-        else { state.to = iso; }
-        state.picking = 'from';
-        render();
-        // applica e chiude dopo aver scelto il secondo giorno
-        setTimeout(() => { onApply(state.from, state.to); close(); }, 150);
-      }
-    });
-  }
-  render();
-  position();
-  setTimeout(() => {
-    document.addEventListener('mousedown', onOutside, true);
-    window.addEventListener('scroll', close, { capture: true });
-    window.addEventListener('resize', close);
-  }, 0);
-}
-
-// Helper per visualizzare il range nel filtro
-function fmtFilterDateRange(from, to) {
-  if (!from && !to) return '';
-  if (from && to && from !== to) return `${fmtShort(from)} → ${fmtShort(to)}`;
-  return fmtShort(from || to);
 }
 
 // ===== SINGLE DATE PICKER (per campi Update / date singole) =====
@@ -3509,9 +2923,9 @@ function createSingleDatePicker(opts) {
       }).join('')}
     </div>
     <div class="dr-actions">
-      <button type="button" class="ghost" data-act="clear">Clear</button>
-      <button type="button" class="ghost" data-act="today">Today</button>
-      <button type="button" class="ghost" data-act="close" style="margin-left:auto">Close</button>
+      <button type="button" class="ghost" data-act="clear">Pulisci</button>
+      <button type="button" class="ghost" data-act="today">Oggi</button>
+      <button type="button" class="ghost" data-act="close" style="margin-left:auto">Chiudi</button>
     </div>`;
     popup.innerHTML = html;
     popup.querySelector('[data-act="prev"]').onclick = (e) => { e.stopPropagation(); if (state.viewMonth === 0) { state.viewMonth = 11; state.viewYear--; } else state.viewMonth--; render(); };
@@ -3542,7 +2956,7 @@ function createSingleDatePicker(opts) {
 
 
 function showCopyFallback(text) {
-  modal.open('Copy vessels list', `
+  modal.open('Copy list navi', `
     <p class="muted" style="margin:0 0 8px;font-size:12px">Seleziona il testo qui sotto e premi Ctrl+C (o Cmd+C su Mac) per copiarlo.</p>
     <textarea id="copy-area" style="width:100%;min-height:300px;background:var(--bg-3);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:10px;font-family:monospace;font-size:12px;resize:vertical">${esc(text)}</textarea>
     <div class="form-actions full">
@@ -3587,7 +3001,7 @@ function armDelete(btn, onConfirm) {
   if (btn.dataset.armed === '1') {
     btn.dataset.armed = '0';
     btn.classList.remove('armed');
-    btn.title = 'Delete';
+    btn.title = 'Elimina';
     if (btn._timer) { clearTimeout(btn._timer); btn._timer = null; }
     onConfirm();
     return;
@@ -3598,7 +3012,7 @@ function armDelete(btn, onConfirm) {
   btn._timer = setTimeout(() => {
     btn.dataset.armed = '0';
     btn.classList.remove('armed');
-    btn.title = 'Delete';
+    btn.title = 'Elimina';
     btn._timer = null;
   }, 3000);
 }
@@ -3728,36 +3142,18 @@ setRoute(); }, 150);
     setRoute();
   };
   editor.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      // Shift+Enter = a capo (solo in textarea). Enter normale = salva.
-      if (type === 'textarea' && e.shiftKey) return;
-      e.preventDefault();
-      finish(true);
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      td.classList.remove('editing');
-      td.innerHTML = original;
-    }
+    if (e.key === 'Enter' && type !== 'textarea') { e.preventDefault(); finish(true); }
+    else if (e.key === 'Escape') { e.preventDefault(); td.classList.remove('editing'); td.innerHTML = original; }
   });
   editor.addEventListener('blur', () => finish(true));
 }
 // Delegation globale dblclick
 document.addEventListener('dblclick', (e) => {
-  // Read-only mode per non-admin: blocca inline edit
-  if (!document.body.classList.contains('is-admin')) return;
   const td = e.target.closest('td.editable');
   if (!td) return;
   const kind = td.dataset.kind, id = Number(td.dataset.id), field = td.dataset.field;
   if (kind && id && field) inlineEdit(td, kind, id, field);
 });
-
-// Read-only guard globale: blocca drag&drop e altri eventi di modifica per non-admin
-document.addEventListener('dragstart', (e) => {
-  if (!document.body.classList.contains('is-admin')) {
-    e.preventDefault();
-    e.stopPropagation();
-  }
-}, true);
 
 
 // ===== SCROLL FADE INDICATOR (fade in fondo quando c'è altro contenuto da scrollare) =====
@@ -3977,7 +3373,7 @@ const SEED_DATA = {"atl_tng":[{"vessel":"ZHENG KAI","dwt_blt":"82/12","open_port
 const KEY = 'lspmx_v4';
 // Ordini esatti come nel Google Sheet originale
 // Ordine aree ATL TNG — IMPERATIVO da Giancarlo
-const ATL_TNG_AREAS = ['ECSA', 'NCSA', 'PG', 'RSEA', 'PG / RSEA', 'WCI', 'ECI', 'SEASIA', 'CONT', 'WMED', 'USG', 'USEC / ECCA', 'EMED / BSEA'];
+const ATL_TNG_AREAS = ['ECSA', 'NCSA', 'PG / RSEA', 'WCI', 'ECI', 'SEASIA', 'CONT', 'WMED', 'USG', 'USEC / ECCA', 'EMED / BSEA'];
 // Ordine aree PAC TNG — IMPERATIVO da Giancarlo
 const PAC_TNG_AREAS = ['NCHINA', 'SCHINA', 'SEASIA'];
 // Ordine sezioni ATL CGO — IMPERATIVO da Giancarlo
@@ -4148,137 +3544,53 @@ function newId() { return DATA.nextId++; }
 // ===== UNDO / REDO (multi-livello) =====
 // Ogni persist() salva lo snapshot precedente nello stack undo prima di sovrascrivere
 // localStorage. Niente snapshot mentre stiamo applicando undo/redo (_suspendUndo).
-// ===== PER-USER UNDO (Fase 2d) =====
-// Solo le tue modifiche entrano nello stack. Le modifiche realtime dei colleghi
-// NON vengono mai annullate dal tuo undo. Conflict detection: se un collega
-// ha modificato lo stesso record dopo di te, l'undo viene bloccato con avviso.
 const UNDO_LIMIT = 100;
-const UNDO_STACK = [];   // [{kind, table, id, before, after, ts}]
+const UNDO_STACK = [];
 const REDO_STACK = [];
 let _suspendUndo = false;
-
-function logUserAction(kind, table, id, before, after) {
-  if (_suspendUndo) return;
-  // Deep-clone for safety (so future mutations don't change snapshot)
-  UNDO_STACK.push({
-    kind, table, id,
-    before: before ? JSON.parse(JSON.stringify(before)) : null,
-    after:  after  ? JSON.parse(JSON.stringify(after))  : null,
-    ts: Date.now()
-  });
-  if (UNDO_STACK.length > UNDO_LIMIT) UNDO_STACK.shift();
-  REDO_STACK.length = 0;
-  updateUndoButtons();
-  // CLOUD: log to mutation_log for history page (fire-and-forget)
-  if (CURRENT_USER && window._cloudSyncActive) {
+function persist() {
+  if (!_suspendUndo) {
     try {
-      // Label = nome visibile del record (vessel/chrtrs) — utile per mostrare nella history
-      const row = after || before || {};
-      const label = table === 'vessels' ? (row.vessel || '') : (row.chrtrs || '');
-      sb.from('mutation_log').insert({
-        user_email: CURRENT_USER.email,
-        table_name: table,
-        row_id: String(id),
-        action: kind === 'add' ? 'insert' : kind === 'upd' ? 'update' : 'delete',
-        before: before ? { label } : null,
-        after:  after  ? { label } : null
-      }).then(({error}) => { if (error) console.warn('mutation_log:', error); });
+      const prev = localStorage.getItem(KEY);
+      if (prev) {
+        UNDO_STACK.push(prev);
+        if (UNDO_STACK.length > UNDO_LIMIT) UNDO_STACK.shift();
+        REDO_STACK.length = 0;
+      }
     } catch(e) {}
   }
-  // Schedule a snapshot debounced after this change (group bursts together)
-  if (typeof scheduleSnapshot === 'function') scheduleSnapshot();
-}
-
-function persist() {
   saveData(DATA);
   updateUndoButtons();
+  // CLOUD: se sync attivo, propaga diff a Supabase (debounced)
   if (window._cloudSyncActive && typeof scheduleCloudSync === 'function') {
     scheduleCloudSync();
   }
 }
-
-// Stesso record è cambiato da un altro utente?
-// Confronto i campi "data" tra current row e quello che ho lasciato io (op.after).
-// Se sono uguali (a parte updated_at), nessuno l'ha toccato dopo di me → undo safe.
-function _rowFingerprint(row) {
-  if (!row) return '';
-  const o = { ...row };
-  delete o.updated_at; delete o.created_at;
-  delete o.updated_by; delete o.created_by;
-  try { return JSON.stringify(o, Object.keys(o).sort()); } catch(e) { return ''; }
+function _applySnapshot(jsonStr) {
+  try {
+    const parsed = JSON.parse(jsonStr);
+    DATA = parsed;
+    window.DATA = DATA;
+    _suspendUndo = true;
+    saveData(DATA);
+    _suspendUndo = false;
+    setRoute();
+    updateUndoButtons();
+    return true;
+  } catch(e) { return false; }
 }
-function _isStillMine(currentRow, afterRow) {
-  return _rowFingerprint(currentRow) === _rowFingerprint(afterRow);
-}
-
 function undoAction() {
   if (!UNDO_STACK.length) return;
-  const op = UNDO_STACK.pop();
-  const arr = DATA[op.table];
-  if (!arr) { updateUndoButtons(); return; }
-  const idx = arr.findIndex(r => r.id === op.id);
-  // Conflict check: se un collega ha modificato il record dopo di me, l'undo
-  // procede comunque (preferenza utente) ma mostra un toast informativo così
-  // sai che hai sovrascritto. Per upd controllo i campi correnti vs op.after.
-  let overwroteColleague = false;
-  if (op.kind === 'upd' && idx >= 0 && op.after) {
-    if (!_isStillMine(arr[idx], op.after)) overwroteColleague = true;
-  } else if (op.kind === 'add' && idx >= 0 && op.after) {
-    if (!_isStillMine(arr[idx], op.after)) overwroteColleague = true;
-  }
-  _suspendUndo = true;
-  try {
-    if (op.kind === 'add') {
-      if (idx >= 0) arr.splice(idx, 1);
-    } else if (op.kind === 'upd') {
-      if (idx >= 0) Object.assign(arr[idx], op.before);
-      else arr.push(op.before);
-    } else if (op.kind === 'del') {
-      if (idx < 0) arr.push(op.before);
-    }
-    REDO_STACK.push(op);
-    persist();
-    setRoute();
-    if (overwroteColleague) {
-      const what = op.table === 'vessels' ? 'vessel' : 'cargo';
-      cloudToast('Undone — but a colleague had edited this ' + what + '. Their change was overwritten. See Version History to restore if needed.', { kind: 'info', duration: 5500 });
-    } else {
-      cloudToast('Undone', { kind: 'ok', duration: 1500 });
-    }
-  } finally {
-    _suspendUndo = false;
-    updateUndoButtons();
-  }
+  const prev = UNDO_STACK.pop();
+  REDO_STACK.push(JSON.stringify(DATA));
+  _applySnapshot(prev);
 }
-
 function redoAction() {
   if (!REDO_STACK.length) return;
-  const op = REDO_STACK[REDO_STACK.length - 1];
-  const arr = DATA[op.table];
-  if (!arr) { REDO_STACK.pop(); updateUndoButtons(); return; }
-  const idx = arr.findIndex(r => r.id === op.id);
-  _suspendUndo = true;
-  try {
-    if (op.kind === 'add') {
-      // Re-aggiunge il record
-      if (idx < 0) arr.push(op.after);
-    } else if (op.kind === 'upd') {
-      if (idx >= 0) Object.assign(arr[idx], op.after);
-    } else if (op.kind === 'del') {
-      // Re-elimina
-      if (idx >= 0) arr.splice(idx, 1);
-    }
-    REDO_STACK.pop();
-    UNDO_STACK.push(op);
-    persist();
-    setRoute();
-    cloudToast('Redone', { kind: 'ok', duration: 1500 });
-  } finally {
-    _suspendUndo = false;
-    updateUndoButtons();
-  }
+  const next = REDO_STACK.pop();
+  UNDO_STACK.push(JSON.stringify(DATA));
+  _applySnapshot(next);
 }
-
 function updateUndoButtons() {
   const u = document.getElementById('btn-undo');
   const r = document.getElementById('btn-redo');
@@ -4371,71 +3683,43 @@ function lookupCargoHistory(chrtrs, load_port, disch_port) {
 }
 
 function addVessel(v) {
-  // ID temporaneo string: syncDirtyToCloud farà INSERT su Supabase, riceverà
-  // l'ID definitivo (bigserial) e patchareà v.id. Questo evita collisioni tra
-  // broker che aggiungono navi contemporaneamente.
-  v.id = 'tmp_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
-  v.created_at = todayIso();
-  v.__sessionNew = true;
+  v.id = newId(); v.created_at = todayIso();
   DATA.vessels.push(v);
   saveVesselHistory(v);
-  logUserAction('add', 'vessels', v.id, null, v);
   persist(); autoUpdateRundowns(); return v;
 }
 function updVessel(id, patch) {
   const v = DATA.vessels.find(x=>x.id===id);
   if (v) {
-    const before = { ...v };  // snapshot prima del cambio
     Object.assign(v, patch);
-    // update_date si aggiorna automaticamente SOLO quando modifichi il testo Ideas
-    // (il ciclo OFFERS → YDAY OFFERS → LAST OFFERS riparte da oggi).
-    // Cambi di altri campi (date, flag, status, ecc.) NON resettano YDAY/LAST.
-    if (!('update_date' in patch) && ('ideas' in patch)) v.update_date = todayIso();
+    // Qualunque modifica → update_date = oggi (resetta il ciclo OFFERS → YDAY OFFERS → LAST OFFERS)
+    if (!('update_date' in patch)) v.update_date = todayIso();
     saveVesselHistory(v);
-    logUserAction('upd', 'vessels', id, before, v);
     persist();
     autoUpdateRundowns();
   }
   return v;
 }
-function delVessel(id) {
-  const v = DATA.vessels.find(x=>x.id===id);
-  if (v) logUserAction('del', 'vessels', id, v, null);
-  DATA.vessels = DATA.vessels.filter(x=>x.id!==id);
-  persist(); autoUpdateRundowns();
-}
+function delVessel(id) { DATA.vessels = DATA.vessels.filter(x=>x.id!==id); persist(); autoUpdateRundowns(); }
 function addCargo(c) {
-  // ID temporaneo string — Postgres assegnerà il definitivo via syncDirtyToCloud
-  c.id = 'tmp_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
-  c.created_at = todayIso();
-  c.__sessionNew = true;
+  c.id = newId(); c.created_at = todayIso();
   DATA.cargoes.push(c);
   saveCargoHistory(c);
-  logUserAction('add', 'cargoes', c.id, null, c);
   persist(); autoUpdateRundowns(); return c;
 }
 function updCargo(id, patch) {
   const c = DATA.cargoes.find(x=>x.id===id);
   if (c) {
-    const before = { ...c };
     Object.assign(c, patch);
-    // update_date si aggiorna automaticamente SOLO quando modifichi il testo Notes
-    // (il ciclo OFFERS → YDAY OFFERS → LAST OFFERS riparte da oggi).
-    // Cambi di altri campi (date, status, ecc.) NON resettano YDAY/LAST.
-    if (!('update_date' in patch) && ('notes' in patch)) c.update_date = todayIso();
+    // Qualunque modifica → update_date = oggi (resetta il ciclo OFFERS → YDAY OFFERS → LAST OFFERS)
+    if (!('update_date' in patch)) c.update_date = todayIso();
     saveCargoHistory(c);
-    logUserAction('upd', 'cargoes', id, before, c);
     persist();
     autoUpdateRundowns();
   }
   return c;
 }
-function delCargo(id) {
-  const c = DATA.cargoes.find(x=>x.id===id);
-  if (c) logUserAction('del', 'cargoes', id, c, null);
-  DATA.cargoes = DATA.cargoes.filter(x=>x.id!==id);
-  persist(); autoUpdateRundowns();
-}
+function delCargo(id) { DATA.cargoes = DATA.cargoes.filter(x=>x.id!==id); persist(); autoUpdateRundowns(); }
 
 const modal = {
   open(title, html) { $('#modal-title').textContent = title; $('#modal-body').innerHTML = html; $('#modal-bg').classList.remove('hidden'); },
@@ -4553,7 +3837,7 @@ function renderMasterList(basin) {
         ${renderAreaDropdown(_pg, areas, 'Area')}
         <div class="group"><label>Status</label>
           <select id="f-status"><option value="">All</option><option value="fresh">Fresh</option><option value="off_mkt">Off mkt</option><option value="on_subs">On subs</option></select></div>
-        <span class="count-pill" id="f-count" style="display:none">— vessels</span>
+        <span class="count-pill" id="f-count" style="display:none">— navi</span>
         ${cpToggleBtn(_pg)}
       </div>
     </div>
@@ -4567,7 +3851,7 @@ function renderMasterList(basin) {
     if (selAreas.size > 0) rows = rows.filter(v => selAreas.has(v.area));
     if (status) rows = rows.filter(v => v.status === status);
     if (q) rows = rows.filter(v => (v.vessel||'').toLowerCase().includes(q) || (v.ideas||'').toLowerCase().includes(q) || (v.ows_brkr||'').toLowerCase().includes(q));
-    $('#f-count').textContent = `${rows.length} vessels`;
+    $('#f-count').textContent = `${rows.length} navi`;
     renderMasterTable(rows, cbCols, basin);
   };
   bindAreaDropdown(_pg, areas, refresh);
@@ -4590,10 +3874,10 @@ function renderMasterTable(rows, cbCols, basin) {
     if (F.open_port && !matchText(v.open_port, F.open_port)) return false;
     if (F.ows_brkr && !matchText(v.ows_brkr, F.ows_brkr)) return false;
     if (F.ls_brkr && !matchText(v.ls_brkr, F.ls_brkr)) return false;
-    if (F.dates_from) { if (!v.open_from || !v.open_to) return false; const ft = F.dates_to || F.dates_from; if (v.open_from > ft || v.open_to < F.dates_from) return false; }
+    if (F.dates && !matchText(fmtDateRange(v.open_from, v.open_to), F.dates)) return false;
     if (F.ideas && !matchText(v.ideas, F.ideas)) return false;
     if (F.bunker && !matchText(v.bunker, F.bunker)) return false;
-    if (F.update_from) { if (!v.update_date) return false; const ft = F.update_to || F.update_from; if (v.update_date < F.update_from || v.update_date > ft) return false; }
+    if (F.update_date && !matchText(fmtUpdate(v.update_date), F.update_date)) return false;
     if (F.status && !matchText(v.status, F.status)) return false;
     if (F.flags) {
       const q = String(F.flags).trim().toUpperCase();
@@ -4609,13 +3893,8 @@ function renderMasterTable(rows, cbCols, basin) {
   }
   const byArea = {};
   for (const r of rows) {
-    const key = r.section || r.area || 'Other';
+    const key = r.section || r.area || '—';
     (byArea[key] ??= []).push(r);
-  }
-  // ORDINE AREE: secondo row_order (= ordine nel Sheet) della prima nave di ciascuna area
-  const areaMinRowOrder = {};
-  for (const a in byArea) {
-    areaMinRowOrder[a] = Math.min(...byArea[a].map(r => r.row_order ?? Infinity));
   }
   const html = [];
   const colspan = 12;
@@ -4624,26 +3903,20 @@ function renderMasterTable(rows, cbCols, basin) {
     <th class="th-filter col-vessel"><input data-col="vessel" placeholder="Vessel" value="${attr(F.vessel||'')}"></th>
     <th class="th-filter col-dwt"><input data-col="dwt_blt" placeholder="DWT" value="${attr(F.dwt_blt||'')}"></th>
     <th class="th-filter col-open"><input data-col="open_port" placeholder="Open" value="${attr(F.open_port||'')}"></th>
-    <th class="th-filter col-dates"><input class="filter-date-range" type="text" readonly data-col="dates" placeholder="Dates" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.dates_from, F.dates_to))}"></th>
+    <th class="th-filter col-dates"><input data-col="dates" placeholder="Dates" value="${attr(F.dates||'')}"></th>
     <th class="th-filter col-ideas"><input data-col="ideas" placeholder="Ideas / Info" value="${attr(F.ideas||'')}"></th>
     <th class="th-filter col-ows"><input data-col="ows_brkr" placeholder="Ows" value="${attr(F.ows_brkr||'')}"></th>
     <th class="th-filter col-bunker"><input data-col="bunker" placeholder="Bunker" value="${attr(F.bunker||'')}"></th>
     <th class="th-filter col-lsbrkr"><input data-col="ls_brkr" placeholder="LS" value="${attr(F.ls_brkr||'')}"></th>
-    <th class="th-filter col-update"><input class="filter-date-range" type="text" readonly data-col="update_date" placeholder="Update" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.update_from, F.update_to))}"></th>
+    <th class="th-filter col-update"><input data-col="update_date" placeholder="Update" value="${attr(F.update_date||'')}"></th>
     <th class="th-filter col-flags" title="${cbCols.map(([,l]) => l).join(' · ')}"><input data-col="flags" placeholder="Flags" value="${attr(F.flags||'')}"></th>
     <th class="th-filter col-stato"><input data-col="status" placeholder="Status" value="${attr(F.status||'')}"></th>
     <th class="col-del"></th>
   </tr></thead><tbody>`);
-  // ORDINE AREE: usa l'ordine canonico per le aree predefinite, row_order per le extra
-  const canonicalAreaOrder = basin === 'ATL' ? ATL_TNG_AREAS : PAC_TNG_AREAS;
-  const predefinedOrdered = canonicalAreaOrder.filter(a => byArea[a]);
-  const extraOrdered = Object.keys(byArea).filter(a => !canonicalAreaOrder.includes(a)).sort((a, b) => areaMinRowOrder[a] - areaMinRowOrder[b]);
-  const ordered = [...predefinedOrdered, ...extraOrdered];
-  // Comparator: ordina per row_order ASC (= ordine nel Sheet), fallback su open_from
-  const cmpVessel = (a, b) => {
-    if (a.row_order != null && b.row_order != null) return a.row_order - b.row_order;
-    return makeDateRangeCmp('open_from', 'open_to')(a, b);
-  };
+  const desired = basin === 'ATL' ? ATL_TNG_AREAS : PAC_TNG_AREAS;
+  const ordered = [...desired.filter(a => byArea[a]), ...Object.keys(byArea).filter(a => !desired.includes(a)).sort()];
+  // Comparator: ordina per open_from ASC, a parità di from per open_to ASC (window più corta prima)
+  const cmpVessel = makeDateRangeCmp('open_from', 'open_to');
   for (const area of ordered) {
     byArea[area].sort(cmpVessel);
     html.push(`<tr class="section-area ${areaClass(area)}"><td colspan="${colspan}">${esc(area)}<span class="area-count">${byArea[area].length}</span></td></tr>`);
@@ -4675,18 +3948,6 @@ function renderMasterTable(rows, cbCols, basin) {
   });
   $$('#tbl thead th.th-filter input').forEach(inp => {
     if (inp.value) inp.classList.add('filter-active');
-    if (inp.classList.contains('filter-date-range')) {
-      const col = inp.dataset.col;
-      const F = getFilter(page);
-      const fromK = col === 'dates' ? 'dates_from' : 'update_from';
-      const toK = col === 'dates' ? 'dates_to' : 'update_to';
-      inp.onclick = () => openFilterDateRange(inp, F[fromK], F[toK], (from, to) => {
-        F[fromK] = from; F[toK] = to;
-        const cur = location.hash.replace(/^#\//,'') || 'atl-tng';
-        if (routes[cur]) routes[cur]();
-      });
-      return;
-    }
     inp.oninput = debounce((e) => {
       const col = inp.dataset.col;
       const selStart = e.target.selectionStart;
@@ -4706,11 +3967,9 @@ function renderVesselRow(v, cbCols) {
   const statusCls = !v.status ? 'none' : v.status === 'on_subs' ? 'subs' : v.status === 'off_mkt' ? 'off' : 'fresh';
   const statusLabel = !v.status ? '—' : v.status === 'on_subs' ? 'on subs' : v.status === 'off_mkt' ? 'off mrkt' : 'fresh';
   const E = (f) => `data-kind="v" data-id="${v.id}" data-field="${f}" class="editable" title="Double-click to edit"`;
-  // Riga in grassetto SOLO se la nave è stata aggiunta in questa sessione
-  // (flag in-memory __sessionNew, settato in addVessel). Le navi caricate da cloud
-  // hanno tutte created_at di oggi per via della migrazione e finirebbero tutte in
-  // grassetto — questo flag risolve.
-  const isNew = !!v.__sessionNew;
+  // Riga "nuova" = modificata oggi (update_date === oggi)
+  // Riga in grassetto SOLO se la nave è stata inserita oggi (non solo modificata)
+  const isNew = v.created_at === todayIso();
   return `<tr class="${cls} row-area ${areaClass(v.area)} ${isNew?'row-new':''}" draggable="true" data-row-vessel-id="${v.id}">
     <td data-kind="v" data-id="${v.id}" data-field="vessel" class="editable col-vessel" title="Double-click to edit"><span class="row-drag" draggable="true" title="Drag to another area">⋮⋮</span>${esc(v.vessel)}</td>
     <td data-kind="v" data-id="${v.id}" data-field="dwt_blt" class="editable dim col-dwt" title="Double-click to edit">${esc(v.dwt_blt || '')}</td>
@@ -4731,7 +3990,7 @@ function renderVesselRow(v, cbCols) {
         <div class="opt none ${!v.status?'current':''}" data-id="${v.id}" data-status="">Empty</div>
       </div>
     </div></td>
-    <td class="col-del"><button class="icon-btn row-del" data-id="${v.id}" title="Delete">
+    <td class="col-del"><button class="icon-btn row-del" data-id="${v.id}" title="Elimina">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
     </button></td>
   </tr>`;
@@ -5216,7 +4475,7 @@ routes['ecsa-list'] = function() {
             ${renderAreaDropdown('ecsa-list', ['ECSA','PG / RSEA','SAFR','WCI','ECI','SEASIA'], 'Area')}
             <div class="group"><label>Status</label>
               <select id="f-status"><option value="">All</option><option value="fresh">Fresh</option><option value="off_mkt">Off mkt</option><option value="on_subs">On subs</option></select></div>
-            <span class="count-pill cnt-with-tooltip" id="cnt">—</span>
+            <span class="count-pill" id="cnt">—</span>
           </div>
           <div class="tbl-wrap" id="tbl"></div>
         </div>
@@ -5224,10 +4483,10 @@ routes['ecsa-list'] = function() {
       <div class="ecsa-rundown-col">
         <div class="panel">
           <div class="cp-header">
-            <span class="cp-header-title">ECSA Rundown</span>
+            <span class="cp-header-title">ECSA Rundown · Oggi</span>
             <button class="cp-copy-btn" id="ecsa-rd-copy">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-              Copy
+              Copia
             </button>
           </div>
           <pre class="rundown" id="ecsa-rd-text"></pre>
@@ -5265,41 +4524,26 @@ routes['ecsa-list'] = function() {
       if (F.vessel && !matchText(v.vessel, F.vessel)) return false;
       if (F.dwt_blt && !matchDwt(v.dwt_blt, F.dwt_blt)) return false;
       if (F.eta && !matchText(e.eta || '', F.eta)) return false;
-      if (F.dates_from) { if (!e.adjFrom || !e.adjTo) return false; const ft = F.dates_to || F.dates_from; if (e.adjFrom > ft || e.adjTo < F.dates_from) return false; }
+      if (F.dates && !matchText(fmtDateRange(e.adjFrom, e.adjTo), F.dates)) return false;
       if (F.ideas && !matchText(v.ideas, F.ideas)) return false;
       if (F.ows_brkr && !matchText(v.ows_brkr, F.ows_brkr)) return false;
       if (F.bunker && !matchText(v.bunker, F.bunker)) return false;
       if (F.ls_brkr && !matchText(v.ls_brkr, F.ls_brkr)) return false;
-      if (F.update_from) { if (!v.update_date) return false; const ft = F.update_to || F.update_from; if (v.update_date < F.update_from || v.update_date > ft) return false; }
+      if (F.update_date && !matchText(fmtUpdate(v.update_date), F.update_date)) return false;
       if (F.status && !matchText(v.status, F.status)) return false;
       return true;
     });
-    $('#cnt').textContent = `${entries.length} vessels`;
-    // Conteggio per bucket 1H/2H mese — visibile come tooltip on hover
-    const bucketCounts = {};
-    for (const e of entries) {
-      const b = bucketFor(e.adjFrom);
-      bucketCounts[b] = (bucketCounts[b] || 0) + 1;
-    }
-    const bucketKeys = Object.keys(bucketCounts).sort(bucketSort);
-    const cntEl = $('#cnt');
-    if (cntEl) {
-      if (bucketKeys.length > 0 && entries.length > 0) {
-        cntEl.dataset.tooltip = bucketKeys.map(k => `${k}: ${bucketCounts[k]}`).join('\n');
-      } else {
-        cntEl.removeAttribute('data-tooltip');
-      }
-    }
+    $('#cnt').textContent = `${entries.length} navi`;
     const html = [`<table class="grid"><thead><tr>
       <th class="th-filter"><input data-col="vessel" placeholder="Vessel" value="${attr(F.vessel||'')}"></th>
       <th class="th-filter"><input data-col="dwt_blt" placeholder="DWT" value="${attr(F.dwt_blt||'')}"></th>
       <th class="th-filter"><input data-col="eta" placeholder="ETA" value="${attr(F.eta||'')}"></th>
-      <th class="th-filter"><input class="filter-date-range" type="text" readonly data-col="dates" placeholder="Dates" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.dates_from, F.dates_to))}"></th>
+      <th class="th-filter"><input data-col="dates" placeholder="Dates" value="${attr(F.dates||'')}"></th>
       <th class="th-filter col-ideas"><input data-col="ideas" placeholder="Ideas / Info" value="${attr(F.ideas||'')}"></th>
       <th class="th-filter"><input data-col="ows_brkr" placeholder="Ows" value="${attr(F.ows_brkr||'')}"></th>
       <th class="th-filter"><input data-col="bunker" placeholder="Bunker" value="${attr(F.bunker||'')}"></th>
       <th class="th-filter"><input data-col="ls_brkr" placeholder="LS" value="${attr(F.ls_brkr||'')}"></th>
-      <th class="th-filter"><input class="filter-date-range" type="text" readonly data-col="update_date" placeholder="Update" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.update_from, F.update_to))}"></th>
+      <th class="th-filter"><input data-col="update_date" placeholder="Update" value="${attr(F.update_date||'')}"></th>
       <th class="th-filter"><input data-col="status" placeholder="Status" value="${attr(F.status||'')}"></th>
     </tr></thead><tbody>`];
     for (const e of entries) html.push(renderEcsaRow(e));
@@ -5315,16 +4559,6 @@ routes['ecsa-list'] = function() {
     // Hook filtri per colonna (inline negli header)
     $$('#tbl thead th.th-filter input').forEach(inp => {
       if (inp.value) inp.classList.add('filter-active');
-      if (inp.classList.contains('filter-date-range')) {
-        const col = inp.dataset.col;
-        const F = getFilter('ecsa-list');
-        const fromK = col === 'dates' ? 'dates_from' : 'update_from';
-        const toK = col === 'dates' ? 'dates_to' : 'update_to';
-        inp.onclick = () => openFilterDateRange(inp, F[fromK], F[toK], (from, to) => {
-          F[fromK] = from; F[toK] = to; refresh();
-        });
-        return;
-      }
       inp.oninput = debounce((e) => {
         const col = inp.dataset.col;
         const selStart = e.target.selectionStart;
@@ -5400,9 +4634,9 @@ function renderCargoList(basin) {
       if (F.cgo && !matchText(c.cgo, F.cgo)) return false;
       if (F.size && !matchText(c.size, F.size)) return false;
       if (F.ls_brkr && !matchText(c.ls_brkr, F.ls_brkr)) return false;
-      if (F.dates_from) { if (!c.laycan_from || !c.laycan_to) return false; const ft = F.dates_to || F.dates_from; if (c.laycan_from > ft || c.laycan_to < F.dates_from) return false; }
+      if (F.dates && !matchText(fmtDateRange(c.laycan_from, c.laycan_to), F.dates)) return false;
       if (F.notes && !matchText(c.notes, F.notes)) return false;
-      if (F.update_from) { const d = c.update_date || c.date; if (!d) return false; const ft = F.update_to || F.update_from; if (d < F.update_from || d > ft) return false; }
+      if (F.update_date && !matchText(fmtUpdate(c.update_date || c.date), F.update_date)) return false;
       if (F.status && !matchText(c.status, F.status)) return false;
       return true;
     });
@@ -5413,31 +4647,24 @@ function renderCargoList(basin) {
       return;
     }
     const bySec = {};
-    for (const r of rows) (bySec[r.section || r.area || 'Other'] ??= []).push(r);
-    // ORDINE SEZIONI: usa row_order dal Sheet — Sheet è source of truth
-    const secMinRowOrder = {};
-    for (const s in bySec) secMinRowOrder[s] = Math.min(...bySec[s].map(r => r.row_order ?? Infinity));
-    const ordered = Object.keys(bySec).sort((a, b) => secMinRowOrder[a] - secMinRowOrder[b]);
-    const otherSecs = []; // tutto ordinato in `ordered` via row_order
+    for (const r of rows) (bySec[r.section || '—'] ??= []).push(r);
+    const ordered = areas.filter(a => bySec[a]);
+    const otherSecs = Object.keys(bySec).filter(s => !areas.includes(s)).sort();
     const html = [`<table class="grid"><thead><tr>
         <th class="th-filter col-c-chrtrs"><input data-col="chrtrs" placeholder="Chrtrs" value="${attr(F.chrtrs||'')}"></th>
-        <th class="th-filter col-c-dates"><input class="filter-date-range" type="text" readonly data-col="dates" placeholder="Dates" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.dates_from, F.dates_to))}"></th>
+        <th class="th-filter col-c-dates"><input data-col="dates" placeholder="Dates" value="${attr(F.dates||'')}"></th>
         <th class="th-filter col-c-port"><input data-col="load_port" placeholder="Load" value="${attr(F.load_port||'')}"></th>
         <th class="th-filter col-c-port"><input data-col="disch_port" placeholder="Disch" value="${attr(F.disch_port||'')}"></th>
         <th class="th-filter col-c-cgo"><input data-col="cgo" placeholder="Cgo" value="${attr(F.cgo||'')}"></th>
         <th class="th-filter col-c-size"><input data-col="size" placeholder="Size" value="${attr(F.size||'')}"></th>
         <th class="th-filter col-ideas"><input data-col="notes" placeholder="Notes / Rates" value="${attr(F.notes||'')}"></th>
         <th class="th-filter col-lsbrkr"><input data-col="ls_brkr" placeholder="LS" value="${attr(F.ls_brkr||'')}"></th>
-        <th class="th-filter col-c-update"><input class="filter-date-range" type="text" readonly data-col="update_date" placeholder="Update" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.update_from, F.update_to))}"></th>
+        <th class="th-filter col-c-update"><input data-col="update_date" placeholder="Update" value="${attr(F.update_date||'')}"></th>
         <th class="th-filter col-c-stato"><input data-col="status" placeholder="Status" value="${attr(F.status||'')}"></th>
         <th class="col-del"></th>
       </tr></thead><tbody>`];
     // Comparator: laycan_from ASC, a parità laycan_to ASC (finestra più corta prima)
-    // Comparator: row_order ASC (= ordine Sheet), fallback laycan
-    const cmpCgo = (a, b) => {
-      if (a.row_order != null && b.row_order != null) return a.row_order - b.row_order;
-      return makeDateRangeCmp('laycan_from', 'laycan_to')(a, b);
-    };
+    const cmpCgo = makeDateRangeCmp('laycan_from', 'laycan_to');
     for (const sec of [...ordered, ...otherSecs]) {
       bySec[sec].sort(cmpCgo);
       html.push(`<tr class="section-area ${areaClass(sec)}"><td colspan="11">${esc(sec)}<span class="area-count">${bySec[sec].length}</span></td></tr>`);
@@ -5456,16 +4683,6 @@ function renderCargoList(basin) {
 /* c-del handled by global delegation */
     $$('#ca-tbl thead th.th-filter input').forEach(inp => {
       if (inp.value) inp.classList.add('filter-active');
-      if (inp.classList.contains('filter-date-range')) {
-        const col = inp.dataset.col;
-        const F = getFilter(page);
-        const fromK = col === 'dates' ? 'dates_from' : 'update_from';
-        const toK = col === 'dates' ? 'dates_to' : 'update_to';
-        inp.onclick = () => openFilterDateRange(inp, F[fromK], F[toK], (from, to) => {
-          F[fromK] = from; F[toK] = to; refresh();
-        });
-        return;
-      }
       inp.oninput = debounce((e) => {
         const col = inp.dataset.col;
         const selStart = e.target.selectionStart;
@@ -5484,7 +4701,7 @@ function renderCgoRow(c) {
   // Riga "nuova" = modificata oggi
   // Riga in grassetto SOLO se il cargo è stato inserito oggi (non solo modificato)
   const isNew = c.created_at === todayIso();
-  return `<tr class="row-area ${areaClass(c.section || c.area)} ${c.status==='on_subs'?'status-subs':c.status==='off_mkt'?'status-off':c.status==='fresh'?'status-fresh':''} ${isNew?'row-new':''}">
+  return `<tr class="row-area ${areaClass(c.area || c.section)} ${c.status==='on_subs'?'status-subs':c.status==='off_mkt'?'status-off':'status-fresh'} ${isNew?'row-new':''}">
     <td data-kind="c" data-id="${c.id}" data-field="chrtrs" class="editable col-c-chrtrs" title="Double-click to edit">${esc(c.chrtrs)}</td>
     <td data-kind="c" data-id="${c.id}" data-field="laycan_from" class="editable col-c-dates" title="Double-click to edit (laycan from)">${fmtDateRange(c.laycan_from,c.laycan_to)}</td>
     <td data-kind="c" data-id="${c.id}" data-field="load_port" class="editable col-c-port" title="Double-click to edit">${esc(c.load_port||'')}</td>
@@ -5503,7 +4720,7 @@ function renderCgoRow(c) {
         <div class="opt none ${!c.status?'current':''}" data-cid="${c.id}" data-status="">Empty</div>
       </div>
     </div></td>
-    <td class="col-del"><button class="icon-btn c-del" data-id="${c.id}" title="Delete">
+    <td class="col-del"><button class="icon-btn c-del" data-id="${c.id}" title="Elimina">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
     </button></td>
   </tr>`;
@@ -5511,7 +4728,7 @@ function renderCgoRow(c) {
 function renderCgoTable(rows) {
   return `<table class="grid"><thead><tr>
     <th>Chrtrs</th><th>Dates</th><th>Load</th><th>Disch</th><th>Cgo</th><th>Size</th>
-    <th>Notes / Rates</th><th>LS Brkr</th><th>Update</th><th>Status</th><th></th>
+    <th>Notes / Rates</th><th>LS Brkr</th><th>Update</th><th>Stato</th><th></th>
   </tr></thead><tbody>${rows.map(c => renderCgoRow(c)).join('')}</tbody></table>`;
 }
 function openCargoForm(id, basin) {
@@ -5839,9 +5056,11 @@ routes['vsl'] = function() {
   $('#topbar-actions').innerHTML = '';
 
   let lastVfRows = [], lastVfArea = '', lastVfFrom = '', lastVfTo = '';
-  const hiddenRows = new Set();
-  const hiddenCols = new Set();
-  const excludedAreas = new Set();
+  // Persistenti in FINDER_STATE: sopravvivono ai ri-render realtime (altrimenti le aree
+  // deselezionate venivano riselezionate a ogni aggiornamento dati).
+  const hiddenRows = (FINDER_STATE.vsl._hiddenRows ??= new Set());
+  const hiddenCols = (FINDER_STATE.vsl._hiddenCols ??= new Set());
+  const excludedAreas = (FINDER_STATE.vsl._excluded ??= new Set());
   // Colonne nascondibili e loro label
   const VF_COLS = [
     {key:'vessel', label:'Vessel'},
@@ -5855,7 +5074,7 @@ routes['vsl'] = function() {
     {key:'update_date', label:'Update'},
     {key:'area', label:'Vsl Area'},
     {key:'subs', label:'Subs'},
-    {key:'status', label:'Status'},
+    {key:'status', label:'Stato'},
   ];
   $('#content').innerHTML = `<div class="panel">
     <div class="filters">
@@ -5864,11 +5083,11 @@ routes['vsl'] = function() {
       <div class="group"><label>Laycan</label><div id="vf-daterange"></div></div>
       <div class="group"><label>Search</label><input id="vf-q" placeholder="vessel / ideas / owner…"/></div>
       <button class="ghost" id="vf-reset">Reset</button>
-      <button class="primary" id="vf-copy" title="Copy filtered list to clipboard">
+      <button class="primary" id="vf-copy" title="Copia la lista filtrata negli appunti">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         Copy list
       </button>
-      <span class="count-pill" id="vf-count" style="display:none">— vessels</span>
+      <span class="count-pill" id="vf-count" style="display:none">— navi</span>
     </div>
     <div id="vf-summary" style="padding:10px 14px;font-size:11.5px;color:var(--text-dim);border-bottom:1px solid var(--line-soft);background:rgba(255,255,255,.015)"></div>
     <div class="tbl-wrap" id="vf-results"></div></div>`;
@@ -5894,7 +5113,7 @@ routes['vsl'] = function() {
       panel.classList.remove('finder-cgo');
     }
     if (isEmpty) {
-      $('#vf-count').textContent = '— vessels';
+      $('#vf-count').textContent = '— navi';
       const sm = $('#vf-summary'); if (sm) sm.style.display = 'none';
       const res = $('#vf-results'); if (res) res.innerHTML = '';
       return;
@@ -5928,7 +5147,7 @@ routes['vsl'] = function() {
       return {...v, eta_from, eta_to, etaDays: days};
     });
     if (cgoArea) rows = rows.filter(v => v.etaDays != null);
-    // Allineato al Google Sheet (Vsl Finder): overlap "stretto" — replica esatta della formula del foglio
+    // Allineato al Google Sheet (Vsl Finder): replica esatta della formula del foglio (verificato 24/11)
     //   ABS(ABS(eta_to-eta_from) - ABS(eta_to-to) - ABS(from-eta_to)) <= (to-from)
     if (from && to) {
       const _d = s => s ? Math.round(Date.parse(s) / 86400000) : null;
@@ -5953,7 +5172,7 @@ routes['vsl'] = function() {
     rows.sort((a,b) => (a.eta_from||'').localeCompare(b.eta_from||''));
     // Escludo righe nascoste
     rows = rows.filter(v => !hiddenRows.has(v.id));
-    $('#vf-count').textContent = `${rows.length} vessels`;
+    $('#vf-count').textContent = `${rows.length} navi`;
     lastVfRows = rows;
     lastVfArea = cgoArea;
     lastVfFrom = from;
@@ -5981,7 +5200,7 @@ routes['vsl'] = function() {
       $('#vf-results').innerHTML = renderVesselsCpView(rows, null);
       return;
     }
-    const colBtn = (k) => `<button class="col-hide-btn" data-col="${k}" title="Hide column">×</button>`;
+    const colBtn = (k) => `<button class="col-hide-btn" data-col="${k}" title="Nascondi colonna">×</button>`;
     const banner = (hiddenRows.size + hiddenCols.size) > 0
       ? `<div class="hidden-banner show"><span>Hidden: <b>${hiddenRows.size}</b> rows ·<b>${hiddenCols.size}</b> columns</span><button id="vf-show-all">Show all</button></div>`
       : '';
@@ -5997,8 +5216,8 @@ routes['vsl'] = function() {
       <th data-col="ls_brkr"><span>LS Brkr</span>${colBtn('ls_brkr')}</th>
       <th data-col="update_date"><span>Update</span>${colBtn('update_date')}</th>
       <th data-col="subs"><span>Subs</span>${colBtn('subs')}</th>
-      <th data-col="status"><span>Status</span>${colBtn('status')}</th>
-    </tr></thead><tbody>${rows.map(v => `<tr class="${v.status==='on_subs'?'status-subs':v.status==='off_mkt'?'status-off':v.status==='fresh'?'status-fresh':''}">
+      <th data-col="status"><span>Stato</span>${colBtn('status')}</th>
+    </tr></thead><tbody>${rows.map(v => `<tr class="${v.status==='on_subs'?'status-subs':v.status==='off_mkt'?'status-off':'status-fresh'}">
       <td><button class="row-hide-btn" data-id="${v.id}" title="Hide row">×</button></td>
       <td data-col="vessel"><b>${esc(v.vessel)}</b></td>
       <td data-col="dwt_blt" class="dim">${esc(v.dwt_blt||'')}</td>
@@ -6049,6 +5268,7 @@ routes['vsl'] = function() {
   });
   $('#vf-reset').onclick = () => {
     $('#vf-cgoarea').value=''; $('#vf-q').value=''; vfFrom=''; vfTo='';
+    excludedAreas.clear(); hiddenRows.clear(); hiddenCols.clear();
     FINDER_STATE.vsl = { area: '', from: '', to: '', q: '' };
     $('#vf-daterange').replaceChildren(createDateRangePicker({from:'',to:'',placeholder:'Select laycan',onChange:(f,t)=>{vfFrom=f;vfTo=t;FINDER_STATE.vsl.from=f;FINDER_STATE.vsl.to=t;run();}}));
     run();
@@ -6104,7 +5324,7 @@ routes['vsl'] = function() {
         b.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>Copied!';
       } else {
         // Fallback: prompt con il testo per copia manuale
-        b.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>Open text';
+        b.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>Apri testo';
         showCopyFallback(txt);
       }
       setTimeout(() => b.innerHTML = oldHtml, 1800);
@@ -6124,7 +5344,7 @@ routes['cgo'] = function() {
       <div class="group"><label>Laycan</label><div id="cf-daterange"></div></div>
       <div class="group"><label>Search</label><input id="cf-q" placeholder="cargo / chrtr / load…"/></div>
       <button class="ghost" id="cf-reset">Reset</button>
-      <button class="primary" id="cf-copy" title="Copy cargoes list to clipboard">
+      <button class="primary" id="cf-copy" title="Copia la lista cargoes negli appunti">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         Copy list
       </button>
@@ -6141,9 +5361,10 @@ routes['cgo'] = function() {
     onChange: (f, t) => { cfFrom = f; cfTo = t; FINDER_STATE.cgo.from = f; FINDER_STATE.cgo.to = t; excludedCgoAreas.clear(); hiddenCgoRows.clear(); run(); }
   });
   $('#cf-daterange').appendChild(drCgo);
-  const excludedCgoAreas = new Set();
-  const hiddenCgoRows = new Set();
-  const hiddenCgoCols = new Set();
+  // Persistenti in FINDER_STATE: sopravvivono ai ri-render realtime.
+  const excludedCgoAreas = (FINDER_STATE.cgo._excluded ??= new Set());
+  const hiddenCgoRows = (FINDER_STATE.cgo._hiddenRows ??= new Set());
+  const hiddenCgoCols = (FINDER_STATE.cgo._hiddenCols ??= new Set());
   let lastCfRows = [], lastCfArea = '';
   const CF = getFilter('cgo');
 // daterange selezionato nello step 'date' della mappa
@@ -6184,19 +5405,17 @@ routes['cgo'] = function() {
     });
     // Filtra cargoes raggiungibili usando matrice Distances CGO (vessel_open → load_area, percorsi commerciali)
     if (vslArea) rows = rows.filter(c => DATA.distances_cgo[vslArea + '__' + c.area] != null);
-    // Allineato al Google Sheet (Cgo Finder): mostra i cargo che la nave aperta in vslArea
-    // riesce a RAGGIUNGERE prima che il cargo cancelli. La nave arriva all'area del cargo dopo
-    // N giorni (matrice Distances CGO) → arrivo = open_from + N; il cargo e' valido se la nave
-    // arriva entro il laycan_to (puo' arrivare prima e aspettare). Esclude i cargo gia' cancellati.
+    // Allineato al Google Sheet (Cgo Finder): mostra i cargo che la nave (aperta in vslArea)
+    // riesce a RAGGIUNGERE entro il cancelling. Arrivo all'area del cargo = open_from + N giorni
+    // (matrice Distances CGO); il cargo e' valido se la nave arriva entro il laycan_to.
     if (from && to) {
       const _d = s => s ? Math.round(Date.parse(s) / 86400000) : null;
       const B = _d(from);
       rows = rows.filter(c => {
-        const lf = _d(c.laycan_from), lt = _d(c.laycan_to);
+        const lt = _d(c.laycan_to);
         if (lt == null) return false;
         const days = vslArea ? (DATA.distances_cgo[vslArea + '__' + c.area] ?? 0) : 0;
-        const arrivo = B + days;        // prima data di arrivo della nave all'area del cargo
-        return arrivo <= lt;            // arriva entro il cancelling del cargo
+        return (B + days) <= lt;          // arriva entro il cancelling del cargo
       });
     } else {
       if (from) rows = rows.filter(c => !c.laycan_to || c.laycan_to >= from);
@@ -6236,7 +5455,7 @@ routes['cgo'] = function() {
       $('#cf-results').innerHTML = renderCargoesCpView(rows, null);
       return;
     }
-    const colBtnC = (k) => `<button class="col-hide-btn" data-col="${k}" title="Hide column">×</button>`;
+    const colBtnC = (k) => `<button class="col-hide-btn" data-col="${k}" title="Nascondi colonna">×</button>`;
     const banner = (hiddenCgoRows.size + hiddenCgoCols.size) > 0
       ? `<div class="hidden-banner show"><span>Hidden: <b>${hiddenCgoRows.size}</b> rows ·<b>${hiddenCgoCols.size}</b> columns</span><button id="cf-show-all">Show all</button></div>`
       : '';
@@ -6251,9 +5470,9 @@ routes['cgo'] = function() {
       <th data-col="notes" class="col-ideas"><span>Notes / Rates</span>${colBtnC('notes')}</th>
       <th data-col="ls_brkr" class="th-filter"><input data-col="ls_brkr" placeholder="LS Brkr" value="${attr(CF.ls_brkr||'')}">${colBtnC('ls_brkr')}</th>
       <th data-col="update_date"><span>Update</span>${colBtnC('update_date')}</th>
-      <th data-col="status"><span>Status</span></th>
+      <th data-col="status"><span>Stato</span></th>
       <th></th>
-    </tr></thead><tbody>${rows.map(c => `<tr class="row-area ${areaClass(c.section || c.area)} ${c.status==='on_subs'?'status-subs':c.status==='off_mkt'?'status-off':c.status==='fresh'?'status-fresh':''}">
+    </tr></thead><tbody>${rows.map(c => `<tr class="row-area ${areaClass(c.area || c.section)} ${c.status==='on_subs'?'status-subs':c.status==='off_mkt'?'status-off':'status-fresh'}">
       <td><button class="row-hide-btn" data-id="${c.id}" title="Hide row">×</button></td>
       <td data-col="chrtrs"><b>${esc(c.chrtrs)}</b></td>
       <td data-col="dates">${fmtDateRange(c.laycan_from,c.laycan_to)}</td>
@@ -6273,7 +5492,7 @@ routes['cgo'] = function() {
           <div class="opt none ${!c.status?'current':''}" data-cid="${c.id}" data-status="">Empty</div>
         </div>
       </div></td>
-      <td><button class="icon-btn c-del" data-id="${c.id}" title="Delete">
+      <td><button class="icon-btn c-del" data-id="${c.id}" title="Elimina">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
       </button></td>
     </tr>`).join('')}</tbody></table>`;
@@ -6365,7 +5584,7 @@ routes['cgo'] = function() {
       if (ok) {
         b.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>Copied!';
       } else {
-        b.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>Open text';
+        b.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>Apri testo';
         showCopyFallback(txt);
       }
       setTimeout(() => b.innerHTML = oldHtml, 1800);
@@ -6432,7 +5651,7 @@ function setSelectedAreas(page, set) {
   else localStorage.removeItem('sel-areas-' + page);
 }
 function areaDropdownLabel(sel, allAreas) {
-  if (sel.size === 0) return 'All';
+  if (sel.size === 0) return 'Tutte';
   const arr = allAreas.filter(a => sel.has(a));
   if (arr.length === 1) return arr[0];
   return arr[0]; // mostra solo la prima — il badge col numero indica le altre
@@ -6452,7 +5671,7 @@ function renderAreaDropdown(page, allAreas, label) {
         <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div class="area-dd-menu">
-        <label class="area-dd-opt all"><input type="checkbox" data-area="__ALL__" ${sel.size===0?'checked':''}>All</label>
+        <label class="area-dd-opt all"><input type="checkbox" data-area="__ALL__" ${sel.size===0?'checked':''}>Tutte</label>
         ${opts}
       </div>
     </div></div>`;
@@ -6576,7 +5795,7 @@ function rowStatusCls(item) {
 function cpCopyButton() {
   return `<button class="cp-copy-btn" id="cp-copy">
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-    Copy
+    Copia
   </button>`;
 }
 // Costruisce il testo da copiare con header sezioni (senza righe on subs)
@@ -6625,7 +5844,7 @@ function renderVesselsCpView(rows, basin) {
   // Stesso comparator della master list: open_from ASC, a parità open_to ASC
   const cmpVessel = makeDateRangeCmp('open_from', 'open_to');
   const groups = [];
-  let html = `<div class="cp-view"><div class="cp-header"><span class="cp-header-title">Copy &amp; Paste List · ${rows.length} vessels</span>${cpCopyButton()}</div>`;
+  let html = `<div class="cp-view"><div class="cp-header"><span class="cp-header-title">Copy &amp; Paste List · ${rows.length} navi</span>${cpCopyButton()}</div>`;
   for (const a of areas) {
     const list = rows.filter(v => (v.area || '—') === a).slice().sort(cmpVessel);
     if (!list.length) continue;
@@ -7772,392 +6991,6 @@ const ROADMAP_DOCS = {
   },
 };
 
-// ============== VERSION HISTORY PAGE ==============
-// Mostra gli snapshot orari degli ultimi 5 giorni. Ogni utente può ripristinare
-// (con conferma). Il ripristino sostituisce vessels/cargoes/accounts/rundowns
-// con quelli dello snapshot scelto, e prende uno snapshot "pre-restore" per
-// poter tornare indietro se il ripristino è stato un errore.
-routes['history'] = function() {
-  $('#topbar-actions').innerHTML = '';
-  $('#content').innerHTML = `
-    <div class="panel">
-      <div class="history-panel">
-        <h2 style="margin: 0 0 8px; font-size: 16px; letter-spacing: .04em;">Version History</h2>
-        <p style="margin: 0 0 14px; font-size: 12px; color: var(--text-mute);">
-          Snapshots are taken automatically a few seconds after each change. Versions older than 5 days are deleted automatically.
-          Click <b>Restore</b> on any version to bring the broker list back to that state (a pre-restore backup is saved first, so you can undo).
-        </p>
-        <div class="tbl-wrap" style="overflow:auto;">
-          <div class="history-list" id="history-list">
-            <div class="history-empty">Loading…</div>
-          </div>
-        </div>
-      </div>
-    </div>`;
-  loadAndRenderHistory();
-};
-
-async function loadAndRenderHistory() {
-  try {
-    const { data: snaps, error: e1 } = await sb
-      .from('snapshots')
-      .select('id, created_at, taken_by, label, size_bytes')
-      .order('created_at', { ascending: false })
-      .limit(200);
-    if (e1) throw e1;
-    if (!snaps || !snaps.length) {
-      $('#history-list').innerHTML = '<div class="history-empty">No snapshots yet. are taken automatically 30 seconds after any change. Or click "Take snapshot now" above.</div>';
-      return;
-    }
-    // Recupero le mutazioni dal mutation_log per associarle agli snapshot
-    const oldest = snaps[snaps.length - 1].created_at;
-    const { data: muts } = await sb
-      .from('mutation_log')
-      .select('user_email, table_name, action, before, after, created_at')
-      .gte('created_at', oldest)
-      .order('created_at', { ascending: false })
-      .limit(5000);
-    // Per ogni snapshot calcolo i contributors e le modifiche nell'intervallo (prev, this]
-    for (let i = 0; i < snaps.length; i++) {
-      const thisT = new Date(snaps[i].created_at).getTime();
-      const prevT = i+1 < snaps.length ? new Date(snaps[i+1].created_at).getTime() : 0;
-      const inRange = (muts || []).filter(m => {
-        const t = new Date(m.created_at).getTime();
-        return t > prevT && t <= thisT;
-      });
-      const usersSet = new Set();
-      inRange.forEach(m => { if (m.user_email) usersSet.add(m.user_email); });
-      if (snaps[i].taken_by) usersSet.add(snaps[i].taken_by);
-      snaps[i].contributors = Array.from(usersSet);
-      snaps[i].changeCount = inRange.length;
-      // Lista descrittiva delle modifiche
-      snaps[i].changes = inRange.map(m => {
-        const verbMap = { insert: 'Added', update: 'Edited', delete: 'Deleted' };
-        const verb = verbMap[m.action] || m.action;
-        const what = m.table_name === 'vessels' ? 'vessel' : m.table_name === 'cargoes' ? 'cargo' : m.table_name;
-        const label = (m.after && m.after.label) || (m.before && m.before.label) || '';
-        const who = m.user_email ? String(m.user_email).split('@')[0] : '';
-        return { verb, what, label, who };
-      });
-    }
-    renderHistoryList(snaps);
-  } catch (err) {
-    $('#history-list').innerHTML = '<div class="history-empty">Failed to load: ' + esc(err.message || String(err)) + '</div>';
-  }
-}
-
-// Genera un colore stabile a partire dall'email (hash → hue)
-function _userColor(email) {
-  let h = 0;
-  for (let i = 0; i < email.length; i++) h = (h * 31 + email.charCodeAt(i)) >>> 0;
-  return `hsl(${h % 360}, 65%, 55%)`;
-}
-
-function _dayGroup(d) {
-  const today = new Date(); today.setHours(0,0,0,0);
-  const yest  = new Date(today); yest.setDate(yest.getDate() - 1);
-  const dd    = new Date(d); dd.setHours(0,0,0,0);
-  if (dd.getTime() === today.getTime()) return 'Today';
-  if (dd.getTime() === yest.getTime())  return 'Yesterday';
-  return dd.toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'long' });
-}
-
-function renderHistoryList(rows) {
-  const wrap = $('#history-list');
-  if (!wrap) return;
-  // Raggruppo per giorno
-  const groups = {};
-  const order = [];
-  for (const r of rows) {
-    const key = _dayGroup(r.created_at);
-    if (!groups[key]) { groups[key] = []; order.push(key); }
-    groups[key].push(r);
-  }
-  const html = [];
-  for (const key of order) {
-    html.push(`<div class="h-day-header">${esc(key)}</div>`);
-    const rs = groups[key];
-    for (let i = 0; i < rs.length; i++) {
-      const r = rs[i];
-      const d = new Date(r.created_at);
-      const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-      const isCurrent = (rows.indexOf(r) === 0);
-      const v = (r.data && r.data.vessels) ? r.data.vessels.length : '';
-      const labelTag = r.label === 'Manual'
-        ? ' <span class="h-manual">MANUAL</span>'
-        : r.label === 'Pre-restore'
-        ? ' <span class="h-pre">PRE-RESTORE</span>'
-        : '';
-      const dots = (r.contributors || []).map(email => {
-        const short = String(email).split('@')[0];
-        return `<div class="h-user"><span class="h-dot" style="background:${_userColor(email)}"></span>${esc(short)}</div>`;
-      }).join('');
-      // Lista modifiche dettagliate
-      const changesHtml = (r.changes && r.changes.length)
-        ? r.changes.map(ch => {
-            const labelPart = ch.label ? ` <b>${esc(ch.label)}</b>` : '';
-            const whoPart = ch.who ? ` <span class="h-by-who">by ${esc(ch.who)}</span>` : '';
-            return `<div class="h-change"><span class="h-verb h-verb-${ch.verb.toLowerCase()}">${ch.verb}</span> ${esc(ch.what)}${labelPart}${whoPart}</div>`;
-          }).join('')
-        : '';
-      // Restore disponibile solo agli admin (per evitare che chiunque distrugga
-      // il lavoro di tutti). I non-admin vedono lo storico ma senza bottone attivo.
-      const canRestore = CURRENT_USER_ROLE === 'admin' && !isCurrent;
-      const restoreLabel = isCurrent ? '—' : (CURRENT_USER_ROLE === 'admin' ? 'Restore' : '🔒 Admin only');
-      html.push(`
-        <div class="h-card ${isCurrent ? 'h-current' : ''}" data-id="${r.id}">
-          <div class="h-card-head">
-            <div class="h-time">${esc(time)}${labelTag}${isCurrent ? ' <span class="h-current-tag">Current version</span>' : ''}</div>
-            <button class="h-restore" data-id="${r.id}" ${canRestore ? '' : 'disabled'}>${restoreLabel}</button>
-          </div>
-          <div class="h-users">${dots || '<span style="color:var(--text-mute); font-size:11px;">(no logged changes)</span>'}</div>
-          ${changesHtml ? `<div class="h-changes">${changesHtml}</div>` : ''}
-        </div>`);
-    }
-  }
-  wrap.innerHTML = html.join('') || '<div class="history-empty">No snapshots yet.</div>';
-  wrap.querySelectorAll('button.h-restore[data-id]:not([disabled])').forEach(btn => {
-    btn.onclick = () => restoreSnapshot(btn.dataset.id);
-  });
-}
-
-function _timeAgo(d) {
-  const sec = Math.floor((Date.now() - d.getTime()) / 1000);
-  if (sec < 60) return 'just now';
-  const min = Math.floor(sec / 60);
-  if (min < 60) return min + ' min ago';
-  const h = Math.floor(min / 60);
-  if (h < 24) return h + ' hour' + (h === 1 ? '' : 's') + ' ago';
-  const dd = Math.floor(h / 24);
-  return dd + ' day' + (dd === 1 ? '' : 's') + ' ago';
-}
-
-// Flag globale: blocca tutti i sync mentre un restore è in corso (evita race).
-window._restoring = false;
-
-async function restoreSnapshot(id) {
-  // Solo admin può ripristinare
-  if (CURRENT_USER_ROLE !== 'admin') {
-    cloudToast('Only admins can restore versions. Contact Giancarlo.', { kind: 'error', duration: 4000 });
-    return;
-  }
-  if (!confirm('Restore this version?\n\nALL current vessels, cargoes, accounts and rundowns will be REPLACED with the version from this moment.\n\nA backup snapshot will be taken first so you can undo this restore.\n\nALL OTHER USERS will see the change. Their unsaved local work will be lost.\n\nContinue?')) return;
-  // Lock locale: blocca syncDirtyToCloud per evitare race
-  window._restoring = true;
-  cloudToast('Restoring…', { spinner: true });
-  try {
-    // 1) Prendi snapshot pre-restore (per poter tornare indietro)
-    await takeSnapshot('Pre-restore');
-    // 2) Recupera lo snapshot da ripristinare
-    const { data: snap, error: e1 } = await sb.from('snapshots').select('data').eq('id', id).single();
-    if (e1) throw e1;
-    if (!snap || !snap.data) throw new Error('Snapshot not found');
-    const restored = snap.data;
-    // 3) Pulisci tutto (RLS permette ad ogni allowed user)
-    const [r1, r2, r3] = await Promise.all([
-      sb.from('vessels').delete().gt('id', 0),
-      sb.from('cargoes').delete().gt('id', 0),
-      sb.from('accounts').delete().gt('id', 0),
-    ]);
-    if (r1.error) throw new Error('Clear vessels: ' + r1.error.message);
-    if (r2.error) throw new Error('Clear cargoes: ' + r2.error.message);
-    if (r3.error) throw new Error('Clear accounts: ' + r3.error.message);
-    // 4) Inserisci i dati dallo snapshot
-    const VESSEL_COLS = ['id','vessel','dwt_blt','open_port','open_from','open_to','ideas','ows_brkr','bunker','ls_brkr','update_date','area','basin','status','subs','yard','copy_text','ukr_trader','rus_trader','iran_trader','scr_ftd','ex_our_cp','grain_clean','neo_pnm_ftd','scrbr_ftd','oz_grain','bhp','co2_ftd'];
-    const CARGO_COLS  = ['id','chrtrs','laycan_from','laycan_to','load_port','disch_port','cgo','size','notes','ls_brkr','update_date','date','area','section','basin','status','copy_text'];
-    const ACCOUNT_COLS= ['id','col','city','broker','clients'];
-    const pick = (obj, cols) => { const o = {}; for (const k of cols) if (obj[k] !== undefined && obj[k] !== null) o[k] = obj[k]; return o; };
-    const vs = (restored.vessels || []).map(v => pick(v, VESSEL_COLS));
-    const cs = (restored.cargoes || []).map(c => pick(c, CARGO_COLS));
-    const as = (restored.accounts || []).map(a => pick(a, ACCOUNT_COLS));
-    if (vs.length) { const { error } = await sb.from('vessels').insert(vs); if (error) throw new Error('Insert vessels: ' + error.message); }
-    if (cs.length) { const { error } = await sb.from('cargoes').insert(cs); if (error) throw new Error('Insert cargoes: ' + error.message); }
-    if (as.length) { const { error } = await sb.from('accounts').insert(as); if (error) throw new Error('Insert accounts: ' + error.message); }
-    // 5) Rundowns
-    if (restored.rundowns) {
-      for (const key of ['ecsa','natl','pac']) {
-        const text = restored.rundowns[key];
-        if (text != null) await sb.from('rundowns').upsert({ key, text });
-      }
-    }
-    cloudToast('Restored ✓ Reloading…', { kind: 'ok', duration: 2000 });
-    setTimeout(() => location.reload(), 1200);
-  } catch (err) {
-    cloudToast('Restore failed: ' + (err.message || err), { kind: 'error', duration: 6000 });
-  } finally {
-    window._restoring = false;
-  }
-}
-
-// ============== ADMIN PAGE ==============
-// Visible only to users with role='admin' in allowed_users (CSS .admin-only).
-// Allows admin to add/remove/deactivate colleagues from the allowlist.
-routes['admin'] = function() {
-  // Defense in depth: even if a non-admin types #/admin in URL, redirect away
-  if (CURRENT_USER_ROLE !== 'admin') {
-    location.hash = '#/atl-tng';
-    return;
-  }
-  $('#topbar-actions').innerHTML = '';
-  $('#content').innerHTML = `
-    <div class="panel">
-      <div class="admin-panel">
-        <h2 style="margin: 0 0 8px; font-size: 16px; letter-spacing: .04em;">User access management</h2>
-        <p style="margin: 0 0 14px; font-size: 12px; color: var(--text-mute);">
-          Only people listed here can log in. Active = ON means they can sign in. Toggle OFF to suspend access without deleting the row.
-        </p>
-        <form class="admin-form" id="admin-add-form">
-          <input type="email" name="email" placeholder="name@lightshipchartering.com" required autocomplete="off"/>
-          <input type="text" name="name" placeholder="Display name (e.g. Marco Rossi)" autocomplete="off"/>
-          <select name="role">
-            <option value="broker" selected>Broker</option>
-            <option value="admin">Admin</option>
-          </select>
-          <button class="primary" type="submit">+ Add user</button>
-        </form>
-        <div id="admin-msg" style="min-height:16px; margin-bottom:10px; font-size:11.5px;"></div>
-        <div class="tbl-wrap" style="overflow:auto;">
-          <table class="admin-tbl" id="admin-tbl">
-            <thead><tr>
-              <th>Email</th>
-              <th>Name</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th>Added</th>
-              <th style="text-align:right;">Actions</th>
-            </tr></thead>
-            <tbody><tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-mute);">Loading…</td></tr></tbody>
-          </table>
-        </div>
-      </div>
-    </div>`;
-  $('#admin-add-form').addEventListener('submit', adminAddUser);
-  loadAndRenderAdminTable();
-};
-
-async function loadAndRenderAdminTable() {
-  try {
-    const { data, error } = await sb
-      .from('allowed_users')
-      .select('id, email, role, display_name, active, added_at, added_by')
-      .order('added_at', { ascending: false });
-    if (error) throw error;
-    renderAdminTable(data || []);
-  } catch (err) {
-    setAdminMsg('Failed to load: ' + (err.message || err), 'error');
-  }
-}
-
-function renderAdminTable(rows) {
-  const tbody = $('#admin-tbl tbody');
-  if (!tbody) return;
-  if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-mute);">No users yet.</td></tr>';
-    return;
-  }
-  tbody.innerHTML = rows.map(r => {
-    const roleChip  = `<span class="admin-chip ${r.role==='admin'?'admin':'broker'}">${r.role}</span>`;
-    const statusChip = r.active
-      ? '<span class="admin-chip admin" style="background:rgba(45,138,79,.15); color:#2D8A4F;">active</span>'
-      : '<span class="admin-chip inactive">suspended</span>';
-    const added = r.added_at ? new Date(r.added_at).toISOString().slice(0,10) : '—';
-    const isSelf = String(r.email).toLowerCase() === String((CURRENT_USER && CURRENT_USER.email) || '').toLowerCase();
-    return `<tr data-id="${r.id}">
-      <td><b>${esc(r.email)}</b></td>
-      <td>${esc(r.display_name || '')}</td>
-      <td>${roleChip}</td>
-      <td>${statusChip}</td>
-      <td style="color:var(--text-mute);">${added}</td>
-      <td class="admin-actions" style="text-align:right; white-space:nowrap;">
-        ${isSelf ? '<span style="color:var(--text-mute); font-size:10px;">(you)</span>' : `
-          <button data-act="toggle" data-id="${r.id}" data-active="${r.active}">${r.active ? 'Suspend' : 'Reactivate'}</button>
-          <button data-act="role" data-id="${r.id}" data-role="${r.role}">${r.role === 'admin' ? 'Make broker' : 'Make admin'}</button>
-          <button class="danger" data-act="delete" data-id="${r.id}" data-email="${esc(r.email)}">Delete</button>
-        `}
-      </td>
-    </tr>`;
-  }).join('');
-  // Bind buttons
-  tbody.querySelectorAll('button[data-act]').forEach(btn => {
-    btn.onclick = (e) => {
-      const act = btn.dataset.act;
-      const id  = btn.dataset.id;
-      if (act === 'toggle') adminToggleActive(id, btn.dataset.active !== 'true');
-      else if (act === 'role') adminToggleRole(id, btn.dataset.role === 'admin' ? 'broker' : 'admin');
-      else if (act === 'delete') adminDeleteUser(id, btn.dataset.email);
-    };
-  });
-}
-
-function setAdminMsg(text, kind) {
-  const m = $('#admin-msg');
-  if (!m) return;
-  m.textContent = text || '';
-  m.style.color = kind === 'error' ? '#C5392B' : kind === 'ok' ? '#2D8A4F' : 'var(--text-mute)';
-}
-
-async function adminAddUser(ev) {
-  ev.preventDefault();
-  const f = ev.target;
-  const email = String(f.email.value || '').trim().toLowerCase();
-  const name  = String(f.name.value || '').trim();
-  const role  = f.role.value;
-  if (!email) return;
-  if (!/@lightshipchartering\.com$/.test(email)) {
-    setAdminMsg('Email must end with @lightshipchartering.com', 'error');
-    return;
-  }
-  setAdminMsg('Adding…');
-  try {
-    const { error } = await sb.from('allowed_users').insert({
-      email, role, display_name: name || null,
-      added_by: (CURRENT_USER && CURRENT_USER.email) || 'admin',
-      active: true
-    });
-    if (error) throw error;
-    f.reset();
-    f.role.value = 'broker';
-    setAdminMsg('User added ✓', 'ok');
-    loadAndRenderAdminTable();
-  } catch (err) {
-    setAdminMsg('Error: ' + (err.message || err), 'error');
-  }
-}
-
-async function adminToggleActive(id, newActive) {
-  try {
-    const { error } = await sb.from('allowed_users').update({ active: newActive }).eq('id', id);
-    if (error) throw error;
-    setAdminMsg(newActive ? 'Reactivated ✓' : 'Suspended ✓', 'ok');
-    loadAndRenderAdminTable();
-  } catch (err) {
-    setAdminMsg('Error: ' + (err.message || err), 'error');
-  }
-}
-
-async function adminToggleRole(id, newRole) {
-  try {
-    const { error } = await sb.from('allowed_users').update({ role: newRole }).eq('id', id);
-    if (error) throw error;
-    setAdminMsg('Role updated ✓', 'ok');
-    loadAndRenderAdminTable();
-  } catch (err) {
-    setAdminMsg('Error: ' + (err.message || err), 'error');
-  }
-}
-
-async function adminDeleteUser(id, email) {
-  if (!confirm('Permanently delete ' + email + ' from the allowlist?\n\nThey will lose access immediately. Their data in vessels/cargoes remains untouched.')) return;
-  try {
-    const { error } = await sb.from('allowed_users').delete().eq('id', id);
-    if (error) throw error;
-    setAdminMsg('Deleted ✓', 'ok');
-    loadAndRenderAdminTable();
-  } catch (err) {
-    setAdminMsg('Error: ' + (err.message || err), 'error');
-  }
-}
-
 routes['roadmap'] = function() {
   const tabs = [
     { key: 'roadmap',      label: 'The Broker Roadmap' },
@@ -8201,6 +7034,7 @@ routes['roadmap'] = function() {
       DATA.cargoes = upd.cargoes;
       saveData(DATA);
       window.DATA = DATA;
+      localStorage.setItem(FLAG, new Date().toISOString());
       console.log('PMX update v4: applicate ' + upd.vessels.length + ' navi e ' + upd.cargoes.length + ' cargoes');
     }
   } catch(e) { console.error('PMX update v4 failed:', e); }
@@ -8317,7 +7151,6 @@ routes['roadmap'] = function() {
   const PERIOD_CARGOES = [
     { chrtrs: 'SEATRANS',     laycan_from: '2026-06-01', laycan_to: '2026-06-07', load_port: 'PMO-JPN',       disch_port: 'INDIA-JPN', size: 'LME/KMX',    notes: '25YRS OLD, LEG OR SP',          ls_brkr: 'CHN', area: 'FEAST'  },
     { chrtrs: 'BG SHIPPING',  laycan_from: '2026-06-05', laycan_to: '2026-06-11', load_port: 'ASIA PACIFIC',  disch_port: '',          size: 'PMX/KMX',    notes: 'FOR 2-3LLS UP TP SP',           ls_brkr: 'BEE', area: 'WCAUS'  },
-    { chrtrs: 'ELEMENT',      laycan_from: '2026-06-10', laycan_to: '2026-06-25', load_port: 'SCHINA',        disch_port: '',          size: 'PMX/KMX',    notes: 'PERIOD 6/9 MONS OR 1 YEAR 5TTL', ls_brkr: 'MPE', area: 'WCAUS'  },
     { chrtrs: 'DOOYANG',      laycan_from: '2026-06-10', laycan_to: '2026-06-29', load_port: 'SGP-JPN',       disch_port: 'PG-JPN',    size: '73-93K DWT', notes: '4/6 MONS, TRY LONGER PERIOD',    ls_brkr: 'NHH', area: 'WCAUS'  },
   ];
   let added = 0;
@@ -8373,6 +7206,7 @@ routes['roadmap'] = function() {
   localStorage.setItem(FLAG, new Date().toISOString());
 })();
 
+// ============== STALE FRESH STATUS CLEANUP ==============
 // Il giorno dopo: tutte le navi/cargoes con status='fresh' diventano vuote.
 // off_mkt e on_subs restano invariati (gestione manuale del broker).
 function clearStaleFreshStatus() {
@@ -8383,48 +7217,4 @@ function clearStaleFreshStatus() {
   for (const v of DATA.vessels) {
     if (v.status !== 'fresh') continue;
     const ref = v.update_date || v.created_at;
-    if (ref && ref !== today) { v.status = ''; changed = true; }
-  }
-  for (const c of DATA.cargoes) {
-    if (c.status !== 'fresh') continue;
-    const ref = c.update_date || c.created_at || c.date;
-    if (ref && ref !== today) { c.status = ''; changed = true; }
-  }
-  if (changed) { saveData(DATA); window.DATA = DATA; }
-}
-
-// One-time seed: popola lo storico con tutte le navi/cargoes già esistenti
-(function seedHistoryFromCurrent() {
-  const FLAG = 'pmx_seed_history_v1';
-  if (localStorage.getItem(FLAG)) return;
-  _ensureHistory();
-  for (const v of DATA.vessels) saveVesselHistory(v);
-  for (const c of DATA.cargoes) saveCargoHistory(c);
-  saveData(DATA);
-  localStorage.setItem(FLAG, new Date().toISOString());
-})();
-
-// BOOT
-clearStaleFreshStatus();
-document.getElementById("theme-toggle").addEventListener("click", toggleTheme);
-document.getElementById("sidebar-toggle").addEventListener("click", () => document.querySelector(".sidebar").classList.toggle("open"));
-// Undo / Redo: click + scorciatoie da tastiera (Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z / Ctrl+Y)
-document.getElementById("btn-undo").addEventListener("click", undoAction);
-document.getElementById("btn-redo").addEventListener("click", redoAction);
-document.addEventListener("keydown", (e) => {
-  const mod = e.metaKey || e.ctrlKey;
-  if (!mod) return;
-  // Non intercettare se l'utente sta scrivendo in un input/textarea/contenteditable
-  const t = e.target;
-  const isEditing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
-  if (isEditing) return;
-  const k = String(e.key || '').toLowerCase();
-  if (k === 'z' && !e.shiftKey) { e.preventDefault(); undoAction(); }
-  else if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); redoAction(); }
-});
-updateUndoButtons();
-setRoute();
-</script>
-
-</body>
-</html>
+    if (ref && ref !== today) { v.status = ''; changed = 
