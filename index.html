@@ -5071,7 +5071,8 @@ function _shiftIsoDate(iso, days) {
 function buildEcsaEtaEntries() {
   const entries = [];
   for (const v of DATA.vessels.filter(x => x.basin === 'ATL')) {
-    const area = String(v.area || '').trim().toUpperCase();
+    const rawArea = String(v.area || '').trim().toUpperCase();
+    const area = (rawArea === 'PG' || rawArea === 'RSEA') ? 'PG / RSEA' : rawArea;
     if (!(area in ECSA_ATL_OFFSETS)) continue;
     const offset = ECSA_ATL_OFFSETS[area];
     entries.push({
