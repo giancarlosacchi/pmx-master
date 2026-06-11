@@ -5842,7 +5842,7 @@ routes['vsl'] = function() {
   let lastVfRows = [], lastVfArea = '', lastVfFrom = '', lastVfTo = '';
   const hiddenRows = new Set();
   const hiddenCols = new Set();
-  const excludedAreas = new Set();
+  FINDER_STATE.vsl.excl = FINDER_STATE.vsl.excl || new Set(); const excludedAreas = FINDER_STATE.vsl.excl;
   // Colonne nascondibili e loro label
   const VF_COLS = [
     {key:'vessel', label:'Vessel'},
@@ -6142,7 +6142,7 @@ routes['cgo'] = function() {
     onChange: (f, t) => { cfFrom = f; cfTo = t; FINDER_STATE.cgo.from = f; FINDER_STATE.cgo.to = t; excludedCgoAreas.clear(); hiddenCgoRows.clear(); run(); }
   });
   $('#cf-daterange').appendChild(drCgo);
-  const excludedCgoAreas = new Set();
+  FINDER_STATE.cgo.excl = FINDER_STATE.cgo.excl || new Set(); const excludedCgoAreas = FINDER_STATE.cgo.excl;
   const hiddenCgoRows = new Set();
   const hiddenCgoCols = new Set();
   let lastCfRows = [], lastCfArea = '';
