@@ -1339,6 +1339,8 @@ pre.rundown { white-space: pre-wrap; font-family: inherit;
   line-height: 1.55;
   flex: 1 1 auto; min-height: 0; max-height: none !important;
   overflow: auto;
+  -webkit-mask-image: linear-gradient(to bottom, black 0, black calc(100% - 75px), transparent 100%);
+          mask-image: linear-gradient(to bottom, black 0, black calc(100% - 75px), transparent 100%);
 }
 @media (max-width: 1700px) {
   .ecsa-layout { grid-template-columns: 1fr; }
