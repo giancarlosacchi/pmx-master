@@ -1330,14 +1330,14 @@ pre.rundown { white-space: pre-wrap; font-family: inherit;
 .ecsa-list-col .panel { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .ecsa-list-col .tbl-wrap { flex: 1; overflow: auto; }
 /* Rundown col: si adatta al contenuto (non riempie verticalmente) — spazio sotto resta vuoto */
-.ecsa-rundown-col { align-self: start; max-height: 100%; display: flex; flex-direction: column; min-height: 0; }
-.ecsa-rundown-col .panel { display: flex; flex-direction: column; min-height: 0; flex: 0 1 auto; }
+.ecsa-rundown-col { align-self: stretch; max-height: 100%; display: flex; flex-direction: column; min-height: 0; }
+.ecsa-rundown-col .panel { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; }
 .ecsa-rundown-col pre.rundown {
   margin: 0;
   border-radius: 0 0 var(--radius-lg) var(--radius-lg);
   font-size: 12px;
   line-height: 1.55;
-  max-height: calc(100vh - 260px);
+  flex: 1 1 auto; min-height: 0;
   overflow: auto;
 }
 @media (max-width: 1700px) {
