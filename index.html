@@ -2194,19 +2194,12 @@ body:not(.logged-in) .app { visibility: hidden; }
   <div class="login-box">
     <img src="./logo.png" alt="Lightship logo" />
     <h1>PMX MASTER LIST</h1>
-    <p>Sign in with your Lightship email.<br/>We'll send you a one-time code.</p>
+    <p>Sign in with your Lightship email and password.</p>
     <input type="email" id="login-email" class="login-input" placeholder="name@lightshipchartering.com" autocomplete="email" />
-    <button id="login-send" class="login-btn">Send code</button>
+    <input type="password" id="login-password" class="login-input" placeholder="Password" autocomplete="current-password" />
+    <button id="login-pwd-signin" class="login-btn">Sign in</button>
     <div class="login-divider"><span>or</span></div>
-    <button id="login-ms" class="login-btn login-btn-ms" type="button">
-      <svg width="16" height="16" viewBox="0 0 23 23" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <rect x="1" y="1" width="10" height="10" fill="#F25022"/>
-        <rect x="12" y="1" width="10" height="10" fill="#7FBA00"/>
-        <rect x="1" y="12" width="10" height="10" fill="#00A4EF"/>
-        <rect x="12" y="12" width="10" height="10" fill="#FFB900"/>
-      </svg>
-      <span>Sign in with Microsoft</span>
-    </button>
+    <button id="login-send" class="login-btn login-btn-ms" type="button">Email me a one-time code</button>
     <div id="login-otp-wrap" hidden style="width:100%; display:flex; flex-direction:column; gap:10px;">
       <p style="margin-top:6px;">Check your inbox. Paste the code below.</p>
       <input type="text" id="login-otp" class="login-input" placeholder="6-digit code" inputmode="numeric" autocomplete="one-time-code" />
@@ -2928,6 +2921,8 @@ function renderUserChip(user) {
   const $verify  = () => document.getElementById('login-verify');
   const $ms      = () => document.getElementById('login-ms');
   const $msg     = () => document.getElementById('login-msg');
+  const $pwd     = () => document.getElementById('login-password');
+  const $pwdBtn  = () => document.getElementById('login-pwd-signin');
 
   async function signInWithMicrosoft() {
     setBusy($ms(), true, 'Redirecting…');
@@ -2963,6 +2958,40 @@ function renderUserChip(user) {
   function normEmail(e) { return String(e || '').trim().toLowerCase(); }
   function isLightshipEmail(e) { return /@lightshipchartering\.com$/.test(normEmail(e)); }
 
+  async function signInWithPwd() {
+    const email = normEmail($email().value);
+    const password = String(($pwd() && $pwd().value) || '');
+    if (!email || !password) { setMsg('Enter your email and password.', 'error'); return; }
+    if (!isLightshipEmail(email)) { setMsg('Only @lightshipchartering.com emails are allowed.', 'error'); return; }
+    setBusy($pwdBtn(), true, 'Signing in...');
+    setMsg('', '');
+    try {
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      const user = data && data.user;
+      if (!user) throw new Error('No user returned');
+      const { data: rows, error: e2 } = await sb
+        .from('allowed_users')
+        .select('email, role, active, display_name')
+        .ilike('email', user.email)
+        .limit(1);
+      if (e2) throw e2;
+      if (!rows || !rows.length || rows[0].active !== true) {
+        await sb.auth.signOut();
+        setMsg('Not authorized or access revoked. Contact Giancarlo.', 'error');
+        return;
+      }
+      setMsg('Welcome ' + (rows[0].display_name || user.email), 'ok');
+      bootAppAfterAuth(user, rows[0]);
+    } catch (err) {
+      const m = (err && err.message) || String(err);
+      if (/Invalid login credentials/i.test(m)) setMsg('Wrong email or password.', 'error');
+      else setMsg('Sign-in failed: ' + m, 'error');
+    } finally {
+      setBusy($pwdBtn(), false);
+    }
+  }
+
   async function sendCode() {
     const email = normEmail($email().value);
     if (!email) { setMsg('Type your email first.', 'error'); return; }
@@ -2975,7 +3004,7 @@ function renderUserChip(user) {
     try {
       const { error } = await sb.auth.signInWithOtp({
         email,
-        options: { shouldCreateUser: true }
+        options: { shouldCreateUser: false }
       });
       if (error) throw error;
       $otpWrap().hidden = false;
@@ -3035,10 +3064,13 @@ function renderUserChip(user) {
   // Wire up buttons after DOM is ready (the script runs in <body>, so it's already ready)
   function wire() {
     const s = $send(), v = $verify(), e = $email(), o = $otp(), m = $ms();
+    const pb = $pwdBtn(), p = $pwd();
+    if (pb) pb.onclick = signInWithPwd;
     if (s) s.onclick = sendCode;
     if (v) v.onclick = verifyCode;
     if (m) m.onclick = signInWithMicrosoft;
-    if (e) e.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') sendCode(); });
+    if (e) e.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { if ($pwd() && $pwd().value) signInWithPwd(); else if ($pwd()) $pwd().focus(); else sendCode(); } });
+    if (p) p.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') signInWithPwd(); });
     if (o) o.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') verifyCode(); });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire);
@@ -3049,6 +3081,7 @@ function renderUserChip(user) {
 // SESSION CHECK on load — if already logged in, skip the overlay
 // ============================================================
 async function trySilentMicrosoftSSO() {
+  return; // Microsoft/Azure SSO disabilitato (Entra ID in revisione IT) - mostra invece l'overlay email+password
   // Auto SSO: i PC aziendali sono già loggati con Microsoft, quindi proviamo
   // il login Azure automaticamente. Se l'utente NON è loggato in Microsoft,
   // Microsoft mostra il proprio form di login (comportamento accettabile per
