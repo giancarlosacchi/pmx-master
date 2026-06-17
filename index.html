@@ -1096,7 +1096,7 @@ pre.rundown { white-space: pre-wrap; font-family: inherit;
   line-height: 1.5;
 }
 .cp-row:hover { background: var(--bg-hover); }
-.cp-row.subs { background: var(--subs-bg); color: var(--subs-text); text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.cp-row.subs { background: var(--subs-bg); color: var(--subs-text); }
 .cp-row.off { background: var(--off-bg); color: var(--off-text); }
 .cp-row.exocp { font-weight: 700; }
 .cp-empty { padding: 30px 20px; text-align: center; color: var(--text-mute); font-size: 12.5px; }
@@ -1655,7 +1655,7 @@ tr.row-area.dragging td { opacity: 0.35; }
 
 
 /* Navi on subs: testo barrato */
-tr.status-subs td { text-decoration: line-through; text-decoration-thickness: 1.5px; text-decoration-color: var(--rose); }
+tr.status-subs td { color: var(--subs-text); }
 /* Eccezioni: status pill, flag chips e icon edit non devono essere barrati */
 tr.status-subs .status-chip,
 tr.status-subs .area-pill,
