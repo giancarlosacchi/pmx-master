@@ -8488,9 +8488,9 @@ setRoute();
 </script>
 
 <script>
-/* ===== LIVE CURSORS - frecce dei colleghi collegati, visibili SOLO a Giancarlo ===== */
+/* ===== LIVE CURSORS + lista ONLINE - visibili SOLO a Giancarlo ===== */
 (function () {
-  var VIEWER = 'gsc@lightshipchartering.com'; // solo lui vede le frecce
+  var VIEWER = 'gsc@lightshipchartering.com';
   function start() {
     if (!window.sb || !window.CURRENT_USER || !window.CURRENT_USER.email) { return setTimeout(start, 1000); }
     var me = String(window.CURRENT_USER.email).toLowerCase();
@@ -8498,46 +8498,77 @@ setRoute();
     var amViewer = (me === VIEWER);
     var ch = window.sb.channel('pmx-cursors', { config: { broadcast: { self: false } } });
     var subscribed = false;
+    var lastPos = { x: 0.5, y: 0.5 };
+    function routeNow(){ return (location.hash || '').replace('#/', '') || 'home'; }
     var lastSent = 0;
     window.addEventListener('mousemove', function (e) {
+      lastPos = { x: e.clientX / Math.max(1, window.innerWidth), y: e.clientY / Math.max(1, window.innerHeight) };
       if (!subscribed) return;
-      var now = Date.now();
-      if (now - lastSent < 50) return;
-      lastSent = now;
-      ch.send({ type: 'broadcast', event: 'cur', payload: {
-        id: me, name: myName,
-        x: e.clientX / Math.max(1, window.innerWidth),
-        y: e.clientY / Math.max(1, window.innerHeight),
-        route: (location.hash || '').replace('#/', '') || 'home'
-      }});
+      var now = Date.now(); if (now - lastSent < 50) return; lastSent = now;
+      ch.send({ type:'broadcast', event:'cur', payload: { id: me, name: myName, x: lastPos.x, y: lastPos.y, route: routeNow() } });
     }, { passive: true });
+    setInterval(function () {
+      if (!subscribed) return;
+      ch.send({ type:'broadcast', event:'ping', payload: { id: me, name: myName, x: lastPos.x, y: lastPos.y, route: routeNow() } });
+    }, 4000);
+
     if (amViewer) {
       var layer = document.createElement('div');
       layer.id = 'cursor-layer';
       layer.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:99998';
       document.body.appendChild(layer);
-      var cursors = {};
+      var panel = document.createElement('div');
+      panel.className = 'sb-block sb-online';
+      panel.innerHTML = '<div class="nav-section">Online</div><nav class="nav" id="online-list"><div style="padding:6px 12px;font-size:11px;color:var(--text-mute)">nessuno</div></nav>';
+      var sidebar = document.querySelector('.sidebar');
+      if (sidebar) sidebar.appendChild(panel);
       var COLORS = ['#E0457B','#2D8A4F','#2563EB','#D97706','#7C3AED','#0891B2','#DB2777','#65A30D'];
       function colorFor(id){ var h=0; for (var i=0;i<id.length;i++) h=(h*31+id.charCodeAt(i))%COLORS.length; return COLORS[h]; }
-      ch.on('broadcast', { event: 'cur' }, function (m) {
-        var p = m.payload; if (!p || p.id === me) return;
-        var c = cursors[p.id];
-        if (!c) {
-          var el = document.createElement('div');
-          el.style.cssText = 'position:absolute;transition:left .09s linear,top .09s linear;will-change:left,top';
-          var col = colorFor(p.id);
-          el.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,.45))"><path d="M5 3l15 9-7 1.4L9.6 20z" fill="' + col + '" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg><span style="position:absolute;left:17px;top:13px;background:' + col + ';color:#fff;font:600 10px/1.5 system-ui,sans-serif;padding:1px 7px;border-radius:9px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.3)">' + String(p.name||'?').replace(/[<>&]/g,'') + '</span>';
-          layer.appendChild(el);
-          c = cursors[p.id] = { el: el };
-        }
-        c.el.style.left = (p.x * window.innerWidth) + 'px';
-        c.el.style.top = (p.y * window.innerHeight) + 'px';
-        c.last = Date.now();
-      });
+      var peers = {};
+      function ensureArrow(id) {
+        var p = peers[id]; if (p.el) return p.el;
+        var el = document.createElement('div');
+        el.style.cssText = 'position:absolute;transition:left .09s linear,top .09s linear;will-change:left,top';
+        el.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,.45))"><path d="M5 3l15 9-7 1.4L9.6 20z" fill="' + p.col + '" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg><span style="position:absolute;left:17px;top:13px;background:' + p.col + ';color:#fff;font:600 10px/1.5 system-ui,sans-serif;padding:1px 7px;border-radius:9px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.3)">' + String(p.name||'?').replace(/[<>&]/g,'') + '</span>';
+        layer.appendChild(el); p.el = el; return el;
+      }
+      function placeArrow(id) {
+        var p = peers[id]; if (!p) return; var el = ensureArrow(id);
+        el.style.left = (p.x * window.innerWidth) + 'px';
+        el.style.top = (p.y * window.innerHeight) + 'px';
+      }
+      function pulse(id){ var p = peers[id]; if (!p) return; placeArrow(id); p.lastCur = Date.now(); if (p.el && p.el.animate) p.el.animate([{transform:'scale(1)'},{transform:'scale(1.9)'},{transform:'scale(1)'}], { duration:650, iterations:2 }); }
+      function update(p, isCur) {
+        var o = peers[p.id] || (peers[p.id] = { col: colorFor(p.id) });
+        o.name = p.name; o.route = p.route; o.x = p.x; o.y = p.y; o.lastSeen = Date.now();
+        if (isCur) { o.lastCur = Date.now(); placeArrow(p.id); }
+      }
+      ch.on('broadcast', { event:'cur' }, function (m) { if (m.payload && m.payload.id !== me) update(m.payload, true); });
+      ch.on('broadcast', { event:'ping' }, function (m) { if (m.payload && m.payload.id !== me) update(m.payload, false); });
+      function renderList() {
+        var nav = document.getElementById('online-list'); if (!nav) return;
+        var now = Date.now();
+        var ids = Object.keys(peers).filter(function(id){ return now - peers[id].lastSeen < 12000; });
+        if (!ids.length) { nav.innerHTML = '<div style="padding:6px 12px;font-size:11px;color:var(--text-mute)">nessuno</div>'; return; }
+        nav.innerHTML = ids.map(function(id){ var p = peers[id];
+          return '<a data-cur-id="' + id + '" style="cursor:pointer"><span style="width:9px;height:9px;border-radius:50%;background:' + p.col + ';display:inline-block;flex:0 0 auto;margin-right:4px"></span><span class="nav-label">' + String(p.name||'?').replace(/[<>&]/g,'') + '</span></a>';
+        }).join('');
+        Array.prototype.forEach.call(nav.querySelectorAll('a[data-cur-id]'), function(a){
+          a.onclick = function(){ var id = a.getAttribute('data-cur-id'); var p = peers[id]; if (!p) return;
+            if (routeNow() !== p.route) location.hash = '#/' + p.route;
+            setTimeout(function(){ pulse(id); }, 150);
+          };
+        });
+      }
       setInterval(function () {
         var now = Date.now();
-        for (var id in cursors) { if (now - (cursors[id].last || 0) > 4000) { cursors[id].el.remove(); delete cursors[id]; } }
+        for (var id in peers) {
+          if (peers[id].el && now - (peers[id].lastCur||0) > 4000) { peers[id].el.remove(); peers[id].el = null; }
+          if (now - peers[id].lastSeen > 12000) { if (peers[id].el) peers[id].el.remove(); delete peers[id]; }
+        }
+        renderList();
       }, 1500);
+      renderList();
     }
     ch.subscribe(function (status) { if (status === 'SUBSCRIBED') subscribed = true; });
   }
