@@ -8487,5 +8487,63 @@ updateUndoButtons();
 setRoute();
 </script>
 
+<script>
+/* ===== LIVE CURSORS - frecce dei colleghi collegati, visibili SOLO a Giancarlo ===== */
+(function () {
+  var VIEWER = 'gsc@lightshipchartering.com'; // solo lui vede le frecce
+  function start() {
+    if (!window.sb || !window.CURRENT_USER || !window.CURRENT_USER.email) { return setTimeout(start, 1000); }
+    var me = String(window.CURRENT_USER.email).toLowerCase();
+    var myName = window.CURRENT_USER_NAME || me.split('@')[0];
+    var amViewer = (me === VIEWER);
+    var ch = window.sb.channel('pmx-cursors', { config: { broadcast: { self: false } } });
+    var subscribed = false;
+    var lastSent = 0;
+    window.addEventListener('mousemove', function (e) {
+      if (!subscribed) return;
+      var now = Date.now();
+      if (now - lastSent < 50) return;
+      lastSent = now;
+      ch.send({ type: 'broadcast', event: 'cur', payload: {
+        id: me, name: myName,
+        x: e.clientX / Math.max(1, window.innerWidth),
+        y: e.clientY / Math.max(1, window.innerHeight),
+        route: (location.hash || '').replace('#/', '') || 'home'
+      }});
+    }, { passive: true });
+    if (amViewer) {
+      var layer = document.createElement('div');
+      layer.id = 'cursor-layer';
+      layer.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:99998';
+      document.body.appendChild(layer);
+      var cursors = {};
+      var COLORS = ['#E0457B','#2D8A4F','#2563EB','#D97706','#7C3AED','#0891B2','#DB2777','#65A30D'];
+      function colorFor(id){ var h=0; for (var i=0;i<id.length;i++) h=(h*31+id.charCodeAt(i))%COLORS.length; return COLORS[h]; }
+      ch.on('broadcast', { event: 'cur' }, function (m) {
+        var p = m.payload; if (!p || p.id === me) return;
+        var c = cursors[p.id];
+        if (!c) {
+          var el = document.createElement('div');
+          el.style.cssText = 'position:absolute;transition:left .09s linear,top .09s linear;will-change:left,top';
+          var col = colorFor(p.id);
+          el.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,.45))"><path d="M5 3l15 9-7 1.4L9.6 20z" fill="' + col + '" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg><span style="position:absolute;left:17px;top:13px;background:' + col + ';color:#fff;font:600 10px/1.5 system-ui,sans-serif;padding:1px 7px;border-radius:9px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.3)">' + String(p.name||'?').replace(/[<>&]/g,'') + '</span>';
+          layer.appendChild(el);
+          c = cursors[p.id] = { el: el };
+        }
+        c.el.style.left = (p.x * window.innerWidth) + 'px';
+        c.el.style.top = (p.y * window.innerHeight) + 'px';
+        c.last = Date.now();
+      });
+      setInterval(function () {
+        var now = Date.now();
+        for (var id in cursors) { if (now - (cursors[id].last || 0) > 4000) { cursors[id].el.remove(); delete cursors[id]; } }
+      }, 1500);
+    }
+    ch.subscribe(function (status) { if (status === 'SUBSCRIBED') subscribed = true; });
+  }
+  start();
+})();
+</script>
+
 </body>
 </html>
