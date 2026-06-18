@@ -6071,7 +6071,7 @@ routes['vsl'] = function() {
       <td data-col="ls_brkr" class="dim">${esc(v.ls_brkr||'')}</td>
       <td data-col="update_date" class="dim">${fmtUpdate(v.update_date)}</td>
       <td data-col="subs">${esc(v.subs||'')}</td>
-      <td data-col="status"><span class="pill ${v.status==='on_subs'?'subs':v.status==='off_mkt'?'off':'fresh'}">${v.status==='on_subs'?'On subs':v.status==='off_mkt'?'Off mkt':'Fresh'}</span></td>
+      <td data-col="status">${!v.status ? '<span class="dim">—</span>' : `<span class="pill ${v.status==='on_subs'?'subs':v.status==='off_mkt'?'off':'fresh'}">${v.status==='on_subs'?'On subs':v.status==='off_mkt'?'Off mkt':'Fresh'}</span>`}</td>
     </tr>`).join('')}</tbody></table>`;
     // Applico hidden cols
     $$('#vf-results [data-col]').forEach(el => {
