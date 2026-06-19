@@ -1097,6 +1097,10 @@ pre.rundown { white-space: pre-wrap; font-family: inherit;
 }
 .cp-row:hover { background: var(--bg-hover); }
 .cp-row.subs { color: var(--subs-text); }
+.cp-cam-btn { width:30px; height:30px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--line); background:transparent; color:var(--text-dim); cursor:pointer; margin-left:6px; padding:0; transition:all .15s; }
+.cp-cam-btn:hover { background:var(--bg-hover); color:var(--text); }
+.cp-cam-btn.ok { color:#2D8A4F; border-color:#2D8A4F; }
+.cp-cam-btn.busy { opacity:.5; pointer-events:none; }
 .cp-row.off { background: var(--off-bg); color: var(--off-text); }
 .cp-row.exocp { font-weight: 700; }
 .cp-cols-bar { display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:8px 14px; border-bottom:1px solid var(--line-soft); }
@@ -6698,11 +6702,39 @@ function rowStatusCls(item) {
   if (item.status === 'off_mkt') return 'off';
   return '';
 }
+async function cpSnapshot(btn) {
+  const cpView = document.querySelector('.cp-view');
+  if (!cpView) return;
+  if (btn) btn.classList.add('busy');
+  try {
+    if (!window.html2canvas) {
+      await new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'; sc.onload = res; sc.onerror = rej; document.head.appendChild(sc); });
+    }
+    const canvas = await window.html2canvas(cpView, { scale: 2, backgroundColor: '#ffffff', logging: false, onclone: (doc) => { doc.querySelectorAll('.cp-header, .cp-cols-bar').forEach(el => el.style.display = 'none'); } });
+    const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+    if (!blob) throw new Error('no blob');
+    let copied = false;
+    try { if (navigator.clipboard && window.ClipboardItem) { await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]); copied = true; } } catch (e) {}
+    if (!copied) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'lista.png'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 3000); }
+    if (btn) { btn.classList.add('ok'); setTimeout(() => btn.classList.remove('ok'), 1400); }
+    if (typeof cloudToast === 'function') cloudToast(copied ? 'Immagine copiata negli appunti' : 'Immagine scaricata', { kind: 'ok' });
+  } catch (e) {
+    if (typeof cloudToast === 'function') cloudToast('Errore immagine: ' + (e.message || e), { kind: 'error', duration: 5000 });
+  } finally {
+    if (btn) btn.classList.remove('busy');
+  }
+}
+document.addEventListener('click', (e) => {
+  const cam = e.target.closest && e.target.closest('.cp-cam-btn');
+  if (!cam) return;
+  e.preventDefault();
+  cpSnapshot(cam);
+});
 function cpCopyButton() {
   return `<button class="cp-copy-btn" id="cp-copy">
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
     Copy
-  </button>`;
+  </button><button class="cp-cam-btn" type="button" title="Copia la lista come immagine"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>`;
 }
 // Costruisce il testo da copiare con header sezioni (senza righe on subs)
 function buildCpPlainText(groups) {
