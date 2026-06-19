@@ -5266,7 +5266,7 @@ routes['ecsa-list'] = function() {
             <div class="group"><label>Status</label>
               <select id="f-status"><option value="">All</option><option value="fresh">Fresh</option><option value="off_mkt">Off mkt</option><option value="on_subs">On subs</option></select></div>
             <span class="count-pill cnt-with-tooltip" id="cnt">—</span>${cpToggleBtn('ecsa-list')}
-            <label class="rd-toggle" title="Mostra/nascondi ECSA Rundown"><span>Rundown</span><input type="checkbox" id="ecsa-toggle-rd"><span class="rd-switch" aria-hidden="true"></span></label>
+            <span class="cp-switch" id="ecsa-rd-sw" title="Mostra/nascondi ECSA Rundown"><span class="cp-sw-label">Rundown</span><button class="cp-sw-track" type="button" id="ecsa-toggle-rd" data-rdtoggle="1"><span class="cp-sw-knob"></span></button></span>
           </div>
           <div class="tbl-wrap" id="tbl"></div>
         </div>
@@ -5303,14 +5303,15 @@ routes['ecsa-list'] = function() {
   (function(){
     const KEY = 'pmxEcsaRundownHidden';
     const layoutEl = document.querySelector('.ecsa-layout');
-    const cb = document.getElementById('ecsa-toggle-rd');
+    const sw = document.getElementById('ecsa-rd-sw');
+    const btn = document.getElementById('ecsa-toggle-rd');
     function apply(hidden){
       if (layoutEl) layoutEl.classList.toggle('rundown-hidden', !!hidden);
-      if (cb) cb.checked = !hidden;
+      if (sw) sw.classList.toggle('on', !hidden);
     }
     apply(localStorage.getItem(KEY) === '1');
-    if (cb) cb.onchange = function(){
-      const nowHidden = !cb.checked;
+    if (btn) btn.onclick = function(){
+      const nowHidden = !(layoutEl && layoutEl.classList.contains('rundown-hidden'));
       localStorage.setItem(KEY, nowHidden ? '1' : '0');
       apply(nowHidden);
     };
@@ -6826,6 +6827,7 @@ function bindCpToggle(page) {
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('.cp-sw-track');
   if (!btn) return;
+  if (btn.dataset.rdtoggle) return;
   e.preventDefault();
   let page = btn.dataset.page;
   if (!page) {
