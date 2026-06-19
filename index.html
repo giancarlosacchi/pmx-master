@@ -5975,6 +5975,10 @@ routes['vsl'] = function() {
       if (FF.open_port && !matchText(v.open_port, FF.open_port)) return false;
       if (FF.ows_brkr && !matchText(v.ows_brkr, FF.ows_brkr)) return false;
       if (FF.ls_brkr && !matchText(v.ls_brkr, FF.ls_brkr)) return false;
+      if (FF.ideas && !matchText(v.ideas, FF.ideas)) return false;
+      if (FF.bunker && !matchText(v.bunker, FF.bunker)) return false;
+      if (FF.subs && !matchText(v.subs, FF.subs)) return false;
+      if (FF.status && !matchText(v.status, FF.status)) return false;
       return true;
     });
     // Calcolo ETA al cgo area usando matrice Distances VSL (vessel_open → load_area)
@@ -6048,17 +6052,17 @@ routes['vsl'] = function() {
       : '';
     $('#vf-results').innerHTML = banner + `<table class="grid"><thead><tr>
       <th style="width:24px"></th>
-      <th data-col="vessel"><span>Vessel</span>${colBtn('vessel')}</th>
-      <th data-col="dwt_blt"><span>DWT/Age</span>${colBtn('dwt_blt')}</th>
+      <th data-col="vessel" class="th-filter"><input data-col="vessel" placeholder="Vessel" value="${attr(FF.vessel||'')}">${colBtn('vessel')}</th>
+      <th data-col="dwt_blt" class="th-filter"><input data-col="dwt_blt" placeholder="DWT" value="${attr(FF.dwt_blt||'')}">${colBtn('dwt_blt')}</th>
       <th data-col="dates"><span>${cgoArea ? 'ETA '+cgoArea : 'Dates'}</span>${colBtn('dates')}</th>
-      <th data-col="open_port"><span>Position</span>${colBtn('open_port')}</th>
-      <th data-col="ideas" class="col-ideas"><span>Ideas/Info</span>${colBtn('ideas')}</th>
-      <th data-col="ows_brkr"><span>Ows/Brkr</span>${colBtn('ows_brkr')}</th>
-      <th data-col="bunker"><span>Bunker</span>${colBtn('bunker')}</th>
-      <th data-col="ls_brkr"><span>LS Brkr</span>${colBtn('ls_brkr')}</th>
+      <th data-col="open_port" class="th-filter"><input data-col="open_port" placeholder="Position" value="${attr(FF.open_port||'')}">${colBtn('open_port')}</th>
+      <th data-col="ideas" class="th-filter col-ideas"><input data-col="ideas" placeholder="Ideas/Info" value="${attr(FF.ideas||'')}">${colBtn('ideas')}</th>
+      <th data-col="ows_brkr" class="th-filter"><input data-col="ows_brkr" placeholder="Ows" value="${attr(FF.ows_brkr||'')}">${colBtn('ows_brkr')}</th>
+      <th data-col="bunker" class="th-filter"><input data-col="bunker" placeholder="Bunker" value="${attr(FF.bunker||'')}">${colBtn('bunker')}</th>
+      <th data-col="ls_brkr" class="th-filter"><input data-col="ls_brkr" placeholder="LS" value="${attr(FF.ls_brkr||'')}">${colBtn('ls_brkr')}</th>
       <th data-col="update_date"><span>Update</span>${colBtn('update_date')}</th>
-      <th data-col="subs"><span>Subs</span>${colBtn('subs')}</th>
-      <th data-col="status"><span>Status</span>${colBtn('status')}</th>
+      <th data-col="subs" class="th-filter"><input data-col="subs" placeholder="Subs" value="${attr(FF.subs||'')}">${colBtn('subs')}</th>
+      <th data-col="status" class="th-filter"><input data-col="status" placeholder="Status" value="${attr(FF.status||'')}">${colBtn('status')}</th>
     </tr></thead><tbody>${rows.map(v => `<tr class="${v.status==='on_subs'?'status-subs':v.status==='off_mkt'?'status-off':v.status==='fresh'?'status-fresh':''}">
       <td><button class="row-hide-btn" data-id="${v.id}" title="Hide row">×</button></td>
       <td data-col="vessel"><b>${esc(v.vessel)}</b></td>
@@ -6241,6 +6245,8 @@ routes['cgo'] = function() {
       if (CF.cgo && !matchText(c.cgo, CF.cgo)) return false;
       if (CF.size && !matchText(c.size, CF.size)) return false;
       if (CF.ls_brkr && !matchText(c.ls_brkr, CF.ls_brkr)) return false;
+      if (CF.notes && !matchText(c.notes, CF.notes)) return false;
+      if (CF.status && !matchText(c.status, CF.status)) return false;
       return true;
     });
     // Filtra cargoes raggiungibili usando matrice Distances CGO (vessel_open → load_area, percorsi commerciali)
@@ -6309,10 +6315,10 @@ routes['cgo'] = function() {
       <th data-col="disch_port" class="th-filter"><input data-col="disch_port" placeholder="Disch" value="${attr(CF.disch_port||'')}">${colBtnC('disch_port')}</th>
       <th data-col="cgo" class="th-filter"><input data-col="cgo" placeholder="Cgo" value="${attr(CF.cgo||'')}">${colBtnC('cgo')}</th>
       <th data-col="size" class="th-filter"><input data-col="size" placeholder="Size" value="${attr(CF.size||'')}">${colBtnC('size')}</th>
-      <th data-col="notes" class="col-ideas"><span>Notes / Rates</span>${colBtnC('notes')}</th>
+      <th data-col="notes" class="th-filter col-ideas"><input data-col="notes" placeholder="Notes / Rates" value="${attr(CF.notes||'')}">${colBtnC('notes')}</th>
       <th data-col="ls_brkr" class="th-filter"><input data-col="ls_brkr" placeholder="LS Brkr" value="${attr(CF.ls_brkr||'')}">${colBtnC('ls_brkr')}</th>
       <th data-col="update_date"><span>Update</span>${colBtnC('update_date')}</th>
-      <th data-col="status"><span>Status</span></th>
+      <th data-col="status" class="th-filter"><input data-col="status" placeholder="Status" value="${attr(CF.status||'')}"></th>
       <th></th>
     </tr></thead><tbody>${rows.map(c => `<tr class="row-area ${areaClass(c.section || c.area)} ${c.status==='on_subs'?'status-subs':c.status==='off_mkt'?'status-off':c.status==='fresh'?'status-fresh':''}">
       <td><button class="row-hide-btn" data-id="${c.id}" title="Hide row">×</button></td>
