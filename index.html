@@ -6703,14 +6703,15 @@ function rowStatusCls(item) {
   return '';
 }
 async function cpSnapshot(btn) {
-  const cpView = document.querySelector('.cp-view');
-  if (!cpView) return;
+  const node = buildSnapshotTable();
+  if (!node) return;
   if (btn) btn.classList.add('busy');
+  document.body.appendChild(node);
   try {
     if (!window.html2canvas) {
       await new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'; sc.onload = res; sc.onerror = rej; document.head.appendChild(sc); });
     }
-    const canvas = await window.html2canvas(cpView, { scale: 2, backgroundColor: '#ffffff', logging: false, onclone: (doc) => { doc.querySelectorAll('.cp-header, .cp-cols-bar').forEach(el => el.style.display = 'none'); } });
+    const canvas = await window.html2canvas(node, { scale: 2, backgroundColor: '#ffffff', logging: false });
     const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
     if (!blob) throw new Error('no blob');
     let copied = false;
@@ -6721,8 +6722,73 @@ async function cpSnapshot(btn) {
   } catch (e) {
     if (typeof cloudToast === 'function') cloudToast('Errore immagine: ' + (e.message || e), { kind: 'error', duration: 5000 });
   } finally {
+    node.remove();
     if (btn) btn.classList.remove('busy');
   }
+}
+function buildSnapshotTable() {
+  const cpView = document.querySelector('.cp-view');
+  if (!cpView) return null;
+  const first = cpView.querySelector('.cp-row');
+  const kind = first ? (first.dataset.kind || 'v') : 'v';
+  const ex = getCpCols(kind);
+  const VCOLS = [['vessel','Vessel'],['dwt_blt','DWT'],['open_port','Position'],['dates','Laycan'],['ideas','Ideas / Info'],['ows_brkr','Owner'],['bunker','Bunker'],['ls_brkr','LS'],['update_date','Update']];
+  const CCOLS = [['chrtrs','Charterer'],['size','Size'],['route','Load / Disch'],['dates','Laycan'],['cgo','Cargo'],['notes','Notes / Rates'],['ls_brkr','LS'],['update_date','Update']];
+  const cols = (kind === 'v' ? VCOLS : CCOLS).filter(([k]) => k === 'vessel' || k === 'chrtrs' || !ex.has(k));
+  const sections = []; let curSec = null;
+  cpView.querySelectorAll('.cp-section, .cp-row').forEach(el => {
+    if (el.classList.contains('cp-section')) { curSec = { title: el.textContent.trim(), ac: (el.className.match(/area-\w+/) || [''])[0], ids: [] }; sections.push(curSec); }
+    else if (curSec) { curSec.ids.push({ id: el.dataset.id, kind: el.dataset.kind }); }
+  });
+  const DATA = window.DATA || {};
+  const lookup = (id, k) => (k === 'c' ? (DATA.cargoes || []) : (DATA.vessels || [])).find(x => String(x.id) === String(id));
+  const ACOL = { 'area-green': '#2D8A4F', 'area-blue': '#2563EB', 'area-red': '#C5392B', 'area-amber': '#D97706' };
+  const cellVal = (it, key) => {
+    if (kind === 'v') {
+      if (key === 'vessel') return titleCase(it.vessel || '');
+      if (key === 'dwt_blt') return it.dwt_blt || '';
+      if (key === 'open_port') return titleCase(it.open_port || '');
+      if (key === 'dates') return fmtDateRange(it.open_from, it.open_to) || '';
+      if (key === 'ideas') return it.ideas || '';
+      if (key === 'ows_brkr') return it.ows_brkr || '';
+      if (key === 'bunker') return it.bunker || '';
+      if (key === 'ls_brkr') return it.ls_brkr || '';
+      if (key === 'update_date') return fmtUpdate(it.update_date) || '';
+    } else {
+      if (key === 'chrtrs') return titleCase(it.chrtrs || '');
+      if (key === 'size') return it.size || '';
+      if (key === 'route') { const l = titleCase(it.load_port || ''), d = titleCase(it.disch_port || ''); return (l && d) ? (l + ' / ' + d) : (l || d); }
+      if (key === 'dates') return fmtDateRange(it.laycan_from, it.laycan_to) || '';
+      if (key === 'cgo') return it.cgo || '';
+      if (key === 'notes') return it.notes || '';
+      if (key === 'ls_brkr') return it.ls_brkr || '';
+      if (key === 'update_date') return fmtUpdate(it.update_date || it.date) || '';
+    }
+    return '';
+  };
+  let body = '';
+  for (const sec of sections) {
+    const col = ACOL[sec.ac] || '#475569';
+    body += `<tr><td colspan="${cols.length}" style="background:${col};color:#fff;font-weight:700;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:8px 14px;">${esc(sec.title)}</td></tr>`;
+    let i = 0;
+    for (const r of sec.ids) {
+      const it = lookup(r.id, r.kind); if (!it) continue;
+      const subs = it.status === 'on_subs';
+      const tds = cols.map(([k]) => {
+        const v = cellVal(it, k);
+        const wide = (k === 'ideas' || k === 'notes');
+        const style = `padding:7px 14px;border-bottom:1px solid #eef1f5;` + (subs ? 'color:#B31412;' : 'color:#1f2937;') + ((k === 'vessel' || k === 'chrtrs') ? 'font-weight:700;' : '') + (wide ? 'max-width:360px;white-space:normal;' : 'white-space:nowrap;');
+        return `<td style="${style}">${esc(v)}</td>`;
+      }).join('');
+      body += `<tr style="background:${i % 2 ? '#fbfcfe' : '#ffffff'};">${tds}</tr>`;
+      i++;
+    }
+  }
+  const head = cols.map(([, l]) => `<th style="padding:9px 14px;text-align:left;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#cbd5e1;font-weight:700;white-space:nowrap;">${esc(l)}</th>`).join('');
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:absolute;left:-100000px;top:0;background:#ffffff;padding:24px;';
+  wrap.innerHTML = `<table style="border-collapse:collapse;border-radius:12px;overflow:hidden;box-shadow:0 6px 24px rgba(15,23,42,.10);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;font-size:12.5px;line-height:1.4;"><thead><tr style="background:#0f172a;">${head}</tr></thead><tbody>${body}</tbody></table>`;
+  return wrap;
 }
 document.addEventListener('click', (e) => {
   const cam = e.target.closest && e.target.closest('.cp-cam-btn');
