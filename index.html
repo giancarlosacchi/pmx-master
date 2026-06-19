@@ -503,9 +503,9 @@ body:not(.is-admin) .col-del,
 body:not(.is-admin) .row-drag,
 body:not(.is-admin) #new-vessel,
 body:not(.is-admin) #new-cargo,
-body:not(.is-admin) button.primary[title*="Aggiungi"],
-body:not(.is-admin) button.primary[title*="Nuovo"],
-body:not(.is-admin) button.primary[title*="Nuova"],
+body:not(.is-admin) button.primary[title*="Add"],
+body:not(.is-admin) button.primary[title*="New"],
+body:not(.is-admin) button.primary[title*="New "],
 body:not(.is-admin) .topbar-add-btn,
 body:not(.is-admin) [data-route="admin"] {
   display: none !important;
@@ -2295,7 +2295,7 @@ body:not(.logged-in) .app { visibility: hidden; }
     <button id="sidebar-toggle" title="Menu"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18M3 12h18M3 17h18"/></svg></button>
     <div>
       <h1 class="page-title" id="page-title">ATL TNG</h1>
-      <div class="page-sub" id="page-sub">Master List Atlantico — panamax position</div>
+      <div class="page-sub" id="page-sub">Master List Atlantic — panamax position</div>
     </div>
     <div class="topbar-right">
         <span id="user-chip-slot"></span>
@@ -3596,10 +3596,10 @@ function createSingleDatePicker(opts) {
 
 function showCopyFallback(text) {
   modal.open('Copy vessels list', `
-    <p class="muted" style="margin:0 0 8px;font-size:12px">Seleziona il testo qui sotto e premi Ctrl+C (o Cmd+C su Mac) per copiarlo.</p>
+    <p class="muted" style="margin:0 0 8px;font-size:12px">Select the text below and press Ctrl+C (or Cmd+C on Mac) to copy it.</p>
     <textarea id="copy-area" style="width:100%;min-height:300px;background:var(--bg-3);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:10px;font-family:monospace;font-size:12px;resize:vertical">${esc(text)}</textarea>
     <div class="form-actions full">
-      <button type="button" class="primary" id="copy-select-all">Seleziona tutto</button>
+      <button type="button" class="primary" id="copy-select-all">Select all</button>
     </div>
   `);
   setTimeout(() => {
@@ -3647,7 +3647,7 @@ function armDelete(btn, onConfirm) {
   }
   btn.dataset.armed = '1';
   btn.classList.add('armed');
-  btn.title = 'Click ancora per confermare elimina';
+  btn.title = 'Click again to confirm delete';
   btn._timer = setTimeout(() => {
     btn.dataset.armed = '0';
     btn.classList.remove('armed');
@@ -5271,7 +5271,7 @@ routes['ecsa-list'] = function() {
             <div class="group"><label>Status</label>
               <select id="f-status"><option value="">All</option><option value="fresh">Fresh</option><option value="off_mkt">Off mkt</option><option value="on_subs">On subs</option></select></div>
             <span class="count-pill cnt-with-tooltip" id="cnt">—</span>${cpToggleBtn('ecsa-list')}
-            <span class="cp-switch" id="ecsa-rd-sw" title="Mostra/nascondi ECSA Rundown"><span class="cp-sw-label">Rundown</span><button class="cp-sw-track" type="button" id="ecsa-toggle-rd" data-rdtoggle="1"><span class="cp-sw-knob"></span></button></span>
+            <span class="cp-switch" id="ecsa-rd-sw" title="Show/hide ECSA Rundown"><span class="cp-sw-label">Rundown</span><button class="cp-sw-track" type="button" id="ecsa-toggle-rd" data-rdtoggle="1"><span class="cp-sw-knob"></span></button></span>
           </div>
           <div class="tbl-wrap" id="tbl"></div>
         </div>
@@ -5291,14 +5291,14 @@ routes['ecsa-list'] = function() {
     </div>`;
   // Rundown a destra: replica della pagina standalone ECSA Rundown (sezioni FIXTURES/TA/FH/1H/2H/PG-SEASIA/PPMX)
   const rdText = (typeof generateEcsaRundown === 'function') ? generateEcsaRundown(null) : '';
-  $('#ecsa-rd-text').textContent = rdText || '— nessuna nave qualificata —';
+  $('#ecsa-rd-text').textContent = rdText || '— no qualified vessel —';
   $('#ecsa-rd-copy').onclick = async () => {
     const ok = await copyToClipboard(rdText || '');
     const btn = $('#ecsa-rd-copy');
     if (ok) {
       btn.classList.add('ok');
       const oldHtml = btn.innerHTML;
-      btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copiato`;
+      btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied`;
       setTimeout(() => { btn.classList.remove('ok'); btn.innerHTML = oldHtml; }, 1600);
     } else {
       showCopyFallback(rdText || '');
@@ -6044,7 +6044,7 @@ routes['vsl'] = function() {
       const areaOrder = Object.keys(availableAreas).sort();
       const pills = areaOrder.map(a => {
         const cls = (excludedAreas.has(a) ? 'off' : '');
-        return `<span class="area-toggle ${cls}" data-area="${attr(a)}" title="Click per ${excludedAreas.has(a) ? 'includere' : 'escludere'} ${esc(a)}">${esc(a)} <span class="at-count">${availableAreas[a]}</span></span>`;
+        return `<span class="area-toggle ${cls}" data-area="${attr(a)}" title="Click to ${excludedAreas.has(a) ? 'include' : 'exclude'} ${esc(a)}">${esc(a)} <span class="at-count">${availableAreas[a]}</span></span>`;
       }).join('');
       $('#vf-summary').innerHTML = `<b style="margin-right:8px">TNG COUNT ➡ ${rows.length}</b> ${pills}`;
       // Hook click
@@ -6506,7 +6506,7 @@ function cpColChips(kind) {
     : [['size','Size'],['route','Route'],['dates','Dates'],['cgo','Cgo'],['notes','Notes'],['ls_brkr','LS'],['update_date','Update']];
   const ex = getCpCols(kind);
   const chips = cols.map(([c,l]) => `<button class="cp-col-chip ${ex.has(c)?'off':'on'}" data-cp-kind="${kind}" data-cp-col="${c}" type="button">${l}</button>`).join('');
-  return `<div class="cp-cols-bar"><span class="cp-cols-label">Copia colonne:</span>${chips}</div>`;
+  return `<div class="cp-cols-bar"><span class="cp-cols-label">Copy columns:</span>${chips}</div>`;
 }
 document.addEventListener('click', (e) => {
   const chip = e.target.closest && e.target.closest('.cp-col-chip');
@@ -6716,11 +6716,11 @@ async function cpSnapshot(btn) {
     if (!blob) throw new Error('no blob');
     let copied = false;
     try { if (navigator.clipboard && window.ClipboardItem) { await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]); copied = true; } } catch (e) {}
-    if (!copied) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'lista.png'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 3000); }
+    if (!copied) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'list.png'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 3000); }
     if (btn) { btn.classList.add('ok'); setTimeout(() => btn.classList.remove('ok'), 1400); }
-    if (typeof cloudToast === 'function') cloudToast(copied ? 'Immagine copiata negli appunti' : 'Immagine scaricata', { kind: 'ok' });
+    if (typeof cloudToast === 'function') cloudToast(copied ? 'Image copied to clipboard' : 'Image downloaded', { kind: 'ok' });
   } catch (e) {
-    if (typeof cloudToast === 'function') cloudToast('Errore immagine: ' + (e.message || e), { kind: 'error', duration: 5000 });
+    if (typeof cloudToast === 'function') cloudToast('Image error: ' + (e.message || e), { kind: 'error', duration: 5000 });
   } finally {
     node.remove();
     if (btn) btn.classList.remove('busy');
@@ -6800,7 +6800,7 @@ function cpCopyButton() {
   return `<button class="cp-copy-btn" id="cp-copy">
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
     Copy
-  </button><button class="cp-cam-btn" type="button" title="Copia la lista come immagine"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>`;
+  </button><button class="cp-cam-btn" type="button" title="Copy list as image"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>`;
 }
 // Costruisce il testo da copiare con header sezioni (senza righe on subs)
 function buildCpPlainText(groups) {
@@ -6827,7 +6827,7 @@ function bindCpCopy(groups) {
     if (ok) {
       btn.classList.add('ok');
       const oldHtml = btn.innerHTML;
-      btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copiato`;
+      btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied`;
       setTimeout(() => { btn.classList.remove('ok'); btn.innerHTML = oldHtml; }, 1600);
     } else {
       showCopyFallback(txt);
@@ -7573,7 +7573,7 @@ function renderApsToDop() {
       <div class="calc-hero">
         <div class="ch-lbl">DOP Rate</div>
         <div class="ch-val">${fmtUSD(dop)}</div>
-        <div class="ch-sub">USD/giorno</div>
+        <div class="ch-sub">USD/day</div>
       </div>
       <div class="calc-stats">
         <div class="cstat">
@@ -7635,7 +7635,7 @@ function renderDopToAps() {
       <div class="calc-hero">
         <div class="ch-lbl">APS Base (no BB)</div>
         <div class="ch-val">${fmtEU(apsBase)}</div>
-        <div class="ch-sub">USD/giorno</div>
+        <div class="ch-sub">USD/day</div>
       </div>
       <div class="calc-combos-title">Combinazioni APS + BB <span class="cct-hint">— evidenziata: BB target ${fmtEU(bb)}</span></div>
       <div class="calc-combos">
@@ -7677,8 +7677,8 @@ function renderDistMatrix(which) {
   const rowKeys = vslOrder.filter(a => opens.has(a));
   const colKeys = vslOrder.filter(a => loads.has(a));
   const label = which === 'vsl'
-    ? 'Vsl Finder — DA Vessel Open Area VERSO Load Area (giorni)'
-    : 'Cgo Finder — DA Vessel Open Area VERSO Load Area (giorni, percorsi commerciali)';
+    ? 'Vsl Finder — FROM Vessel Open Area TO Load Area (days)'
+    : 'Cgo Finder — FROM Vessel Open Area TO Load Area (days, trade routes)';
   const html = [`<div style="padding:12px 16px;color:var(--gold);font-size:12.5px;font-weight:600;background:rgba(245,177,78,.08);border-bottom:1px solid var(--line-soft)">${label}</div>`,
     '<div class="tbl-wrap"><table class="grid distance-tbl"><thead><tr><th></th>'];
   for (const a of colKeys) html.push(`<th>${a}</th>`);
@@ -7786,7 +7786,7 @@ const ROADMAP_DOCS = {
       <h3 class="rm-section">SEGMENT 1 — MACRO · ESSENTIALS</h3>
 
       <h4>Broker Manual</h4>
-      <h5>Qualità di un buon shipbroker</h5>
+      <h5>Qualities of a good shipbroker</h5>
       <p>Persistency / Adaptability / Ambition / Proactivity / Efficiency (speed never at the expense of precision and quality).</p>
 
       <h5>Shipbroking 101</h5>
@@ -8652,7 +8652,7 @@ updateUndoButtons();
 setRoute();
 
 // ============================================================
-// CHAT "Chiedi alla lista" — parser linguaggio naturale broker
+// CHAT "Ask the list" — parser linguaggio naturale broker
 // ============================================================
 (function(){
   if (window.__bchatInit) return; window.__bchatInit = true;
@@ -8702,7 +8702,7 @@ setRoute();
     novembre:10, nov:10, november:10,
     dicembre:11, dic:11, december:11, dec:11,
   };
-  const BCHAT_MON_SHORT = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+  const BCHAT_MON_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
   function bchatIso(y,m,d){ return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'); }
   function bchatLastDay(y,m){ return new Date(Date.UTC(y,m+1,0)).getUTCDate(); }
@@ -8713,12 +8713,12 @@ setRoute();
     const iso = (dt)=> dt.toISOString().slice(0,10);
     const addDays = (dt,n)=>{ const x=new Date(dt); x.setDate(x.getDate()+n); return x; };
     // --- relativi ---
-    if (/\boggi\b|\btoday\b/.test(q)) return { from: iso(today), to: iso(today), label: 'oggi' };
-    if (/\bdomani\b|\btomorrow\b/.test(q)) { const t=addDays(today,1); return { from: iso(t), to: iso(t), label: 'domani' }; }
+    if (/\boggi\b|\btoday\b/.test(q)) return { from: iso(today), to: iso(today), label: 'today' };
+    if (/\bdomani\b|\btomorrow\b/.test(q)) { const t=addDays(today,1); return { from: iso(t), to: iso(t), label: 'tomorrow' }; }
     let mRel;
-    if ((mRel = q.match(/prossim[ie]\s+(\d{1,2})\s+giorni|next\s+(\d{1,2})\s+days/))) { const n=parseInt(mRel[1]||mRel[2],10); return { from: iso(today), to: iso(addDays(today,n)), label: 'prossimi '+n+' giorni' }; }
-    if (/prossima settimana|next week/.test(q)) return { from: iso(addDays(today,7)), to: iso(addDays(today,13)), label: 'prossima settimana' };
-    if (/questa settimana|this week/.test(q)) return { from: iso(today), to: iso(addDays(today,6)), label: 'questa settimana' };
+    if ((mRel = q.match(/prossim[ie]\s+(\d{1,2})\s+giorni|next\s+(\d{1,2})\s+days/))) { const n=parseInt(mRel[1]||mRel[2],10); return { from: iso(today), to: iso(addDays(today,n)), label: 'next '+n+' days' }; }
+    if (/prossima settimana|next week/.test(q)) return { from: iso(addDays(today,7)), to: iso(addDays(today,13)), label: 'next week' };
+    if (/questa settimana|this week/.test(q)) return { from: iso(today), to: iso(addDays(today,6)), label: 'this week' };
     // --- mese ---
     let monIdx = -1;
     for (const name in BCHAT_MONTHS){ const re = new RegExp('\\b'+name+'\\b'); if (re.test(q)) { monIdx = BCHAT_MONTHS[name]; break; } }
@@ -8884,9 +8884,9 @@ setRoute();
       const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
       let copied = false;
       try { if (navigator.clipboard && window.ClipboardItem){ await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]); copied = true; } } catch(e){}
-      if (!copied){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='lista.png'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),3000); }
-      if (typeof cloudToast==='function') cloudToast(copied?'Immagine copiata negli appunti':'Immagine scaricata',{kind:'ok'});
-    } catch(e){ if (typeof cloudToast==='function') cloudToast('Errore immagine',{kind:'error'}); }
+      if (!copied){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='list.png'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),3000); }
+      if (typeof cloudToast==='function') cloudToast(copied?'Image copied to clipboard':'Image downloaded',{kind:'ok'});
+    } catch(e){ if (typeof cloudToast==='function') cloudToast('Image error',{kind:'error'}); }
     finally { if (btn) btn.classList.remove('busy'); }
   }
 
@@ -8898,33 +8898,33 @@ setRoute();
   }
   function bchatSummary(f, res){
     const bits = [];
-    bits.push(f.kind==='v' ? 'navi' : 'cargo');
-    if (f.ecsaDest) bits.push('caricabili in ECSA');
+    bits.push(f.kind==='v' ? 'vessels' : 'cargoes');
+    if (f.ecsaDest) bits.push('loadable in ECSA');
     else if (f.areas.size) bits.push([...f.areas].join('/'));
-    else if (f.basin) bits.push(f.basin==='ATL'?'atlantico':'pacifico');
+    else if (f.basin) bits.push(f.basin==='ATL'?'atlantic':'pacific');
     if (f.size) bits.push(f.size==='smx'?'supramax':'panamax');
-    if (f.status) bits.push(f.status==='fresh'?'fresh':f.status==='on_subs'?'on subs':f.status==='off_mkt'?'off mkt':'disponibili');
+    if (f.status) bits.push(f.status==='fresh'?'fresh':f.status==='on_subs'?'on subs':f.status==='off_mkt'?'off mkt':'available');
     if (f.period) bits.push(f.period.label);
-    return bits.join(' · ') + ' — <b>' + res.total + '</b> risultat' + (res.total===1?'o':'i');
+    return bits.join(' · ') + ' — <b>' + res.total + '</b> result' + (res.total===1?'':'s');
   }
   function bchatHandle(text){
     const t = text.trim(); if(!t) return;
     bchatAddMsg(esc(t), 'user');
     const f = bchatParse(t);
     if (!f.areas.size && !f.basin && !f.ecsaDest){
-      bchatAddMsg('Specifica almeno un’area (es. <b>ECSA</b>, <b>USG</b>, <b>SEASIA</b>) o un bacino (<b>atlantico</b>/<b>pacifico</b>). Esempio: "navi caricabili in ECSA seconda metà luglio".'); return;
+      bchatAddMsg('Specify at least an area (e.g. <b>ECSA</b>, <b>USG</b>, <b>SEASIA</b>) or a basin (<b>atlantic</b>/<b>pacific</b>). Example: "vessels loadable in ECSA second half July".'); return;
     }
     const res = bchatQuery(f);
-    if (!res.total){ bchatAddMsg('Nessun risultato per: ' + bchatSummary(f,res) + '.'); return; }
+    if (!res.total){ bchatAddMsg('No results for: ' + bchatSummary(f,res) + '.'); return; }
     const wrap = document.createElement('div');
     wrap.innerHTML = '<div class="bchat-sum">'+bchatSummary(f,res)+'</div>' +
       '<div class="bchat-tblwrap">'+bchatTableHtml(res, f.kind)+'</div>' +
-      '<div class="bchat-acts"><button class="bchat-act" data-act="img">📷 Copia immagine</button><button class="bchat-act" data-act="txt">⎘ Copia testo</button></div>';
+      '<div class="bchat-acts"><button class="bchat-act" data-act="img">📷 Copy image</button><button class="bchat-act" data-act="txt">⎘ Copy text</button></div>';
     const node = bchatAddMsg('', 'bot'); node.appendChild(wrap);
     const tbl = wrap.querySelector('.bchat-tblwrap');
     wrap.querySelector('[data-act=img]').addEventListener('click', e => bchatSnapshot(tbl.querySelector('table'), e.currentTarget));
     wrap.querySelector('[data-act=txt]').addEventListener('click', async e => {
-      try { await navigator.clipboard.writeText(bchatTextOut(res, f.kind)); if(typeof cloudToast==='function') cloudToast('Testo copiato',{kind:'ok'}); } catch(err){}
+      try { await navigator.clipboard.writeText(bchatTextOut(res, f.kind)); if(typeof cloudToast==='function') cloudToast('Text copied',{kind:'ok'}); } catch(err){}
     });
   }
 
@@ -8967,21 +8967,21 @@ setRoute();
     `;
     document.head.appendChild(style);
     const fab = document.createElement('button');
-    fab.id = 'bchatFab'; fab.title = 'Chiedi alla lista';
+    fab.id = 'bchatFab'; fab.title = 'Ask the list';
     fab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
     const panel = document.createElement('div');
     panel.id = 'bchatPanel'; panel.className = 'bchat-hidden';
-    const examples = ['navi caricabili in ECSA seconda metà luglio','navi fresh in pacifico','cargo USG agosto','navi in SEASIA'];
+    const examples = ['vessels loadable in ECSA second half July','fresh vessels in pacific','cargo USG august','vessels in SEASIA'];
     panel.innerHTML =
-      '<div id="bchatHead"><div>Chiedi alla lista<small>navi, cargo, aree e periodi</small></div><button id="bchatClose">✕</button></div>' +
+      '<div id="bchatHead"><div>Ask the list<small>vessels, cargoes, areas & periods</small></div><button id="bchatClose">✕</button></div>' +
       '<div id="bchatMsgs"></div>' +
       '<div id="bchatExamples">' + examples.map(e=>`<button class="bchat-ex">${esc(e)}</button>`).join('') + '</div>' +
-      '<form id="bchatForm"><input id="bchatInput" autocomplete="off" placeholder="es. navi caricabili in ECSA 2ª metà luglio"><button type="submit">➤</button></form>';
+      '<form id="bchatForm"><input id="bchatInput" autocomplete="off" placeholder="e.g. vessels loadable in ECSA 2nd half July"><button type="submit">➤</button></form>';
     document.body.appendChild(fab); document.body.appendChild(panel);
 
     let welcomed = false;
     function openPanel(){ panel.classList.remove('bchat-hidden'); document.getElementById('bchatInput').focus();
-      if (!welcomed){ welcomed = true; bchatAddMsg('Ciao! Chiedimi che navi o cargo ci sono per area e periodo. Esempi:<br>• <i>navi caricabili in ECSA seconda metà luglio</i><br>• <i>navi fresh in pacifico</i><br>• <i>cargo USG agosto</i>'); }
+      if (!welcomed){ welcomed = true; bchatAddMsg('Hi! Ask me which vessels or cargoes are available by area and period. Examples:<br>• <i>vessels loadable in ECSA second half July</i><br>• <i>fresh vessels in pacific</i><br>• <i>cargo USG august</i>'); }
     }
     fab.addEventListener('click', ()=> panel.classList.contains('bchat-hidden') ? openPanel() : panel.classList.add('bchat-hidden'));
     panel.querySelector('#bchatClose').addEventListener('click', ()=> panel.classList.add('bchat-hidden'));
@@ -9037,7 +9037,7 @@ setRoute();
       document.body.appendChild(layer);
       var panel = document.createElement('div');
       panel.className = 'sb-block sb-online';
-      panel.innerHTML = '<div class="nav-section">Online</div><nav class="nav" id="online-list"><div style="padding:6px 12px;font-size:11px;color:var(--text-mute)">nessuno</div></nav>';
+      panel.innerHTML = '<div class="nav-section">Online</div><nav class="nav" id="online-list"><div style="padding:6px 12px;font-size:11px;color:var(--text-mute)">none</div></nav>';
       var sidebar = document.querySelector('.sidebar'); if (sidebar) sidebar.appendChild(panel);
       var COLORS = ['#E0457B','#2D8A4F','#2563EB','#D97706','#7C3AED','#0891B2','#DB2777','#65A30D'];
       function colorFor(id){ var h=0; for (var i=0;i<id.length;i++) h=(h*31+id.charCodeAt(i))%COLORS.length; return COLORS[h]; }
@@ -9080,7 +9080,7 @@ setRoute();
       function renderList(){
         var nav = document.getElementById('online-list'); if (!nav) return;
         var now = Date.now(); var ids = Object.keys(peers).filter(function(id){ return now - peers[id].lastSeen < 12000; });
-        if (!ids.length){ nav.innerHTML='<div style="padding:6px 12px;font-size:11px;color:var(--text-mute)">nessuno</div>'; return; }
+        if (!ids.length){ nav.innerHTML='<div style="padding:6px 12px;font-size:11px;color:var(--text-mute)">none</div>'; return; }
         nav.innerHTML = ids.map(function(id){ var p=peers[id];
           return '<a data-cur-id="'+id+'" style="cursor:pointer"><span style="width:9px;height:9px;border-radius:50%;background:'+p.col+';display:inline-block;flex:0 0 auto;margin-right:4px"></span><span class="nav-label">'+String(p.name||'?').replace(/[<>&]/g,'')+'</span><span style="margin-left:auto;font-size:9px;color:var(--text-mute);text-transform:uppercase">'+String(p.route||'').replace(/[<>&]/g,'').slice(0,9)+'</span></a>';
         }).join('');
