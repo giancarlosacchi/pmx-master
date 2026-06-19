@@ -8650,6 +8650,349 @@ document.addEventListener("keydown", (e) => {
 });
 updateUndoButtons();
 setRoute();
+
+// ============================================================
+// CHAT "Chiedi alla lista" — parser linguaggio naturale broker
+// ============================================================
+(function(){
+  if (window.__bchatInit) return; window.__bchatInit = true;
+
+  // ---------- AREE: sinonimi -> codici area canonici ----------
+  // ogni voce: [regex, [aree...], destinazioneEcsa?]
+  const BCHAT_AREAS = [
+    [/\b(ecsa|east coast south america|sud ?america est|argentina|brasile|brazil|recalada|santos|necochea)\b/, ['ECSA']],
+    [/\b(usg|us gulf|gulf|golfo del messico|golfo)\b/, ['USG']],
+    [/\b(usec|us east coast|east coast usa)\b/, ['USEC']],
+    [/\b(ncsa|north coast south america)\b/, ['NCSA']],
+    [/\b(safr|south africa|sud ?africa|saldanha|richards bay)\b/, ['SAFR']],
+    [/\b(wci|west coast india|india ovest)\b/, ['WCI']],
+    [/\b(eci|east coast india|india est)\b/, ['ECI']],
+    [/\b(india)\b/, ['WCI','ECI']],
+    [/\b(pg|persian gulf|golfo persico|arabian gulf|arab gulf)\b/, ['PG']],
+    [/\b(rsea|red sea|mar rosso)\b/, ['RSEA']],
+    [/\b(seasia|sea|south ?east ?asia|sud ?est asia|singapore|sing)\b/, ['SEASIA']],
+    [/\b(indo|indonesia)\b/, ['INDO']],
+    [/\b(nchina|north china|cina nord)\b/, ['NCHINA']],
+    [/\b(schina|south china|cina sud)\b/, ['SCHINA']],
+    [/\b(china|cina)\b/, ['NCHINA','SCHINA']],
+    [/\b(nopac|north ?pacific|nord pacifico)\b/, ['NOPAC']],
+    [/\b(feast|far east|estremo oriente)\b/, ['FEAST']],
+    [/\b(ecaus|east australia|australia est)\b/, ['ECAUS']],
+    [/\b(wcaus|west australia|australia ovest)\b/, ['WCAUS']],
+    [/\b(aussie|australia|aus)\b/, ['ECAUS','WCAUS']],
+    [/\b(emed|east med|med est)\b/, ['EMED']],
+    [/\b(wmed|west med|med ovest)\b/, ['WMED']],
+    [/\b(med|mediterraneo|mediterranean)\b/, ['EMED','WMED']],
+    [/\b(ukc|uk continent|continent|cont|nord europa|skaw|baltico|baltic)\b/, ['UKC']],
+    [/\b(middleast|middle east|medio oriente)\b/, ['MIDDLEAST']],
+    [/\b(cis)\b/, ['CIS']],
+  ];
+
+  const BCHAT_MONTHS = {
+    gennaio:0, gen:0, january:0, jan:0,
+    febbraio:1, feb:1, february:1,
+    marzo:2, mar:2, march:2,
+    aprile:3, apr:3, april:3,
+    maggio:4, mag:4, may:4,
+    giugno:5, giu:5, june:5, jun:5,
+    luglio:6, lug:6, july:6, jul:6,
+    agosto:7, ago:7, august:7, aug:7,
+    settembre:8, set:8, sett:8, september:8, sep:8,
+    ottobre:9, ott:9, october:9, oct:9,
+    novembre:10, nov:10, november:10,
+    dicembre:11, dic:11, december:11, dec:11,
+  };
+  const BCHAT_MON_SHORT = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+
+  function bchatIso(y,m,d){ return y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'); }
+  function bchatLastDay(y,m){ return new Date(Date.UTC(y,m+1,0)).getUTCDate(); }
+
+  function bchatPeriod(qraw){
+    const q = ' ' + qraw.toLowerCase() + ' ';
+    const today = new Date();
+    const iso = (dt)=> dt.toISOString().slice(0,10);
+    const addDays = (dt,n)=>{ const x=new Date(dt); x.setDate(x.getDate()+n); return x; };
+    // --- relativi ---
+    if (/\boggi\b|\btoday\b/.test(q)) return { from: iso(today), to: iso(today), label: 'oggi' };
+    if (/\bdomani\b|\btomorrow\b/.test(q)) { const t=addDays(today,1); return { from: iso(t), to: iso(t), label: 'domani' }; }
+    let mRel;
+    if ((mRel = q.match(/prossim[ie]\s+(\d{1,2})\s+giorni|next\s+(\d{1,2})\s+days/))) { const n=parseInt(mRel[1]||mRel[2],10); return { from: iso(today), to: iso(addDays(today,n)), label: 'prossimi '+n+' giorni' }; }
+    if (/prossima settimana|next week/.test(q)) return { from: iso(addDays(today,7)), to: iso(addDays(today,13)), label: 'prossima settimana' };
+    if (/questa settimana|this week/.test(q)) return { from: iso(today), to: iso(addDays(today,6)), label: 'questa settimana' };
+    // --- mese ---
+    let monIdx = -1;
+    for (const name in BCHAT_MONTHS){ const re = new RegExp('\\b'+name+'\\b'); if (re.test(q)) { monIdx = BCHAT_MONTHS[name]; break; } }
+    if (monIdx < 0) return null;
+    const curM = today.getUTCMonth();
+    const year = (monIdx < curM) ? today.getUTCFullYear()+1 : today.getUTCFullYear();
+    const last = bchatLastDay(year, monIdx);
+    const lab = (a,b)=> (a===b ? a : a+'-'+b) + ' ' + BCHAT_MON_SHORT[monIdx];
+    // decadi
+    if (/prima decade|1\^?\s*decade|first decade/.test(q)) return { from: bchatIso(year,monIdx,1), to: bchatIso(year,monIdx,10), label: lab(1,10) };
+    if (/seconda decade|2\^?\s*decade|second decade/.test(q)) return { from: bchatIso(year,monIdx,11), to: bchatIso(year,monIdx,20), label: lab(11,20) };
+    if (/terza decade|3\^?\s*decade|third decade/.test(q)) return { from: bchatIso(year,monIdx,21), to: bchatIso(year,monIdx,last), label: lab(21,last) };
+    // metà
+    if (/prima\s+met[aà]|1\^?\s*met[aà]|\b1h\b|first half/.test(q)) return { from: bchatIso(year,monIdx,1), to: bchatIso(year,monIdx,15), label: lab(1,15) };
+    if (/seconda\s+met[aà]|2\^?\s*met[aà]|\b2h\b|second half/.test(q)) return { from: bchatIso(year,monIdx,16), to: bchatIso(year,monIdx,last), label: lab(16,last) };
+    if (/\binizio\b|early/.test(q)) return { from: bchatIso(year,monIdx,1), to: bchatIso(year,monIdx,10), label: lab(1,10) };
+    if (/\bfine\b|\bend\b|tardo|late/.test(q)) return { from: bchatIso(year,monIdx,21), to: bchatIso(year,monIdx,last), label: lab(21,last) };
+    // range esplicito  "dal 15 al 25" / "15-25" / "15/25"
+    let mr = q.match(/\b(\d{1,2})\s*(?:[-\/]|al|to)\s*(\d{1,2})\b/);
+    if (mr) { let a=Math.max(1,Math.min(31,parseInt(mr[1],10))), b=Math.max(1,Math.min(last,parseInt(mr[2],10))); if(a>b){const t=a;a=b;b=t;} return { from: bchatIso(year,monIdx,a), to: bchatIso(year,monIdx,b), label: lab(a,b) }; }
+    // metà mese (mid) senza prima/seconda
+    if (/\bmet[aà]\b|\bmid\b/.test(q)) return { from: bchatIso(year,monIdx,10), to: bchatIso(year,monIdx,20), label: lab(10,20) };
+    // giorno singolo "20 luglio"
+    let md = q.match(/\b(\d{1,2})\s*(?:di\s+)?(?:gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre|gen|feb|mar|apr|mag|giu|lug|ago|set|sett|ott|nov|dic|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\b/);
+    if (md) { const d=Math.max(1,Math.min(last,parseInt(md[1],10))); return { from: bchatIso(year,monIdx,d), to: bchatIso(year,monIdx,d), label: lab(d,d) }; }
+    // tutto il mese
+    return { from: bchatIso(year,monIdx,1), to: bchatIso(year,monIdx,last), label: BCHAT_MON_SHORT[monIdx]+' '+year };
+  }
+
+  function bchatParse(qraw){
+    const q = qraw.toLowerCase();
+    // kind
+    let kind = 'v';
+    if (/\b(carich[io]|carico|cargo|cargoes|cgo|order|orders|ordin[ei]|nol[io]|requirement|reqs?)\b/.test(q)) kind = 'c';
+    if (/\b(navi|nave|vessel|vessels|ship|ships|tonnage|tng|ballaster|ballasters|open)\b/.test(q)) kind = 'v';
+    // aree / basin
+    const areas = new Set(); let basin = null; let ecsaDest = false;
+    for (const [re, list] of BCHAT_AREAS){ if (re.test(q)){ list.forEach(a=>areas.add(a)); } }
+    if (areas.has('ECSA')) ecsaDest = true;
+    if (/\b(atlantico|atlantic|atl)\b/.test(q)) basin = basin || 'ATL';
+    if (/\b(pacifico|pacific|pac)\b/.test(q)) basin = basin || 'PAC';
+    // size
+    let size = null;
+    if (/\b(supramax|supra|smx|ultramax|ultra|umax|geared|handy|handysize)\b/.test(q)) size = 'smx';
+    if (/\b(panamax|pmax|kamsarmax|kmx|post ?panamax)\b/.test(q)) size = 'pmax';
+    // status
+    let status = null;
+    if (/\b(fresh|fresche|fresca|nuove)\b/.test(q)) status = 'fresh';
+    if (/\b(on subs|a soggetti|soggetti|subs)\b/.test(q)) status = 'on_subs';
+    if (/\b(off market|off mkt|off|ritirat[ae])\b/.test(q)) status = 'off_mkt';
+    if (/\b(disponibil[ie]|available|libere|aperte)\b/.test(q)) status = 'avail';
+    const period = bchatPeriod(qraw);
+    return { kind, areas, basin, ecsaDest, size, status, period, raw: qraw };
+  }
+
+  // ---------- helpers periodo / dwt ----------
+  function bchatOverlap(aFrom, aTo, p){
+    if (!p) return true;
+    const f = aFrom || aTo, t = aTo || aFrom;
+    if (!f) return false;
+    return (f <= p.to) && (t >= p.from);
+  }
+  function bchatDwt(s){ const m = String(s||'').match(/(\d{2,3})/); return m ? parseInt(m[1],10) : null; }
+  function bchatSizeOk(v, size){
+    if (!size) return true;
+    const d = bchatDwt(v.dwt_blt); if (d==null) return true;
+    if (size==='smx') return d <= 66;
+    if (size==='pmax') return d >= 67;
+    return true;
+  }
+  function bchatStatusOk(v, status){
+    const st = v.status || 'fresh';
+    if (!status) return st !== 'off_mkt';
+    if (status==='avail') return st !== 'off_mkt';
+    return st === status;
+  }
+
+  // ---------- colore area ----------
+  const BCHAT_ACOLOR = { green:'#2D8A4F', blue:'#2563EB', red:'#C5392B', amber:'#D97706', gray:'#475569', slate:'#475569', purple:'#7C3AED', teal:'#0D9488' };
+  function bchatAreaColor(area){ try { const c = (typeof areaClass==='function') ? areaClass(area).replace('area-','') : 'gray'; return BCHAT_ACOLOR[c] || BCHAT_ACOLOR.gray; } catch(e){ return BCHAT_ACOLOR.gray; } }
+
+  // ---------- esecuzione query ----------
+  function bchatQuery(f){
+    const groups = {}; // area -> rows[]
+    const push = (area, row) => { (groups[area] = groups[area] || []).push(row); };
+    const D = window.DATA || {};
+    if (f.kind === 'v'){
+      if (f.ecsaDest){
+        // navi caricabili in ECSA: usa il rundown ETA
+        const entries = (typeof buildEcsaEtaEntries==='function') ? buildEcsaEtaEntries() : [];
+        for (const e of entries){
+          const v = e.v;
+          if (!bchatSizeOk(v, f.size) || !bchatStatusOk(v, f.status)) continue;
+          if (!bchatOverlap(e.adjFrom, e.adjTo, f.period)) continue;
+          push(e.area, { v, subs: (v.status==='on_subs'),
+            cells: [ titleCase(v.vessel||''), v.dwt_blt||'', (e.area||''), fmtRundownDate(e.adjFrom, e.adjTo), titleCase(v.ows_brkr||'') ] });
+        }
+      } else {
+        for (const v of (D.vessels||[])){
+          const area = String(v.area||'').trim().toUpperCase();
+          if (f.areas.size && !f.areas.has(area)) continue;
+          if (!f.areas.size && f.basin && v.basin !== f.basin) continue;
+          if (!f.areas.size && !f.basin) continue; // serve almeno un'area o un basin
+          if (!bchatSizeOk(v, f.size) || !bchatStatusOk(v, f.status)) continue;
+          if (!bchatOverlap(v.open_from, v.open_to, f.period)) continue;
+          push(area, { v, subs: (v.status==='on_subs'),
+            cells: [ titleCase(v.vessel||''), v.dwt_blt||'', titleCase(v.open_port||''), fmtRundownDate(v.open_from, v.open_to), titleCase(v.ows_brkr||'') ] });
+        }
+      }
+    } else {
+      for (const c of (D.cargoes||[])){
+        const area = String(c.area||'').trim().toUpperCase();
+        if (f.areas.size && !f.areas.has(area)) continue;
+        if (!f.areas.size && f.basin && c.basin !== f.basin) continue;
+        if (!f.areas.size && !f.basin) continue;
+        if (!bchatOverlap(c.laycan_from, c.laycan_to, f.period)) continue;
+        const route = [titleCase(c.load_port||''), titleCase(c.disch_port||'')].filter(Boolean).join(' / ');
+        push(area, { v: c, subs: (c.status==='on_subs'),
+          cells: [ titleCase(c.chrtrs||''), c.size||'', route, fmtRundownDate(c.laycan_from, c.laycan_to), c.cgo||'' ] });
+      }
+    }
+    // ordina aree e righe
+    const order = Object.keys(groups).sort();
+    let total = 0;
+    const out = order.map(area => { const rows = groups[area]; total += rows.length; return { area, rows }; });
+    return { groups: out, total };
+  }
+
+  // ---------- rendering tabella ----------
+  const BCHAT_HEAD = {
+    v: ['Vessel','DWT','Pos / ETA','Laycan','Owner'],
+    c: ['Charterer','Size','Load / Disch','Laycan','Cargo'],
+  };
+  function bchatTableHtml(res, kind){
+    const head = BCHAT_HEAD[kind].map(h => `<th>${esc(h)}</th>`).join('');
+    let body = '';
+    for (const g of res.groups){
+      const col = bchatAreaColor(g.area);
+      body += `<tr class="bchat-sec"><td colspan="${BCHAT_HEAD[kind].length}" style="background:${col}">${esc(g.area)} · ${g.rows.length}</td></tr>`;
+      g.rows.forEach((r,i)=>{
+        const tds = r.cells.map((c,ci)=>`<td class="${ci===0?'bchat-strong':''}${(ci===2||ci===4)?' bchat-wide':''}">${esc(c)}</td>`).join('');
+        body += `<tr class="${r.subs?'bchat-subs':''}${i%2?' bchat-alt':''}">${tds}</tr>`;
+      });
+    }
+    return `<table class="bchat-tbl"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+  }
+  function bchatTextOut(res, kind){
+    let out = '';
+    for (const g of res.groups){
+      out += g.area + ' (' + g.rows.length + ')\n';
+      for (const r of g.rows){ out += r.cells.filter(Boolean).join('  ').toLowerCase() + '\n'; }
+      out += '\n';
+    }
+    return out.trim();
+  }
+
+  // ---------- snapshot immagine ----------
+  async function bchatSnapshot(node, btn){
+    if (btn) btn.classList.add('busy');
+    try {
+      if (!window.html2canvas){ await new Promise((res,rej)=>{ const sc=document.createElement('script'); sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'; sc.onload=res; sc.onerror=rej; document.head.appendChild(sc); }); }
+      const canvas = await window.html2canvas(node, { scale: 2, backgroundColor: '#ffffff', logging: false });
+      const blob = await new Promise(r => canvas.toBlob(r, 'image/png'));
+      let copied = false;
+      try { if (navigator.clipboard && window.ClipboardItem){ await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]); copied = true; } } catch(e){}
+      if (!copied){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='lista.png'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),3000); }
+      if (typeof cloudToast==='function') cloudToast(copied?'Immagine copiata negli appunti':'Immagine scaricata',{kind:'ok'});
+    } catch(e){ if (typeof cloudToast==='function') cloudToast('Errore immagine',{kind:'error'}); }
+    finally { if (btn) btn.classList.remove('busy'); }
+  }
+
+  // ---------- UI ----------
+  function bchatAddMsg(html, who){
+    const m = document.getElementById('bchatMsgs'); if(!m) return null;
+    const d = document.createElement('div'); d.className = 'bchat-msg bchat-'+(who||'bot'); d.innerHTML = html;
+    m.appendChild(d); m.scrollTop = m.scrollHeight; return d;
+  }
+  function bchatSummary(f, res){
+    const bits = [];
+    bits.push(f.kind==='v' ? 'navi' : 'cargo');
+    if (f.ecsaDest) bits.push('caricabili in ECSA');
+    else if (f.areas.size) bits.push([...f.areas].join('/'));
+    else if (f.basin) bits.push(f.basin==='ATL'?'atlantico':'pacifico');
+    if (f.size) bits.push(f.size==='smx'?'supramax':'panamax');
+    if (f.status) bits.push(f.status==='fresh'?'fresh':f.status==='on_subs'?'on subs':f.status==='off_mkt'?'off mkt':'disponibili');
+    if (f.period) bits.push(f.period.label);
+    return bits.join(' · ') + ' — <b>' + res.total + '</b> risultat' + (res.total===1?'o':'i');
+  }
+  function bchatHandle(text){
+    const t = text.trim(); if(!t) return;
+    bchatAddMsg(esc(t), 'user');
+    const f = bchatParse(t);
+    if (!f.areas.size && !f.basin && !f.ecsaDest){
+      bchatAddMsg('Specifica almeno un’area (es. <b>ECSA</b>, <b>USG</b>, <b>SEASIA</b>) o un bacino (<b>atlantico</b>/<b>pacifico</b>). Esempio: "navi caricabili in ECSA seconda metà luglio".'); return;
+    }
+    const res = bchatQuery(f);
+    if (!res.total){ bchatAddMsg('Nessun risultato per: ' + bchatSummary(f,res) + '.'); return; }
+    const wrap = document.createElement('div');
+    wrap.innerHTML = '<div class="bchat-sum">'+bchatSummary(f,res)+'</div>' +
+      '<div class="bchat-tblwrap">'+bchatTableHtml(res, f.kind)+'</div>' +
+      '<div class="bchat-acts"><button class="bchat-act" data-act="img">📷 Copia immagine</button><button class="bchat-act" data-act="txt">⎘ Copia testo</button></div>';
+    const node = bchatAddMsg('', 'bot'); node.appendChild(wrap);
+    const tbl = wrap.querySelector('.bchat-tblwrap');
+    wrap.querySelector('[data-act=img]').addEventListener('click', e => bchatSnapshot(tbl.querySelector('table'), e.currentTarget));
+    wrap.querySelector('[data-act=txt]').addEventListener('click', async e => {
+      try { await navigator.clipboard.writeText(bchatTextOut(res, f.kind)); if(typeof cloudToast==='function') cloudToast('Testo copiato',{kind:'ok'}); } catch(err){}
+    });
+  }
+
+  function bchatBuildUI(){
+    const style = document.createElement('style');
+    style.textContent = `
+      #bchatFab{position:fixed;right:20px;bottom:20px;width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;background:#0f172a;color:#fff;box-shadow:0 8px 24px rgba(15,23,42,.35);display:flex;align-items:center;justify-content:center;z-index:99990;transition:transform .15s}
+      #bchatFab:hover{transform:scale(1.06)}
+      #bchatFab svg{width:26px;height:26px}
+      #bchatPanel{position:fixed;right:20px;bottom:88px;width:min(440px,calc(100vw - 32px));height:min(70vh,640px);background:#fff;border-radius:16px;box-shadow:0 18px 50px rgba(15,23,42,.30);display:flex;flex-direction:column;overflow:hidden;z-index:99991;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif}
+      #bchatPanel.bchat-hidden{display:none}
+      #bchatHead{background:#0f172a;color:#fff;padding:13px 16px;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:space-between}
+      #bchatHead small{display:block;font-weight:400;font-size:11px;color:#94a3b8;margin-top:2px}
+      #bchatClose{background:none;border:none;color:#cbd5e1;font-size:18px;cursor:pointer;line-height:1}
+      #bchatMsgs{flex:1;overflow-y:auto;padding:14px;background:#f1f5f9;display:flex;flex-direction:column;gap:10px}
+      .bchat-msg{font-size:12.5px;line-height:1.45;max-width:100%}
+      .bchat-user{align-self:flex-end;background:#0f172a;color:#fff;padding:8px 12px;border-radius:14px 14px 4px 14px;max-width:85%}
+      .bchat-bot{align-self:flex-start;background:#fff;color:#1f2937;padding:10px 12px;border-radius:14px 14px 14px 4px;box-shadow:0 1px 4px rgba(15,23,42,.08);max-width:100%}
+      .bchat-sum{font-size:12px;color:#475569;margin-bottom:8px}
+      .bchat-tblwrap{overflow-x:auto;border-radius:10px;border:1px solid #e5e9f0}
+      table.bchat-tbl{border-collapse:collapse;font-size:11.5px;width:100%;line-height:1.35}
+      table.bchat-tbl thead th{background:#0f172a;color:#cbd5e1;text-transform:uppercase;font-size:9px;letter-spacing:.06em;font-weight:700;padding:7px 9px;text-align:left;white-space:nowrap}
+      table.bchat-tbl td{padding:5px 9px;border-bottom:1px solid #eef1f5;color:#1f2937;white-space:nowrap}
+      table.bchat-tbl td.bchat-wide{white-space:normal;max-width:170px}
+      table.bchat-tbl td.bchat-strong{font-weight:700}
+      table.bchat-tbl tr.bchat-alt td{background:#fbfcfe}
+      table.bchat-tbl tr.bchat-subs td{color:#B31412}
+      table.bchat-tbl tr.bchat-sec td{color:#fff;font-weight:700;font-size:10px;letter-spacing:.05em;text-transform:uppercase;padding:6px 9px;white-space:nowrap}
+      .bchat-acts{display:flex;gap:8px;margin-top:9px}
+      .bchat-act{font-size:11px;border:1px solid #d7deea;background:#fff;color:#0f172a;border-radius:8px;padding:6px 10px;cursor:pointer;font-weight:600}
+      .bchat-act:hover{background:#f1f5f9}
+      .bchat-act.busy{opacity:.5;pointer-events:none}
+      #bchatExamples{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px;background:#f8fafc;border-top:1px solid #e9eef5}
+      .bchat-ex{font-size:11px;border:1px solid #d7deea;background:#fff;color:#334155;border-radius:20px;padding:4px 10px;cursor:pointer}
+      .bchat-ex:hover{background:#eef2f8}
+      #bchatForm{display:flex;gap:8px;padding:10px 12px;border-top:1px solid #e5e9f0;background:#fff}
+      #bchatInput{flex:1;border:1px solid #cdd6e4;border-radius:10px;padding:9px 12px;font-size:13px;outline:none}
+      #bchatInput:focus{border-color:#0f172a}
+      #bchatForm button{border:none;background:#0f172a;color:#fff;border-radius:10px;width:42px;font-size:16px;cursor:pointer}
+    `;
+    document.head.appendChild(style);
+    const fab = document.createElement('button');
+    fab.id = 'bchatFab'; fab.title = 'Chiedi alla lista';
+    fab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+    const panel = document.createElement('div');
+    panel.id = 'bchatPanel'; panel.className = 'bchat-hidden';
+    const examples = ['navi caricabili in ECSA seconda metà luglio','navi fresh in pacifico','cargo USG agosto','navi in SEASIA'];
+    panel.innerHTML =
+      '<div id="bchatHead"><div>Chiedi alla lista<small>navi, cargo, aree e periodi</small></div><button id="bchatClose">✕</button></div>' +
+      '<div id="bchatMsgs"></div>' +
+      '<div id="bchatExamples">' + examples.map(e=>`<button class="bchat-ex">${esc(e)}</button>`).join('') + '</div>' +
+      '<form id="bchatForm"><input id="bchatInput" autocomplete="off" placeholder="es. navi caricabili in ECSA 2ª metà luglio"><button type="submit">➤</button></form>';
+    document.body.appendChild(fab); document.body.appendChild(panel);
+
+    let welcomed = false;
+    function openPanel(){ panel.classList.remove('bchat-hidden'); document.getElementById('bchatInput').focus();
+      if (!welcomed){ welcomed = true; bchatAddMsg('Ciao! Chiedimi che navi o cargo ci sono per area e periodo. Esempi:<br>• <i>navi caricabili in ECSA seconda metà luglio</i><br>• <i>navi fresh in pacifico</i><br>• <i>cargo USG agosto</i>'); }
+    }
+    fab.addEventListener('click', ()=> panel.classList.contains('bchat-hidden') ? openPanel() : panel.classList.add('bchat-hidden'));
+    panel.querySelector('#bchatClose').addEventListener('click', ()=> panel.classList.add('bchat-hidden'));
+    panel.querySelector('#bchatForm').addEventListener('submit', e=>{ e.preventDefault(); const inp=document.getElementById('bchatInput'); const v=inp.value; inp.value=''; bchatHandle(v); });
+    panel.querySelectorAll('.bchat-ex').forEach(b=> b.addEventListener('click', ()=>{ document.getElementById('bchatInput').value=b.textContent; bchatHandle(b.textContent); }));
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bchatBuildUI);
+  else bchatBuildUI();
+})();
+
 </script>
 
 <script>
