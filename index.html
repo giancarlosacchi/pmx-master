@@ -5979,7 +5979,8 @@ routes['vsl'] = function() {
       if (FF.bunker && !matchText(v.bunker, FF.bunker)) return false;
       if (FF.subs && !matchText(v.subs, FF.subs)) return false;
       if (FF.status && !matchText(v.status, FF.status)) return false;
-      if (FF.update_date && !matchText(fmtUpdate(v.update_date), FF.update_date)) return false;
+      if (FF.update_from && (!v.update_date || v.update_date < FF.update_from)) return false;
+      if (FF.update_to && (!v.update_date || v.update_date > FF.update_to)) return false;
       return true;
     });
     // Calcolo ETA al cgo area usando matrice Distances VSL (vessel_open → load_area)
@@ -6061,7 +6062,7 @@ routes['vsl'] = function() {
       <th data-col="ows_brkr" class="th-filter"><input data-col="ows_brkr" placeholder="Ows" value="${attr(FF.ows_brkr||'')}">${colBtn('ows_brkr')}</th>
       <th data-col="bunker" class="th-filter"><input data-col="bunker" placeholder="Bunker" value="${attr(FF.bunker||'')}">${colBtn('bunker')}</th>
       <th data-col="ls_brkr" class="th-filter"><input data-col="ls_brkr" placeholder="LS" value="${attr(FF.ls_brkr||'')}">${colBtn('ls_brkr')}</th>
-      <th data-col="update_date" class="th-filter"><input data-col="update_date" placeholder="Update" value="${attr(FF.update_date||'')}">${colBtn('update_date')}</th>
+      <th data-col="update_date" class="th-filter"><input class="filter-date-range" type="text" readonly data-col="update_date" placeholder="Update" value="${attr(fmtFilterDateRange(FF.update_from, FF.update_to))}">${colBtn('update_date')}</th>
       <th data-col="subs" class="th-filter"><input data-col="subs" placeholder="Subs" value="${attr(FF.subs||'')}">${colBtn('subs')}</th>
       <th data-col="status" class="th-filter"><input data-col="status" placeholder="Status" value="${attr(FF.status||'')}">${colBtn('status')}</th>
     </tr></thead><tbody>${rows.map(v => `<tr class="${v.status==='on_subs'?'status-subs':v.status==='off_mkt'?'status-off':v.status==='fresh'?'status-fresh':''}">
@@ -6104,6 +6105,11 @@ routes['vsl'] = function() {
   // Hook per i filtri colonna (eseguito ogni render)
   const hookVslFilters = () => $$('#vf-results thead th.th-filter input').forEach(inp => {
     if (inp.value) inp.classList.add('filter-active');
+    if (inp.classList.contains('filter-date-range')) {
+      const F = getFilter('vsl');
+      inp.onclick = () => openFilterDateRange(inp, F.update_from, F.update_to, (from, to) => { F.update_from = from; F.update_to = to; run(); hookVslFilters(); });
+      return;
+    }
     inp.oninput = debounce((e) => {
       const col = inp.dataset.col;
       const selStart = e.target.selectionStart;
@@ -6248,7 +6254,8 @@ routes['cgo'] = function() {
       if (CF.ls_brkr && !matchText(c.ls_brkr, CF.ls_brkr)) return false;
       if (CF.notes && !matchText(c.notes, CF.notes)) return false;
       if (CF.status && !matchText(c.status, CF.status)) return false;
-      if (CF.update_date && !matchText(fmtUpdate(c.update_date || c.date), CF.update_date)) return false;
+      if (CF.update_from && (!(c.update_date||c.date) || (c.update_date||c.date) < CF.update_from)) return false;
+      if (CF.update_to && (!(c.update_date||c.date) || (c.update_date||c.date) > CF.update_to)) return false;
       return true;
     });
     // Filtra cargoes raggiungibili usando matrice Distances CGO (vessel_open → load_area, percorsi commerciali)
@@ -6319,7 +6326,7 @@ routes['cgo'] = function() {
       <th data-col="size" class="th-filter"><input data-col="size" placeholder="Size" value="${attr(CF.size||'')}">${colBtnC('size')}</th>
       <th data-col="notes" class="th-filter col-ideas"><input data-col="notes" placeholder="Notes / Rates" value="${attr(CF.notes||'')}">${colBtnC('notes')}</th>
       <th data-col="ls_brkr" class="th-filter"><input data-col="ls_brkr" placeholder="LS Brkr" value="${attr(CF.ls_brkr||'')}">${colBtnC('ls_brkr')}</th>
-      <th data-col="update_date" class="th-filter"><input data-col="update_date" placeholder="Update" value="${attr(CF.update_date||'')}">${colBtnC('update_date')}</th>
+      <th data-col="update_date" class="th-filter"><input class="filter-date-range" type="text" readonly data-col="update_date" placeholder="Update" value="${attr(fmtFilterDateRange(CF.update_from, CF.update_to))}">${colBtnC('update_date')}</th>
       <th data-col="status" class="th-filter"><input data-col="status" placeholder="Status" value="${attr(CF.status||'')}"></th>
       <th></th>
     </tr></thead><tbody>${rows.map(c => `<tr class="row-area ${areaClass(c.section || c.area)} ${c.status==='on_subs'?'status-subs':c.status==='off_mkt'?'status-off':c.status==='fresh'?'status-fresh':''}">
@@ -6370,6 +6377,11 @@ routes['cgo'] = function() {
     // Hook filtri colonna
     $$('#cf-results thead th.th-filter input').forEach(inp => {
       if (inp.value) inp.classList.add('filter-active');
+      if (inp.classList.contains('filter-date-range')) {
+        const F = getFilter('cgo');
+        inp.onclick = () => openFilterDateRange(inp, F.update_from, F.update_to, (from, to) => { F.update_from = from; F.update_to = to; run(); });
+        return;
+      }
       inp.oninput = debounce((e) => {
         const col = inp.dataset.col;
         const selStart = e.target.selectionStart;
