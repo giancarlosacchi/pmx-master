@@ -5265,7 +5265,7 @@ routes['ecsa-list'] = function() {
             ${renderAreaDropdown('ecsa-list', ['ECSA','PG / RSEA','SAFR','WCI','ECI','SEASIA'], 'Area')}
             <div class="group"><label>Status</label>
               <select id="f-status"><option value="">All</option><option value="fresh">Fresh</option><option value="off_mkt">Off mkt</option><option value="on_subs">On subs</option></select></div>
-            <span class="count-pill cnt-with-tooltip" id="cnt">—</span>
+            <span class="count-pill cnt-with-tooltip" id="cnt">—</span>${cpToggleBtn('ecsa-list')}
             <label class="rd-toggle" title="Mostra/nascondi ECSA Rundown"><span>Rundown</span><input type="checkbox" id="ecsa-toggle-rd"><span class="rd-switch" aria-hidden="true"></span></label>
           </div>
           <div class="tbl-wrap" id="tbl"></div>
@@ -5341,6 +5341,7 @@ routes['ecsa-list'] = function() {
       return true;
     });
     $('#cnt').textContent = `${entries.length} vessels`;
+    if (getCpView('ecsa-list')) { $('#tbl').innerHTML = renderVesselsCpView(entries.map(e => ({...e.v, open_from: e.adjFrom, open_to: e.adjTo, area: e.area})), null); return; }
     // Conteggio per bucket 1H/2H mese — visibile come tooltip on hover
     const bucketCounts = {};
     for (const e of entries) {
@@ -5934,7 +5935,7 @@ routes['vsl'] = function() {
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         Copy list
       </button>
-      <span class="count-pill" id="vf-count" style="display:none">— vessels</span>
+      <span class="count-pill" id="vf-count" style="display:none">— vessels</span>${cpToggleBtn('vsl')}
     </div>
     <div id="vf-summary" style="padding:10px 14px;font-size:11.5px;color:var(--text-dim);border-bottom:1px solid var(--line-soft);background:rgba(255,255,255,.015)"></div>
     <div class="tbl-wrap" id="vf-results"></div></div>`;
@@ -6205,7 +6206,7 @@ routes['cgo'] = function() {
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         Copy list
       </button>
-      <span class="count-pill" id="cf-count" style="display:none">— cargoes</span>
+      <span class="count-pill" id="cf-count" style="display:none">— cargoes</span>${cpToggleBtn('cgo')}
     </div>
     <div id="cf-summary" style="padding:10px 14px;font-size:11.5px;color:var(--text-dim);border-bottom:1px solid var(--line-soft);background:rgba(255,255,255,.015)"></div>
     <div class="tbl-wrap" id="cf-results"></div></div>`;
