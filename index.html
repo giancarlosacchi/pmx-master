@@ -6759,7 +6759,7 @@ function renderVesselsCpView(rows, basin) {
     html += `<div class="cp-section ${ac}">${esc(a)} · ${list.length}</div>`;
     const gItems = [];
     for (const v of list) {
-      const text = buildVesselCopyText(v, _cpEx);
+      const text = buildVesselCopyText(v, _cpEx).toLowerCase();
       const sCls = rowStatusCls(v);
       const exocp = v.ex_our_cp ? 'exocp' : '';
       html += `<div class="cp-row ${sCls} ${exocp}" data-id="${v.id}" data-kind="v" title="Double-click to edit">${esc(text)}</div>`;
@@ -6795,7 +6795,7 @@ function renderCargoesCpView(rows, basin) {
     html += `<div class="cp-section ${ac}">${esc(sec)} · ${list.length}</div>`;
     const gItems = [];
     for (const c of list) {
-      const text = buildCargoCopyText(c, _cpEx);
+      const text = buildCargoCopyText(c, _cpEx).toLowerCase();
       const sCls = rowStatusCls(c);
       html += `<div class="cp-row ${sCls}" data-id="${c.id}" data-kind="c" title="Double-click to edit">${esc(text)}</div>`;
       gItems.push({ text, status: c.status });
