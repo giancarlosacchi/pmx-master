@@ -1099,6 +1099,11 @@ pre.rundown { white-space: pre-wrap; font-family: inherit;
 .cp-row.subs { background: var(--subs-bg); color: var(--subs-text); }
 .cp-row.off { background: var(--off-bg); color: var(--off-text); }
 .cp-row.exocp { font-weight: 700; }
+.cp-cols-bar { display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:8px 14px; border-bottom:1px solid var(--line-soft); }
+.cp-cols-label { font-size:11px; color:var(--text-mute); margin-right:4px; }
+.cp-col-chip { font:600 10.5px/1 system-ui,sans-serif; padding:4px 9px; border-radius:999px; border:1px solid var(--line); cursor:pointer; user-select:none; }
+.cp-col-chip.on { background:#2D8A4F; color:#fff; border-color:#2D8A4F; }
+.cp-col-chip.off { background:transparent; color:var(--text-mute); opacity:.65; text-decoration:line-through; }
 .cp-empty { padding: 30px 20px; text-align: center; color: var(--text-mute); font-size: 12.5px; }
 /* Toggle button legacy (vecchio btn-cp-toggle) */
 .btn-cp-toggle.active { background: var(--gold); border-color: var(--gold); color: #fff; box-shadow: 0 2px 6px var(--logo-shadow); }
@@ -6475,26 +6480,62 @@ function fmtRundownDate(from, to) {
   const d = f || t;
   return `${d.getUTCDate()} ${mons[d.getUTCMonth()]}`;
 }
-function buildCargoCopyText(c) {
-  // Format coerente con l'import Excel: "Crc Umx/Pmx/Kmx Ecsa / S-J 5-14 Jun"
-  const chrtr = titleCase(c.chrtrs || '');
-  const size = c.size || '';
-  const load = titleCase(c.load_port || '');
-  const disch = titleCase(c.disch_port || '');
-  const dates = fmtRundownDate(c.laycan_from, c.laycan_to);
-  const cgo = (c.cgo || '').toLowerCase();
-  const route = (load && disch) ? `${load} / ${disch}` : (load || disch);
-  let parts = [chrtr, size, route, dates];
-  if (cgo) parts.push(cgo);
-  return parts.filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+// ===== Colonne selezionabili per la copia (Copy & Paste) =====
+const VESSEL_CP_DEFAULT_EX = ['ideas','ows_brkr','bunker','ls_brkr','update_date'];
+const CARGO_CP_DEFAULT_EX  = ['notes','ls_brkr','update_date'];
+function getCpCols(kind) {
+  const raw = localStorage.getItem('cp-cols-' + kind);
+  if (raw == null) return new Set(kind === 'v' ? VESSEL_CP_DEFAULT_EX : CARGO_CP_DEFAULT_EX);
+  try { return new Set(JSON.parse(raw)); } catch (e) { return new Set(); }
 }
-function buildVesselCopyText(v) {
-  // Format coerente con l'import Excel: "Mv Name 82/14 Port 1-3 Jun"
-  const name = titleCase(v.vessel || '');
-  const dwt = v.dwt_blt || '';
-  const port = titleCase(v.open_port || '');
-  const dates = fmtRundownDate(v.open_from, v.open_to);
-  return `Mv ${name}${dwt?' '+dwt:''}${port?' '+port:''}${dates?' '+dates:''}`.replace(/\s+/g, ' ').trim();
+function toggleCpCol(kind, col) {
+  const ex = getCpCols(kind);
+  if (ex.has(col)) ex.delete(col); else ex.add(col);
+  localStorage.setItem('cp-cols-' + kind, JSON.stringify([...ex]));
+}
+function cpColChips(kind) {
+  const cols = (kind === 'v')
+    ? [['dwt_blt','DWT'],['open_port','Position'],['dates','Dates'],['ideas','Ideas'],['ows_brkr','Owner'],['bunker','Bunker'],['ls_brkr','LS'],['update_date','Update']]
+    : [['size','Size'],['route','Route'],['dates','Dates'],['cgo','Cgo'],['notes','Notes'],['ls_brkr','LS'],['update_date','Update']];
+  const ex = getCpCols(kind);
+  const chips = cols.map(([c,l]) => `<button class="cp-col-chip ${ex.has(c)?'off':'on'}" data-cp-kind="${kind}" data-cp-col="${c}" type="button">${l}</button>`).join('');
+  return `<div class="cp-cols-bar"><span class="cp-cols-label">Copia colonne:</span>${chips}</div>`;
+}
+document.addEventListener('click', (e) => {
+  const chip = e.target.closest && e.target.closest('.cp-col-chip');
+  if (!chip) return;
+  e.preventDefault();
+  toggleCpCol(chip.dataset.cpKind, chip.dataset.cpCol);
+  if (typeof setRoute === 'function') setRoute();
+});
+function buildCargoCopyText(c, ex) {
+  ex = ex || new Set();
+  let line = titleCase(c.chrtrs || '');
+  if (!ex.has('size') && c.size) line += ' ' + c.size;
+  if (!ex.has('route')) { const load = titleCase(c.load_port||''), disch = titleCase(c.disch_port||''); const route = (load && disch) ? (load + ' / ' + disch) : (load || disch); if (route) line += ' ' + route; }
+  if (!ex.has('dates')) { const d = fmtRundownDate(c.laycan_from, c.laycan_to); if (d) line += ' ' + d; }
+  if (!ex.has('cgo') && c.cgo) line += ' ' + String(c.cgo).toLowerCase();
+  const extra = [];
+  if (!ex.has('notes') && c.notes) extra.push(String(c.notes).trim());
+  if (!ex.has('ls_brkr') && c.ls_brkr) extra.push(String(c.ls_brkr).trim());
+  if (!ex.has('update_date') && (c.update_date||c.date)) extra.push(fmtUpdate(c.update_date||c.date));
+  if (extra.length) line += ' - ' + extra.join(' - ');
+  return line.replace(/\s+/g, ' ').trim();
+}
+function buildVesselCopyText(v, ex) {
+  ex = ex || new Set();
+  let line = 'Mv ' + titleCase(v.vessel || '');
+  if (!ex.has('dwt_blt') && v.dwt_blt) line += ' ' + v.dwt_blt;
+  if (!ex.has('open_port') && v.open_port) line += ' ' + titleCase(v.open_port);
+  if (!ex.has('dates')) { const d = fmtRundownDate(v.open_from, v.open_to); if (d) line += ' ' + d; }
+  const extra = [];
+  if (!ex.has('ideas') && v.ideas) extra.push(String(v.ideas).trim());
+  if (!ex.has('ows_brkr') && v.ows_brkr) extra.push(String(v.ows_brkr).trim());
+  if (!ex.has('bunker') && v.bunker) extra.push('Bunker ' + String(v.bunker).trim());
+  if (!ex.has('ls_brkr') && v.ls_brkr) extra.push(String(v.ls_brkr).trim());
+  if (!ex.has('update_date') && v.update_date) extra.push(fmtUpdate(v.update_date));
+  if (extra.length) line += ' - ' + extra.join(' - ');
+  return line.replace(/\s+/g, ' ').trim();
 }
 
 // ===== COPY & PASTE VIEW (toggle alternativo alla tabella) =====
@@ -6706,7 +6747,8 @@ function renderVesselsCpView(rows, basin) {
   // Stesso comparator della master list: open_from ASC, a parità open_to ASC
   const cmpVessel = makeDateRangeCmp('open_from', 'open_to');
   const groups = [];
-  let html = `<div class="cp-view"><div class="cp-header"><span class="cp-header-title">Copy &amp; Paste List · ${rows.length} vessels</span>${cpCopyButton()}</div>`;
+  let html = `<div class="cp-view"><div class="cp-header"><span class="cp-header-title">Copy &amp; Paste List · ${rows.length} vessels</span>${cpCopyButton()}</div>` + cpColChips('v');
+  const _cpEx = getCpCols('v');
   for (const a of areas) {
     const list = rows.filter(v => (v.area || '—') === a).slice().sort(cmpVessel);
     if (!list.length) continue;
@@ -6714,7 +6756,7 @@ function renderVesselsCpView(rows, basin) {
     html += `<div class="cp-section ${ac}">${esc(a)} · ${list.length}</div>`;
     const gItems = [];
     for (const v of list) {
-      const text = v.copy_text || buildVesselCopyText(v);
+      const text = buildVesselCopyText(v, _cpEx);
       const sCls = rowStatusCls(v);
       const exocp = v.ex_our_cp ? 'exocp' : '';
       html += `<div class="cp-row ${sCls} ${exocp}" data-id="${v.id}" data-kind="v" title="Double-click to edit">${esc(text)}</div>`;
@@ -6741,7 +6783,8 @@ function renderCargoesCpView(rows, basin) {
   // Comparator: laycan_from ASC, a parità laycan_to ASC
   const cmpCgo = makeDateRangeCmp('laycan_from', 'laycan_to');
   const groups = [];
-  let html = `<div class="cp-view"><div class="cp-header"><span class="cp-header-title">Copy &amp; Paste List · ${rows.length} cargoes</span>${cpCopyButton()}</div>`;
+  let html = `<div class="cp-view"><div class="cp-header"><span class="cp-header-title">Copy &amp; Paste List · ${rows.length} cargoes</span>${cpCopyButton()}</div>` + cpColChips('c');
+  const _cpEx = getCpCols('c');
   for (const sec of secs) {
     const list = rows.filter(c => (c.section || '—') === sec).slice().sort(cmpCgo);
     if (!list.length) continue;
@@ -6749,7 +6792,7 @@ function renderCargoesCpView(rows, basin) {
     html += `<div class="cp-section ${ac}">${esc(sec)} · ${list.length}</div>`;
     const gItems = [];
     for (const c of list) {
-      const text = c.copy_text || buildCargoCopyText(c);
+      const text = buildCargoCopyText(c, _cpEx);
       const sCls = rowStatusCls(c);
       html += `<div class="cp-row ${sCls}" data-id="${c.id}" data-kind="c" title="Double-click to edit">${esc(text)}</div>`;
       gItems.push({ text, status: c.status });
