@@ -4704,7 +4704,7 @@ function renderMasterTable(rows, cbCols, basin) {
     for (const v of byArea[area]) (buckets[bucketFor(v.open_from)] ??= []).push(v);
     for (const k of Object.keys(buckets).sort(bucketSort)) {
       buckets[k].sort(cmpVessel);
-      html.push(`<tr class="section-half ${areaClass(area)}"><td colspan="${colspan}">${esc(k)}</td></tr>`);
+      if (area === 'ECSA') html.push(`<tr class="section-half ${areaClass(area)}"><td colspan="${colspan}">${esc(k)}</td></tr>`);
       for (const v of buckets[k]) html.push(renderVesselRow(v, cbCols));
     }
   }
