@@ -2433,7 +2433,6 @@ const KEY_LOCAL = 'lspmx_v4';
 const MIGRATED_FLAG = 'lspmx_cloud_migrated';
 
 async function loadDataFromCloud() {
-  cloudToast('Loading from cloud…', { spinner: true });
   try {
     const [v, c, a, r] = await Promise.all([
       sb.from('vessels').select('*').order('id'),
