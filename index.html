@@ -9078,7 +9078,6 @@ setRoute();
     try { await navigator.clipboard.writeText(txt); ok = true; } catch(e){}
     if (!ok && typeof copyToClipboard === 'function') ok = await copyToClipboard(txt);
     if (!ok && typeof showCopyFallback === 'function') showCopyFallback(txt);
-    if (typeof cloudToast === 'function') cloudToast(ok ? ('Copied ' + rows + (rows === 1 ? ' row' : ' rows')) : 'Copy failed', { kind: ok ? 'ok' : 'error' });
   }
   function updateBar(){
     const bar = document.getElementById('bselBar'); if (!bar) return;
@@ -9123,7 +9122,6 @@ setRoute();
     const { rows } = counts();
     e.preventDefault();
     if (e.clipboardData) e.clipboardData.setData('text/plain', txt);
-    if (typeof cloudToast === 'function') cloudToast('Copied ' + rows + (rows === 1 ? ' row' : ' rows'), { kind: 'ok' });
   });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && cells().length) clearSel(); });
   function buildBar(){
