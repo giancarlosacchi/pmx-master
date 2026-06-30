@@ -9009,7 +9009,9 @@ setRoute();
   const ALL_C = ['size','route','dates','cgo','notes','ls_brkr','update_date'];
   let dragging = false, moved = false, start = null;
   const cells = () => [...document.querySelectorAll('td.bcell')];
-  function clearSel(){ cells().forEach(td => td.classList.remove('bcell')); updateBar(); }
+  function overlayEl(){ let o=document.getElementById('bselOverlay'); if(!o){ o=document.createElement('div'); o.id='bselOverlay'; document.body.appendChild(o); } return o; }
+  function updateOverlay(){ const sel=cells(); const o=overlayEl(); if(!sel.length){ o.style.display='none'; return; } let l=Infinity,t=Infinity,r=-Infinity,b=-Infinity; sel.forEach(td=>{ const rc=td.getBoundingClientRect(); l=Math.min(l,rc.left); t=Math.min(t,rc.top); r=Math.max(r,rc.right); b=Math.max(b,rc.bottom); }); o.style.display='block'; o.style.left=l+'px'; o.style.top=t+'px'; o.style.width=(r-l)+'px'; o.style.height=(b-t)+'px'; }
+  function clearSel(){ cells().forEach(td => td.classList.remove('bcell')); updateOverlay(); updateBar(); }
   function cellAt(x, y){ const el = document.elementFromPoint(x, y); return el && el.closest ? el.closest('td') : null; }
   function applyRect(s, endTr, endCi){
     cells().forEach(td => td.classList.remove('bcell'));
@@ -9022,10 +9024,12 @@ setRoute();
       const tds = rows[r].cells;
       for (let c = clo; c <= chi && c < tds.length; c++) tds[c].classList.add('bcell');
     }
+    updateOverlay();
   }
   function selectFullRow(tr){
     cells().forEach(td => td.classList.remove('bcell'));
     [...tr.cells].forEach(td => td.classList.add('bcell'));
+    updateOverlay();
   }
   function buildText(){
     const sel = cells(); if (!sel.length) return '';
@@ -9106,7 +9110,8 @@ setRoute();
   document.addEventListener('mouseup', () => {
     if (!dragging) return;
     dragging = false; document.body.style.userSelect = '';
-    if (!moved && start) selectFullRow(start.tr); // click semplice = riga intera
+    if (moved) { doCopy(); clearSel(); }            // drag: copia automatica + deseleziona
+    else if (start) selectFullRow(start.tr);        // click semplice = riga intera
     updateBar();
   });
   // ---- copy ----
@@ -9126,7 +9131,8 @@ setRoute();
     const st = document.createElement('style');
     st.textContent = `
       tr[data-sel-id] td[data-field], tr[data-sel-id] td[data-col]{cursor:cell}
-      td.bcell{background:rgba(37,99,235,.18)!important;box-shadow:inset 0 0 0 1px rgba(37,99,235,.40)}
+      td.bcell{background:transparent}
+      #bselOverlay{position:fixed;pointer-events:none;background:rgba(37,99,235,.16);border:1.5px solid rgba(37,99,235,.7);border-radius:8px;z-index:99991;display:none}
       #bselBar{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#0f172a;color:#fff;border-radius:12px;padding:8px 10px 8px 16px;display:none;align-items:center;gap:12px;box-shadow:0 12px 34px rgba(15,23,42,.38);z-index:99992;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;font-size:13px}
       #bselBar.show{display:flex}
       #bselBar .bsel-n{font-weight:600;white-space:nowrap}
