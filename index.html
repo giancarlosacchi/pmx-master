@@ -9302,17 +9302,17 @@ setRoute();
       .fdd-lbl{font-weight:600}
       .fdd-chev{width:12px;height:12px;opacity:.6;transition:transform 180ms ease;flex:none}
       .fdd.open .fdd-chev{transform:rotate(180deg)}
-      .fdd-panel{position:absolute;top:calc(100% + 6px);left:0;background:var(--bg-2);border:1px solid var(--line);border-radius:6px;padding:5px;z-index:1000;display:none;box-shadow:0 10px 30px rgba(0,0,0,.28)}
-      .fdd.open .fdd-panel{display:block}
-      .fdd-all{padding:6px 9px;border-radius:4px;font-size:12px;font-weight:600;color:var(--text-dim);cursor:pointer;text-align:center;border-bottom:1px solid var(--line-soft);margin-bottom:5px}
-      .fdd-all:hover{background:var(--bg-3)}
+      .fdd-panel{position:absolute;top:calc(100% + 8px);left:0;background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid var(--glass-border);border-radius:var(--radius-lg);padding:10px;z-index:1000;display:none;box-shadow:var(--glass-shadow);transform-origin:top center}
+      .fdd.open .fdd-panel{display:block;animation:mac-popIn 200ms cubic-bezier(0.32,0.72,0,1) both}
+      .fdd-all{padding:9px 12px;border-radius:8px;font-size:13px;font-weight:600;color:var(--text-dim);cursor:pointer;text-align:center;border-bottom:1px solid var(--glass-border);margin-bottom:8px}
+      .fdd-all:hover{background:var(--bg-hover)}
       .fdd-all.sel{color:var(--text);background:var(--gold-soft)}
-      .fdd-cols{display:flex;gap:6px;align-items:flex-start}
-      .fdd-col{border:1px solid var(--line-soft);border-radius:6px;overflow:hidden;min-width:104px}
-      .fdd-head{background:var(--ac);color:#fff;font-weight:700;font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:5px 9px}
+      .fdd-cols{display:flex;gap:9px;align-items:flex-start}
+      .fdd-col{border:1px solid var(--glass-border);border-radius:9px;overflow:hidden;min-width:124px;background:transparent}
+      .fdd-head{background:var(--ac);color:#fff;font-weight:700;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:7px 12px}
       [data-theme="dark"] .fdd-head{color:#0b1020}
-      .fdd-opt{padding:6px 9px;font-size:12px;color:var(--text);cursor:pointer;white-space:nowrap}
-      .fdd-opt:hover{background:var(--bg-3)}
+      .fdd-opt{padding:8px 13px;font-size:13px;color:var(--text);cursor:pointer;white-space:nowrap;transition:background 80ms}
+      .fdd-opt:hover{background:var(--bg-hover)}
       .fdd-opt.sel{background:var(--gold-soft);color:var(--text);font-weight:700}
     `;
     document.head.appendChild(st);
@@ -9418,26 +9418,4 @@ setRoute();
         var now = Date.now(); var ids = Object.keys(peers).filter(function(id){ return now - peers[id].lastSeen < 12000; });
         if (!ids.length){ nav.innerHTML='<div style="padding:6px 12px;font-size:11px;color:var(--text-mute)">none</div>'; return; }
         nav.innerHTML = ids.map(function(id){ var p=peers[id];
-          return '<a data-cur-id="'+id+'" style="cursor:pointer"><span style="width:9px;height:9px;border-radius:50%;background:'+p.col+';display:inline-block;flex:0 0 auto;margin-right:4px"></span><span class="nav-label">'+String(p.name||'?').replace(/[<>&]/g,'')+'</span><span style="margin-left:auto;font-size:9px;color:var(--text-mute);text-transform:uppercase">'+String(p.route||'').replace(/[<>&]/g,'').slice(0,9)+'</span></a>';
-        }).join('');
-        Array.prototype.forEach.call(nav.querySelectorAll('a[data-cur-id]'), function(a){
-          a.onclick = function(){ var id=a.getAttribute('data-cur-id'); var p=peers[id]; if(!p) return;
-            if (routeNow() !== p.route) location.hash = '#/' + p.route;
-            setTimeout(function(){ pulse(id); }, 220);
-          };
-        });
-      }
-      setInterval(function(){ var now=Date.now();
-        for (var id in peers){ if (now - peers[id].lastSeen > 12000){ if (peers[id].el) peers[id].el.remove(); delete peers[id]; } }
-        renderList();
-      }, 1500);
-      renderList();
-    }
-    ch.subscribe(function (status){ if (status === 'SUBSCRIBED') subscribed = true; });
-  }
-  start();
-})();
-</script>
-
-</body>
-</html>
+          return '<a data-cur-id="'+id+'" style="
