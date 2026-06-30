@@ -4606,6 +4606,7 @@ function renderMasterList(basin) {
         ${renderAreaDropdown(_pg, areas, 'Area')}
         <div class="group"><label>Status</label>
           <select id="f-status"><option value="">All</option><option value="fresh">Fresh</option><option value="off_mkt">Off mkt</option><option value="on_subs">On subs</option></select></div>
+        <button class="filter-clear-all" type="button" title="Clear all filters">✕ Clear filters</button>
         <span class="count-pill" id="f-count" style="display:none">— vessels</span>
         ${cpToggleBtn(_pg)}
       </div>
@@ -5270,7 +5271,8 @@ routes['ecsa-list'] = function() {
             ${renderAreaDropdown('ecsa-list', ['ECSA','PG / RSEA','SAFR','WCI','ECI','SEASIA'], 'Area')}
             <div class="group"><label>Status</label>
               <select id="f-status"><option value="">All</option><option value="fresh">Fresh</option><option value="off_mkt">Off mkt</option><option value="on_subs">On subs</option></select></div>
-            <span class="count-pill cnt-with-tooltip" id="cnt">—</span>${cpToggleBtn('ecsa-list')}
+            <button class="filter-clear-all" type="button" title="Clear all filters">✕ Clear filters</button>
+        <span class="count-pill cnt-with-tooltip" id="cnt">—</span>${cpToggleBtn('ecsa-list')}
             <span class="cp-switch" id="ecsa-rd-sw" title="Show/hide ECSA Rundown"><span class="cp-sw-label">Rundown</span><button class="cp-sw-track" type="button" id="ecsa-toggle-rd" data-rdtoggle="1"><span class="cp-sw-knob"></span></button></span>
           </div>
           <div class="tbl-wrap" id="tbl"></div>
@@ -5449,6 +5451,7 @@ function renderCargoList(basin) {
       <div class="filters">
         ${renderAreaDropdown(_pg, areas, 'Area')}
         <div class="group"><label>Search</label><input id="ca-q" placeholder="chrtr / cargo / load / disch…"/></div>
+        <button class="filter-clear-all" type="button" title="Clear all filters">✕ Clear filters</button>
         <span class="count-pill" id="ca-count" style="display:none">— cargoes</span>
         ${cpToggleBtn(_pg)}
       </div>
@@ -5936,7 +5939,7 @@ routes['vsl'] = function() {
         <select id="vf-cgoarea" class="area-color-select"><option value="">All</option>${VSL_FINDER_LOAD_AREAS.map(a => `<option class="area-opt area-opt-${areaClass(a)}">${a}</option>`).join('')}</select></div>
       <div class="group"><label>Laycan</label><div id="vf-daterange"></div></div>
       <div class="group"><label>Search</label><input id="vf-q" placeholder="vessel / ideas / owner…"/></div>
-      <button class="ghost" id="vf-reset">Reset</button>
+      <button class="ghost" id="vf-reset">✕ Clear filters</button>
       <button class="primary" id="vf-copy" title="Copy filtered list to clipboard">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         Copy list
@@ -6132,6 +6135,7 @@ routes['vsl'] = function() {
     }, 250);
   });
   $('#vf-reset').onclick = () => {
+    { const _f = getFilter('vsl'); for (const k in _f) delete _f[k]; }
     $('#vf-cgoarea').value=''; $('#vf-q').value=''; vfFrom=''; vfTo='';
     FINDER_STATE.vsl = { area: '', from: '', to: '', q: '' };
     $('#vf-daterange').replaceChildren(createDateRangePicker({from:'',to:'',placeholder:'Select laycan',onChange:(f,t)=>{vfFrom=f;vfTo=t;FINDER_STATE.vsl.from=f;FINDER_STATE.vsl.to=t;run();}}));
@@ -6207,7 +6211,7 @@ routes['cgo'] = function() {
         <select id="cf-vslarea" class="area-color-select"><option value="">All</option>${CGO_FINDER_VESSEL_AREAS.map(a => `<option class="area-opt area-opt-${areaClass(a)}">${a}</option>`).join('')}</select></div>
       <div class="group"><label>Laycan</label><div id="cf-daterange"></div></div>
       <div class="group"><label>Search</label><input id="cf-q" placeholder="cargo / chrtr / load…"/></div>
-      <button class="ghost" id="cf-reset">Reset</button>
+      <button class="ghost" id="cf-reset">✕ Clear filters</button>
       <button class="primary" id="cf-copy" title="Copy cargoes list to clipboard">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         Copy list
@@ -6416,6 +6420,7 @@ routes['cgo'] = function() {
   $('#cf-vslarea').onchange = () => { FINDER_STATE.cgo.area = $('#cf-vslarea').value; excludedCgoAreas.clear(); hiddenCgoRows.clear(); run(); };
   $('#cf-q').oninput = debounce(() => { FINDER_STATE.cgo.q = $('#cf-q').value; excludedCgoAreas.clear(); hiddenCgoRows.clear(); run(); }, 200);
   $('#cf-reset').onclick = () => {
+    { const _f = getFilter('cgo'); for (const k in _f) delete _f[k]; }
     $('#cf-vslarea').value=''; $('#cf-q').value=''; cfFrom=''; cfTo='';
     FINDER_STATE.cgo = { area: '', from: '', to: '', q: '' };
     excludedCgoAreas.clear(); hiddenCgoRows.clear(); hiddenCgoCols.clear();
@@ -9141,6 +9146,84 @@ setRoute();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', buildBar);
   else buildBar();
+})();
+
+// ============================================================
+// FILTER CLEARING — "Clear filters" (tutta la lista) + × rosso per singola colonna
+// ============================================================
+(function(){
+  if (window.__bfilterClearInit) return; window.__bfilterClearInit = true;
+  function curRoute(){ return location.hash.replace(/^#\//,'') || 'atl-tng'; }
+  // --- clear all filters della lista corrente ---
+  function clearAllFilters(){
+    const cur = curRoute();
+    const F = (typeof getFilter === 'function') ? getFilter(cur) : null;
+    if (F) for (const k in F) delete F[k];
+    if (cur === 'vsl' || cur === 'cgo'){
+      if (typeof FINDER_STATE !== 'undefined') FINDER_STATE[cur] = { area:'', from:'', to:'', q:'' };
+    } else {
+      try { if (typeof setSelectedAreas === 'function') setSelectedAreas(cur, new Set()); } catch(e){}
+    }
+    if (typeof routes !== 'undefined' && routes[cur]) routes[cur]();
+  }
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('.filter-clear-all');
+    if (!btn) return;
+    e.preventDefault();
+    clearAllFilters();
+  });
+  // --- × rosso per singola colonna ---
+  document.addEventListener('click', (e) => {
+    const x = e.target.closest('.col-clear');
+    if (!x) return;
+    e.preventDefault(); e.stopPropagation();
+    const th = x.closest('th.th-filter'); if (!th) return;
+    const inp = th.querySelector('input[data-col]'); if (!inp) return;
+    const col = inp.dataset.col;
+    const cur = curRoute();
+    const F = (typeof getFilter === 'function') ? getFilter(cur) : null;
+    if (F){
+      if (col === 'dates') { delete F.dates_from; delete F.dates_to; }
+      else if (col === 'update_date') { delete F.update_from; delete F.update_to; }
+      else { delete F[col]; }
+    }
+    if (typeof routes !== 'undefined' && routes[cur]) routes[cur]();
+  });
+  // aggiunge/rimuove il × in base ai filtri colonna attivi
+  function refreshFilterClears(){
+    document.querySelectorAll('th.th-filter').forEach(th => {
+      const inp = th.querySelector('input[data-col]');
+      if (!inp) return;
+      const active = (inp.value || '').trim() !== '';
+      let x = th.querySelector('.col-clear');
+      if (active && !x){
+        x = document.createElement('button');
+        x.type = 'button'; x.className = 'col-clear'; x.title = 'Clear this column filter'; x.textContent = '×';
+        th.appendChild(x); th.classList.add('has-clear');
+      } else if (!active && x){
+        x.remove(); th.classList.remove('has-clear');
+      }
+    });
+  }
+  function init(){
+    const st = document.createElement('style');
+    st.textContent = `
+      .filter-clear-all{display:inline-flex;align-items:center;gap:5px;background:transparent;border:1px solid var(--border,#d7deea);color:var(--text,#334155);border-radius:8px;padding:6px 11px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+      .filter-clear-all:hover{background:rgba(220,38,38,.08);border-color:#dc2626;color:#dc2626}
+      th.th-filter{position:relative}
+      th.th-filter.has-clear input{padding-right:18px !important}
+      .col-clear{position:absolute;top:50%;right:6px;transform:translateY(-50%);width:14px;height:14px;padding:0;border:none;border-radius:50%;background:#dc2626;color:#fff;font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:4;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+      .col-clear:hover{background:#b91c1c}
+    `;
+    document.head.appendChild(st);
+    let t = null;
+    const ob = new MutationObserver(() => { clearTimeout(t); t = setTimeout(refreshFilterClears, 60); });
+    const target = document.getElementById('content') || document.body;
+    ob.observe(target, { childList: true, subtree: true });
+    refreshFilterClears();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
 })();
 
 
