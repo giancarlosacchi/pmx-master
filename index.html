@@ -9336,6 +9336,57 @@ setRoute();
   else init();
 })();
 
+// ============================================================
+// CUSTOM CURSOR — freccetta di design che segue il mouse in modo super smooth
+// ============================================================
+(function(){
+  if (window.__curInit) return; window.__curInit = true;
+  try {
+    if (!window.matchMedia || !matchMedia('(pointer: fine)').matches) return; // solo desktop con mouse preciso
+    var style = document.createElement('style');
+    style.textContent = `
+      @media (pointer:fine){
+        *{cursor:none !important}
+        input:not([type=checkbox]):not([type=radio]):not([type=range]), textarea, [contenteditable="true"]{cursor:text !important}
+      }
+      #curArrow{position:fixed;top:0;left:0;will-change:transform;pointer-events:none;z-index:2147483647;filter:drop-shadow(0 2px 4px rgba(0,0,0,.35));transition:opacity .15s ease}
+      #curRing{position:fixed;top:0;left:0;width:32px;height:32px;margin:-16px 0 0 -16px;border:1.5px solid var(--gold);border-radius:50%;opacity:.35;pointer-events:none;z-index:2147483646;will-change:transform;transition:width .16s ease,height .16s ease,margin .16s ease,opacity .16s ease,background-color .16s ease}
+      body.cur-hover #curRing{width:46px;height:46px;margin:-23px 0 0 -23px;opacity:.5;background:var(--gold-soft)}
+      body.cur-down #curRing{width:24px;height:24px;margin:-12px 0 0 -12px;opacity:.7}
+      body.cur-text #curArrow,body.cur-text #curRing{opacity:0}
+    `;
+    document.head.appendChild(style);
+    var arrow = document.createElement('div'); arrow.id = 'curArrow';
+    arrow.innerHTML = '<svg width="23" height="23" viewBox="0 0 24 24" fill="none" style="display:block;margin:-2px 0 0 -3px"><path d="M3 2 L3 18.5 L7.3 14.6 L10.3 21 L13 19.8 L10 13.5 L16 13.2 Z" style="fill:var(--gold)" stroke="#ffffff" stroke-width="1.4" stroke-linejoin="round"/></svg>';
+    var ring = document.createElement('div'); ring.id = 'curRing';
+    function attach(){ document.body.appendChild(ring); document.body.appendChild(arrow); }
+    if (document.body) attach(); else document.addEventListener('DOMContentLoaded', attach);
+    var mx = innerWidth/2, my = innerHeight/2, ax = mx, ay = my, rx = mx, ry = my, has = false;
+    var TEXT_SEL = 'input:not([type=checkbox]):not([type=radio]):not([type=range]), textarea, [contenteditable="true"]';
+    var CLICK_SEL = 'a,button,[role="button"],.area-dd-btn,.fdd-btn,.fdd-opt,.area-dd-opt,.fdd-all,.status-chip,.flag-chip,.icon-btn,.nav a,.cp-row,.filter-clear-all,.cp-sw-track,.dr-btn,label,select,[onclick]';
+    addEventListener('mousemove', function(e){
+      mx = e.clientX; my = e.clientY;
+      if (!has){ has = true; ax = rx = mx; ay = ry = my; }
+      var t = e.target;
+      document.body.classList.toggle('cur-text', !!(t && t.closest && t.closest(TEXT_SEL)));
+      document.body.classList.toggle('cur-hover', !!(t && t.closest && t.closest(CLICK_SEL)));
+    }, true);
+    addEventListener('mousedown', function(){ document.body.classList.add('cur-down'); });
+    addEventListener('mouseup', function(){ document.body.classList.remove('cur-down'); });
+    document.addEventListener('mouseleave', function(){ arrow.style.opacity = '0'; ring.style.opacity = '0'; });
+    document.addEventListener('mouseenter', function(){ arrow.style.opacity = ''; ring.style.opacity = ''; });
+    function loop(){
+      ax += (mx - ax) * 0.28; ay += (my - ay) * 0.28;
+      rx += (mx - rx) * 0.15; ry += (my - ry) * 0.15;
+      arrow.style.transform = 'translate3d(' + ax + 'px,' + ay + 'px,0)';
+      ring.style.transform = 'translate3d(' + rx + 'px,' + ry + 'px,0)';
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+  } catch(e){}
+})();
+
+
 
 
 
@@ -9426,7 +9477,4 @@ setRoute();
       }
       function renderList(){
         var nav = document.getElementById('online-list'); if (!nav) return;
-        var now = Date.now(); var ids = Object.keys(peers).filter(function(id){ return now - peers[id].lastSeen < 12000; });
-        if (!ids.length){ nav.innerHTML='<div style="padding:6px 12px;font-size:11px;color:var(--text-mute)">none</div>'; return; }
-        nav.innerHTML = ids.map(function(id){ var p=peers[id];
-          return '<a data-cur-id="'+id+'" style="
+        var now = Date.now(); var ids = Object.ke
