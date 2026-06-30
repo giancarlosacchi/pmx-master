@@ -9149,11 +9149,12 @@ setRoute();
 })();
 
 // ============================================================
-// FILTER CLEARING — "Clear filters" (tutta la lista) + × rosso per singola colonna
+// FILTER CLEARING — "Clear filters" (tutta la lista) + cella rossa cliccabile per togliere un filtro
 // ============================================================
 (function(){
   if (window.__bfilterClearInit) return; window.__bfilterClearInit = true;
   function curRoute(){ return location.hash.replace(/^#\//,'') || 'atl-tng'; }
+  function rerender(){ const cur = curRoute(); if (typeof routes !== 'undefined' && routes[cur]) routes[cur](); }
   // --- clear all filters della lista corrente ---
   function clearAllFilters(){
     const cur = curRoute();
@@ -9164,7 +9165,7 @@ setRoute();
     } else {
       try { if (typeof setSelectedAreas === 'function') setSelectedAreas(cur, new Set()); } catch(e){}
     }
-    if (typeof routes !== 'undefined' && routes[cur]) routes[cur]();
+    rerender();
   }
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('.filter-clear-all');
@@ -9172,13 +9173,8 @@ setRoute();
     e.preventDefault();
     clearAllFilters();
   });
-  // --- × rosso per singola colonna ---
-  document.addEventListener('click', (e) => {
-    const x = e.target.closest('.col-clear');
-    if (!x) return;
-    e.preventDefault(); e.stopPropagation();
-    const th = x.closest('th.th-filter'); if (!th) return;
-    const inp = th.querySelector('input[data-col]'); if (!inp) return;
+  // --- click su cella filtro attiva (rossa) -> toglie quel filtro ---
+  function clearColumn(inp){
     const col = inp.dataset.col;
     const cur = curRoute();
     const F = (typeof getFilter === 'function') ? getFilter(cur) : null;
@@ -9187,22 +9183,21 @@ setRoute();
       else if (col === 'update_date') { delete F.update_from; delete F.update_to; }
       else { delete F[col]; }
     }
-    if (typeof routes !== 'undefined' && routes[cur]) routes[cur]();
-  });
-  // aggiunge/rimuove il × in base ai filtri colonna attivi
-  function refreshFilterClears(){
-    document.querySelectorAll('th.th-filter').forEach(th => {
-      const inp = th.querySelector('input[data-col]');
-      if (!inp) return;
+    rerender();
+  }
+  document.addEventListener('click', (e) => {
+    const inp = e.target.closest('th.th-filter input[data-col]');
+    if (!inp) return;
+    const active = (inp.value || '').trim() !== '';
+    if (!active) return; // cella vuota: comportamento normale (focus/scrivi/apri calendario)
+    e.preventDefault(); e.stopPropagation();
+    clearColumn(inp);
+  }, true);
+  // --- marca le celle filtro attive (rosse) ---
+  function refreshFilterActive(){
+    document.querySelectorAll('th.th-filter input[data-col]').forEach(inp => {
       const active = (inp.value || '').trim() !== '';
-      let x = th.querySelector('.col-clear');
-      if (active && !x){
-        x = document.createElement('button');
-        x.type = 'button'; x.className = 'col-clear'; x.title = 'Clear this column filter'; x.textContent = '×';
-        th.appendChild(x); th.classList.add('has-clear');
-      } else if (!active && x){
-        x.remove(); th.classList.remove('has-clear');
-      }
+      inp.classList.toggle('bf-fltr-on', active);
     });
   }
   function init(){
@@ -9210,21 +9205,20 @@ setRoute();
     st.textContent = `
       .filter-clear-all{display:inline-flex;align-items:center;gap:5px;background:transparent;border:1px solid var(--border,#d7deea);color:var(--text,#334155);border-radius:8px;padding:6px 11px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
       .filter-clear-all:hover{background:rgba(220,38,38,.08);border-color:#dc2626;color:#dc2626}
-      th.th-filter{position:relative}
-      th.th-filter.has-clear input{padding-right:18px !important}
-      .col-clear{position:absolute;top:50%;right:6px;transform:translateY(-50%);width:14px;height:14px;padding:0;border:none;border-radius:50%;background:#dc2626;color:#fff;font-size:12px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:4;box-shadow:0 1px 2px rgba(0,0,0,.25)}
-      .col-clear:hover{background:#b91c1c}
+      table.grid thead th.th-filter input.bf-fltr-on{background:rgba(220,38,38,.14) !important;border-color:rgba(220,38,38,.55) !important;cursor:pointer}
+      table.grid thead th.th-filter input.bf-fltr-on::placeholder{color:rgba(220,38,38,.6)}
     `;
     document.head.appendChild(st);
     let t = null;
-    const ob = new MutationObserver(() => { clearTimeout(t); t = setTimeout(refreshFilterClears, 60); });
+    const ob = new MutationObserver(() => { clearTimeout(t); t = setTimeout(refreshFilterActive, 60); });
     const target = document.getElementById('content') || document.body;
     ob.observe(target, { childList: true, subtree: true });
-    refreshFilterClears();
+    refreshFilterActive();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();
+
 
 
 </script>
