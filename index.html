@@ -9143,12 +9143,6 @@ setRoute();
       #bselBar .bsel-clear:hover{color:#fff}
     `;
     document.head.appendChild(st);
-    const bar = document.createElement('div');
-    bar.id = 'bselBar';
-    bar.innerHTML = '<span class="bsel-n"></span><button class="bsel-copy" type="button">📋 Copy</button><button class="bsel-clear" type="button">Clear</button>';
-    document.body.appendChild(bar);
-    bar.querySelector('.bsel-copy').addEventListener('click', doCopy);
-    bar.querySelector('.bsel-clear').addEventListener('click', clearSel);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', buildBar);
   else buildBar();
