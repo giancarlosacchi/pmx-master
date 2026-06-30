@@ -4764,7 +4764,7 @@ function renderVesselRow(v, cbCols) {
   // hanno tutte created_at di oggi per via della migrazione e finirebbero tutte in
   // grassetto — questo flag risolve.
   const isNew = !!v.__sessionNew;
-  return `<tr class="${cls} row-area ${areaClass(v.area)} ${isNew?'row-new':''}" draggable="true" data-row-vessel-id="${v.id}">
+  return `<tr class="${cls} row-area ${areaClass(v.area)} ${isNew?'row-new':''}" draggable="true" data-row-vessel-id="${v.id}" data-sel-id="${v.id}" data-sel-kind="v">
     <td data-kind="v" data-id="${v.id}" data-field="vessel" class="editable col-vessel" title="Double-click to edit"><span class="row-drag" draggable="true" title="Drag to another area">⋮⋮</span>${esc(v.vessel)}</td>
     <td data-kind="v" data-id="${v.id}" data-field="dwt_blt" class="editable dim col-dwt" title="Double-click to edit">${esc(v.dwt_blt || '')}</td>
     <td data-kind="v" data-id="${v.id}" data-field="open_port" class="editable col-open" title="Double-click to edit">${esc(v.open_port || '')}</td>
@@ -5238,7 +5238,7 @@ function renderEcsaRow(entry) {
     const prefix = (origPort + (origDates ? ' ' + origDates : '')).trim();
     ideasDisplay = prefix + (ideasDisplay ? ' - ' + ideasDisplay : '');
   }
-  return `<tr class="${cls}">
+  return `<tr class="${cls}" data-sel-id="${v.id}" data-sel-kind="v" data-sel-from="${entry.adjFrom||''}" data-sel-to="${entry.adjTo||''}" data-sel-area="${esc(entry.area||'')}">
     <td ${E('vessel')}><b>${esc(v.vessel)}</b></td>
     <td ${E('dwt_blt')} class="editable dim">${esc(v.dwt_blt || '')}</td>
     <td>${esc(entry.eta || '')}</td>
@@ -5557,7 +5557,7 @@ function renderCgoRow(c) {
   // Riga "nuova" = modificata oggi
   // Riga in grassetto SOLO se il cargo è stato inserito oggi (non solo modificato)
   const isNew = c.created_at === todayIso();
-  return `<tr class="row-area ${areaClass(c.section || c.area)} ${c.status==='on_subs'?'status-subs':c.status==='off_mkt'?'status-off':c.status==='fresh'?'status-fresh':''} ${isNew?'row-new':''}">
+  return `<tr class="row-area ${areaClass(c.section || c.area)} ${c.status==='on_subs'?'status-subs':c.status==='off_mkt'?'status-off':c.status==='fresh'?'status-fresh':''} ${isNew?'row-new':''}" data-sel-id="${c.id}" data-sel-kind="c">
     <td data-kind="c" data-id="${c.id}" data-field="chrtrs" class="editable col-c-chrtrs" title="Double-click to edit">${esc(c.chrtrs)}</td>
     <td data-kind="c" data-id="${c.id}" data-field="laycan_from" class="editable col-c-dates" title="Double-click to edit (laycan from)">${fmtDateRange(c.laycan_from,c.laycan_to)}</td>
     <td data-kind="c" data-id="${c.id}" data-field="load_port" class="editable col-c-port" title="Double-click to edit">${esc(c.load_port||'')}</td>
@@ -6077,7 +6077,7 @@ routes['vsl'] = function() {
       <th data-col="update_date" class="th-filter"><input class="filter-date-range" type="text" readonly data-col="update_date" placeholder="Update" value="${attr(fmtFilterDateRange(FF.update_from, FF.update_to))}">${colBtn('update_date')}</th>
       <th data-col="subs" class="th-filter"><input data-col="subs" placeholder="Subs" value="${attr(FF.subs||'')}">${colBtn('subs')}</th>
       <th data-col="status" class="th-filter"><input data-col="status" placeholder="Status" value="${attr(FF.status||'')}">${colBtn('status')}</th>
-    </tr></thead><tbody>${rows.map(v => `<tr class="${v.status==='on_subs'?'status-subs':v.status==='off_mkt'?'status-off':v.status==='fresh'?'status-fresh':''}">
+    </tr></thead><tbody>${rows.map(v => `<tr data-sel-id="${v.id}" data-sel-kind="v" class="${v.status==='on_subs'?'status-subs':v.status==='off_mkt'?'status-off':v.status==='fresh'?'status-fresh':''}">
       <td><button class="row-hide-btn" data-id="${v.id}" title="Hide row">×</button></td>
       <td data-col="vessel"><b>${esc(v.vessel)}</b></td>
       <td data-col="dwt_blt" class="dim">${esc(v.dwt_blt||'')}</td>
@@ -6341,7 +6341,7 @@ routes['cgo'] = function() {
       <th data-col="update_date" class="th-filter"><input class="filter-date-range" type="text" readonly data-col="update_date" placeholder="Update" value="${attr(fmtFilterDateRange(CF.update_from, CF.update_to))}">${colBtnC('update_date')}</th>
       <th data-col="status" class="th-filter"><input data-col="status" placeholder="Status" value="${attr(CF.status||'')}"></th>
       <th></th>
-    </tr></thead><tbody>${rows.map(c => `<tr class="row-area ${areaClass(c.section || c.area)} ${c.status==='on_subs'?'status-subs':c.status==='off_mkt'?'status-off':c.status==='fresh'?'status-fresh':''}">
+    </tr></thead><tbody>${rows.map(c => `<tr data-sel-id="${c.id}" data-sel-kind="c" class="row-area ${areaClass(c.section || c.area)} ${c.status==='on_subs'?'status-subs':c.status==='off_mkt'?'status-off':c.status==='fresh'?'status-fresh':''}">
       <td><button class="row-hide-btn" data-id="${c.id}" title="Hide row">×</button></td>
       <td data-col="chrtrs"><b>${esc(c.chrtrs)}</b></td>
       <td data-col="dates">${fmtDateRange(c.laycan_from,c.laycan_to)}</td>
@@ -8991,6 +8991,115 @@ setRoute();
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bchatBuildUI);
   else bchatBuildUI();
+})();
+
+// ============================================================
+// ROW SELECT — seleziona righe (stile Google Sheets) e copia in formato Copy & Paste
+// ============================================================
+(function(){
+  if (window.__bselInit) return; window.__bselInit = true;
+  let anchor = null;
+  const selectedRows = () => [...document.querySelectorAll('tr.bsel[data-sel-id]')];
+  const rowsIn = (tr) => [...tr.parentElement.querySelectorAll('tr[data-sel-id]')];
+  function clearSel(){ selectedRows().forEach(r => r.classList.remove('bsel')); anchor = null; updateBar(); }
+  function buildText(){
+    const D = window.DATA || {};
+    const groups = {}; const order = [];
+    for (const tr of selectedRows()){
+      const id = tr.dataset.selId, kind = tr.dataset.selKind;
+      let item = (kind === 'c' ? (D.cargoes || []) : (D.vessels || [])).find(x => String(x.id) === String(id));
+      if (!item) continue;
+      if (tr.dataset.selFrom || tr.dataset.selTo) item = { ...item, open_from: tr.dataset.selFrom || item.open_from, open_to: tr.dataset.selTo || item.open_to };
+      if (tr.dataset.selArea) item = { ...item, area: tr.dataset.selArea };
+      const ex = getCpCols(kind === 'c' ? 'c' : 'v');
+      const text = (kind === 'c' ? buildCargoCopyText(item, ex) : buildVesselCopyText(item, ex)).toLowerCase();
+      const area = kind === 'c' ? (item.section || item.area || '—') : (item.area || '—');
+      if (!groups[area]) { groups[area] = []; order.push(area); }
+      groups[area].push(text);
+    }
+    if (!order.length) return '';
+    if (order.length === 1) return groups[order[0]].join('\n').trim();
+    const out = [];
+    for (const k of order){ out.push(k); out.push(''); groups[k].forEach(t => out.push(t)); out.push(''); }
+    return out.join('\n').trim();
+  }
+  async function doCopy(){
+    const txt = buildText(); const n = selectedRows().length;
+    if (!txt) return;
+    let ok = false;
+    try { await navigator.clipboard.writeText(txt); ok = true; } catch(e){}
+    if (!ok && typeof copyToClipboard === 'function') ok = await copyToClipboard(txt);
+    if (!ok && typeof showCopyFallback === 'function') showCopyFallback(txt);
+    if (typeof cloudToast === 'function') cloudToast(ok ? ('Copied ' + n + (n === 1 ? ' row' : ' rows')) : 'Copy failed', { kind: ok ? 'ok' : 'error' });
+  }
+  function updateBar(){
+    const bar = document.getElementById('bselBar'); if (!bar) return;
+    const n = selectedRows().length;
+    bar.querySelector('.bsel-n').textContent = n + (n === 1 ? ' row selected' : ' rows selected');
+    bar.classList.toggle('show', n > 0);
+  }
+  // selezione al click
+  document.addEventListener('click', (e) => {
+    const tr = e.target.closest('tr[data-sel-id]');
+    if (!tr) return;
+    if (e.target.closest('button, input, select, textarea, a, label, svg, .flag-chip, .pill, .status-menu, .status-pill, .area-dd, .area-dd-menu, .row-del, .row-edit, .col-del')) return;
+    const rows = rowsIn(tr);
+    if (e.shiftKey && anchor && rows.includes(anchor)) {
+      const i1 = rows.indexOf(anchor), i2 = rows.indexOf(tr); const a = Math.min(i1,i2), b = Math.max(i1,i2);
+      if (!(e.ctrlKey || e.metaKey)) selectedRows().forEach(r => r.classList.remove('bsel'));
+      for (let i = a; i <= b; i++) rows[i].classList.add('bsel');
+    } else if (e.ctrlKey || e.metaKey) {
+      tr.classList.toggle('bsel'); anchor = tr;
+    } else {
+      const onlyThis = tr.classList.contains('bsel') && selectedRows().length === 1;
+      selectedRows().forEach(r => r.classList.remove('bsel'));
+      if (!onlyThis) tr.classList.add('bsel');
+      anchor = tr;
+    }
+    const s = window.getSelection && window.getSelection(); if (s && s.removeAllRanges) s.removeAllRanges();
+    updateBar();
+  });
+  // sempre ricalcola la barra (anche dopo re-render della tabella)
+  document.addEventListener('click', updateBar, true);
+  // intercetta Ctrl/Cmd+C
+  document.addEventListener('copy', (e) => {
+    if (!selectedRows().length) return;
+    const ae = document.activeElement;
+    if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) return;
+    const txt = buildText(); if (!txt) return;
+    const n = selectedRows().length;
+    e.preventDefault();
+    if (e.clipboardData) e.clipboardData.setData('text/plain', txt);
+    if (typeof cloudToast === 'function') cloudToast('Copied ' + n + (n === 1 ? ' row' : ' rows'), { kind: 'ok' });
+  });
+  // Esc deseleziona
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && selectedRows().length) clearSel(); });
+  function buildBar(){
+    if (document.getElementById('bselBar')) return;
+    const st = document.createElement('style');
+    st.textContent = `
+      tr[data-sel-id]{cursor:pointer}
+      tr.bsel>td{background:rgba(37,99,235,.16)!important}
+      tr.bsel>td:first-child{box-shadow:inset 3px 0 0 #2563eb}
+      #bselBar{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#0f172a;color:#fff;border-radius:12px;padding:8px 10px 8px 16px;display:none;align-items:center;gap:12px;box-shadow:0 12px 34px rgba(15,23,42,.38);z-index:99992;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;font-size:13px}
+      #bselBar.show{display:flex}
+      #bselBar .bsel-n{font-weight:600;white-space:nowrap}
+      #bselBar button{border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer}
+      #bselBar .bsel-copy{background:#2563eb;color:#fff}
+      #bselBar .bsel-copy:hover{background:#1d4ed8}
+      #bselBar .bsel-clear{background:transparent;color:#cbd5e1}
+      #bselBar .bsel-clear:hover{color:#fff}
+    `;
+    document.head.appendChild(st);
+    const bar = document.createElement('div');
+    bar.id = 'bselBar';
+    bar.innerHTML = '<span class="bsel-n">0 rows selected</span><button class="bsel-copy" type="button">📋 Copy</button><button class="bsel-clear" type="button">Clear</button>';
+    document.body.appendChild(bar);
+    bar.querySelector('.bsel-copy').addEventListener('click', doCopy);
+    bar.querySelector('.bsel-clear').addEventListener('click', clearSel);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', buildBar);
+  else buildBar();
 })();
 
 </script>
