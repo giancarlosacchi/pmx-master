@@ -2756,7 +2756,7 @@ function _doRtRender() {
     }
     // Skip se c'è un modal aperto, un dropdown/menu aperto, o una selezione celle attiva:
     // non vogliamo togliere all'utente quello che sta facendo né flickerare.
-    if (document.querySelector('#modal-bg:not(.hidden), .area-dd.open, .fdd.open, .area-dd-menu.open, .status-menu.open, td.bcell')) {
+    if (document.querySelector('#modal-bg:not(.hidden), .area-dd.open, .fdd.open, .area-dd-menu.open')) {
       if (_rtRenderTimer) clearTimeout(_rtRenderTimer);
       _rtRenderTimer = setTimeout(_doRtRender, 2000);
       return;
