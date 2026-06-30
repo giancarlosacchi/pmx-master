@@ -2477,7 +2477,6 @@ async function loadDataFromCloud() {
       window.DATA = DATA;
       // Update localStorage cache so reloads are fast
       saveData(DATA);
-      cloudToast('Loaded ' + cloudV.length + ' vessels, ' + cloudC.length + ' cargoes from cloud', { kind: 'ok' });
     } else {
       cloudToast('Cloud is empty — start adding vessels/cargoes', { kind: 'info' });
     }
@@ -2754,6 +2753,13 @@ function _doRtRender() {
     if (Date.now() - _lastMouseMoveAt < 1000) {
       if (_rtRenderTimer) clearTimeout(_rtRenderTimer);
       _rtRenderTimer = setTimeout(_doRtRender, 1500);
+      return;
+    }
+    // Skip se c'è un modal aperto, un dropdown/menu aperto, o una selezione celle attiva:
+    // non vogliamo togliere all'utente quello che sta facendo né flickerare.
+    if (document.querySelector('#modal-bg:not(.hidden), .area-dd.open, .fdd.open, .area-dd-menu.open, .status-menu.open, td.bcell')) {
+      if (_rtRenderTimer) clearTimeout(_rtRenderTimer);
+      _rtRenderTimer = setTimeout(_doRtRender, 2000);
       return;
     }
   } catch(e) {}
