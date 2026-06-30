@@ -9302,17 +9302,17 @@ setRoute();
       .fdd-lbl{font-weight:600}
       .fdd-chev{width:12px;height:12px;opacity:.6;transition:transform 180ms ease;flex:none}
       .fdd.open .fdd-chev{transform:rotate(180deg)}
-      .fdd-panel{position:absolute;top:calc(100% + 8px);left:0;background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);border:1px solid var(--glass-border);border-radius:var(--radius-lg);padding:10px;z-index:1000;display:none;box-shadow:var(--glass-shadow);transform-origin:top center}
+      .fdd-panel{position:absolute;top:calc(100% + 8px);left:0;background:var(--bg-hover);border:1px solid var(--line);border-radius:var(--radius-lg);padding:10px;z-index:1000;display:none;box-shadow:0 16px 40px rgba(15,23,42,.18);transform-origin:top center}
       .fdd.open .fdd-panel{display:block;animation:mac-popIn 200ms cubic-bezier(0.32,0.72,0,1) both}
-      .fdd-all{padding:9px 12px;border-radius:8px;font-size:13px;font-weight:600;color:var(--text-dim);cursor:pointer;text-align:center;border-bottom:1px solid var(--glass-border);margin-bottom:8px}
-      .fdd-all:hover{background:var(--bg-hover)}
+      .fdd-all{padding:9px 12px;border-radius:8px;font-size:13px;font-weight:600;color:var(--text-dim);cursor:pointer;text-align:center;border-bottom:1px solid var(--line-soft);margin-bottom:8px}
+      .fdd-all:hover{background:var(--bg-2)}
       .fdd-all.sel{color:var(--text);background:var(--gold-soft)}
       .fdd-cols{display:flex;gap:9px;align-items:flex-start}
-      .fdd-col{border:1px solid var(--glass-border);border-radius:9px;overflow:hidden;min-width:124px;background:transparent}
+      .fdd-col{border:1px solid var(--line-soft);border-radius:9px;overflow:hidden;min-width:124px;background:transparent}
       .fdd-head{background:var(--ac);color:#fff;font-weight:700;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:7px 12px}
       [data-theme="dark"] .fdd-head{color:#0b1020}
       .fdd-opt{padding:8px 13px;font-size:13px;color:var(--text);cursor:pointer;white-space:nowrap;transition:background 80ms}
-      .fdd-opt:hover{background:var(--bg-hover)}
+      .fdd-opt:hover{background:var(--bg-2)}
       .fdd-opt.sel{background:var(--gold-soft);color:var(--text);font-weight:700}
     `;
     document.head.appendChild(st);
