@@ -9124,24 +9124,21 @@ setRoute();
     dragging = true; moved = false;
     start = { tr, ci: td.cellIndex, tbody: tr.parentElement };
     document.body.style.userSelect = 'none';
-    applyRect(start, tr, td.cellIndex);
-    updateBar();
   });
   document.addEventListener('mousemove', (e) => {
     if (!dragging) return;
     const td = cellAt(e.clientX, e.clientY); const tr = td && td.closest('tr[data-sel-id]');
     if (!td || !tr || tr.parentElement !== start.tbody) return;
-    if (tr !== start.tr || td.cellIndex !== start.ci) moved = true;
+    if (tr === start.tr && td.cellIndex === start.ci) return; // ancora sulla cella iniziale: niente selezione
+    moved = true;
     applyRect(start, tr, td.cellIndex);
-    updateBar();
     const s = window.getSelection && window.getSelection(); if (s && s.removeAllRanges) s.removeAllRanges();
   });
   document.addEventListener('mouseup', () => {
     if (!dragging) return;
     dragging = false; document.body.style.userSelect = '';
-    if (moved) { doCopy(); clearSel(); }            // drag: copia automatica + deseleziona
-    else if (start) selectFullRow(start.tr);        // click semplice = riga intera
-    updateBar();
+    if (moved) { doCopy(); clearSel(); }   // drag su piu celle: copia automatica + deseleziona
+    else clearSel();                        // click singolo: nessuna selezione
   });
   // ---- copy ----
   document.addEventListener('copy', (e) => {
