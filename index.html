@@ -9314,6 +9314,11 @@ setRoute();
       .fdd-opt{padding:8px 13px;font-size:13px;color:var(--text);cursor:pointer;white-space:nowrap;transition:background 80ms}
       .fdd-opt:hover{background:var(--bg-2)}
       .fdd-opt.sel{background:var(--gold-soft);color:var(--text);font-weight:700}
+      .panel.finder-empty .fdd{display:block;width:100%}
+      .panel.finder-empty .fdd-btn{height:52px;width:100%;min-width:100%;padding:0 18px;font-size:16px;font-weight:500;border:1.5px solid rgba(255,255,255,.35);border-radius:12px;background:rgba(255,255,255,.18);color:#fff}
+      .panel.finder-empty .fdd-btn:hover{background:rgba(255,255,255,.28);border-color:rgba(255,255,255,.55)}
+      .panel.finder-empty .fdd.open .fdd-btn{border-color:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.25)}
+      .panel.finder-empty .fdd-chev{width:16px;height:16px;opacity:.9}
     `;
     document.head.appendChild(st);
     let t = null;
