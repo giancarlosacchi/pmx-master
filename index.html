@@ -9217,6 +9217,90 @@ setRoute();
   else init();
 })();
 
+// ============================================================
+// FINDER AREA DROPDOWN — custom, raggruppato Atlantic / Indian / Pacific (tutto visibile, colorato)
+// ============================================================
+(function(){
+  if (window.__finderDdInit) return; window.__finderDdInit = true;
+  const FDD_INDIAN = new Set(['PG','RSEA','PG / RSEA','WCI','ECI','MIDDLEEAST','MIDDLE EAST','INDIA','SAFR']);
+  const FDD_PACIFIC = new Set(['SEASIA','SCHINA','NCHINA','N.CHINA','S.CHINA','INDO','INDO/SE ASIA','FEAST','NOPAC','WCAUS','ECAUS','EAUS','WAUS','EC AUSSIE/NZ','WC AUSSIE','CIS']);
+  function areaBasin(a){ const k=(a||'').trim().toUpperCase(); if(FDD_INDIAN.has(k))return 'Indian'; if(FDD_PACIFIC.has(k))return 'Pacific'; return 'Atlantic'; }
+  const _esc = (s)=> (typeof esc==='function') ? esc(s) : String(s==null?'':s);
+
+  function buildPanel(sel){
+    const opts = [...sel.options].filter(o => (o.value||'') !== '');
+    const groups = { Atlantic: [], Indian: [], Pacific: [] };
+    opts.forEach(o => groups[areaBasin(o.value)].push(o.value));
+    const col = (name, cls) => {
+      const items = groups[name];
+      if (!items.length) return '';
+      return `<div class="fdd-col"><div class="fdd-head ${cls}">${name}</div>${items.map(a=>`<div class="fdd-opt" data-area="${_esc(a)}">${_esc(a)}</div>`).join('')}</div>`;
+    };
+    return `<div class="fdd-all" data-area="">All areas</div><div class="fdd-cols">${col('Atlantic','fb-atl')}${col('Indian','fb-ind')}${col('Pacific','fb-pac')}</div>`;
+  }
+  function enhanceOne(sel){
+    if (sel.dataset.fddDone) return; sel.dataset.fddDone = '1';
+    sel.style.display = 'none';
+    const wrap = document.createElement('div'); wrap.className = 'fdd';
+    wrap.innerHTML = `<button type="button" class="fdd-btn"><span class="fdd-lbl"></span><svg class="fdd-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button><div class="fdd-panel">${buildPanel(sel)}</div>`;
+    sel.parentNode.insertBefore(wrap, sel.nextSibling);
+    const btn = wrap.querySelector('.fdd-btn'), lbl = wrap.querySelector('.fdd-lbl'), panel = wrap.querySelector('.fdd-panel');
+    const sync = () => {
+      lbl.textContent = sel.value || 'All';
+      panel.querySelectorAll('.fdd-opt,.fdd-all').forEach(el => el.classList.toggle('sel', (el.dataset.area||'') === (sel.value||'')));
+    };
+    sync();
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      document.querySelectorAll('.fdd.open').forEach(x => { if (x !== wrap) x.classList.remove('open'); });
+      wrap.classList.toggle('open');
+    });
+    panel.addEventListener('click', (e) => {
+      const opt = e.target.closest('[data-area]'); if (!opt) return;
+      sel.value = opt.dataset.area || '';
+      sel.dispatchEvent(new Event('change'));
+      sync();
+      wrap.classList.remove('open');
+    });
+    sel.addEventListener('change', sync);
+  }
+  function enhanceAll(){ document.querySelectorAll('select.area-color-select').forEach(enhanceOne); }
+  document.addEventListener('click', () => { document.querySelectorAll('.fdd.open').forEach(x => x.classList.remove('open')); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.querySelectorAll('.fdd.open').forEach(x => x.classList.remove('open')); });
+  function init(){
+    const st = document.createElement('style');
+    st.textContent = `
+      .fdd{position:relative;display:inline-block;vertical-align:middle}
+      .fdd-btn{display:flex;align-items:center;gap:8px;min-width:150px;justify-content:space-between;background:#eaf1ff;border:1px solid #cdd9f0;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:600;color:#1e3a8a;cursor:pointer}
+      .fdd-btn:hover{border-color:#9db8ee}
+      .fdd.open .fdd-chev{transform:rotate(180deg)}
+      .fdd-chev{transition:transform .15s}
+      .fdd-panel{position:absolute;top:calc(100% + 6px);left:0;background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 18px 44px rgba(15,23,42,.20);padding:8px;z-index:100000;display:none}
+      .fdd.open .fdd-panel{display:block}
+      .fdd-all{padding:8px 12px;border-radius:8px;font-weight:700;font-size:12px;color:#0f172a;cursor:pointer;text-align:center;background:#f1f5f9;margin-bottom:8px}
+      .fdd-all:hover{background:#e2e8f0}
+      .fdd-all.sel{background:#dbeafe}
+      .fdd-cols{display:flex;gap:8px;align-items:flex-start}
+      .fdd-col{border-radius:10px;overflow:hidden;border:1px solid #eef1f6;min-width:108px}
+      .fdd-head{padding:6px 10px;font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#fff}
+      .fdd-head.fb-atl{background:linear-gradient(135deg,#2563eb,#1d4ed8)}
+      .fdd-head.fb-ind{background:linear-gradient(135deg,#0d9488,#0f766e)}
+      .fdd-head.fb-pac{background:linear-gradient(135deg,#dc2626,#b91c1c)}
+      .fdd-opt{padding:6px 11px;font-size:12.5px;color:#1f2937;cursor:pointer;white-space:nowrap}
+      .fdd-opt:hover{background:#f1f5f9}
+      .fdd-opt.sel{background:#dbeafe;font-weight:700}
+    `;
+    document.head.appendChild(st);
+    let t = null;
+    const ob = new MutationObserver(() => { clearTimeout(t); t = setTimeout(enhanceAll, 50); });
+    ob.observe(document.getElementById('content') || document.body, { childList: true, subtree: true });
+    enhanceAll();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+
+
 
 
 </script>
