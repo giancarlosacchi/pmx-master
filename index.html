@@ -10,6 +10,31 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+<script>
+/* AUTO-UPDATE: se sul server c'è una index.html più recente di quella caricata (cache del browser),
+   ricarica automaticamente con cache-bust. Niente più Ctrl+F5 manuali. Max 2 reload per sessione. */
+(function(){
+  try {
+    var docLM = Date.parse(document.lastModified || '') || 0;
+    if (!docLM) return;
+    fetch(location.pathname + '?cc=' + Date.now(), { method: 'HEAD', cache: 'no-store' })
+      .then(function(r){
+        var srv = Date.parse(r.headers.get('Last-Modified') || '') || 0;
+        if (!srv || srv <= docLM + 5000) return;
+        var key = 'pmx_reload_' + srv;
+        var n = +(sessionStorage.getItem('pmx_reload_n') || 0);
+        if (n < 2 && !sessionStorage.getItem(key)) {
+          sessionStorage.setItem(key, '1');
+          sessionStorage.setItem('pmx_reload_n', String(n + 1));
+          location.replace(location.pathname + '?_=' + srv + location.hash);
+        }
+      }).catch(function(){});
+  } catch(e){}
+})();
+</script>
 <title>LS PMX Master — Lightship</title>
 <style>
 /* Glass tokens: usati da panel/sidebar/topbar/modal per effetto vetro satinato.
