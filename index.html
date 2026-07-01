@@ -2731,6 +2731,12 @@ function _scheduleRtRender() {
 }
 function _doRtRender() {
   try {
+    // Skip mentre l'utente sta disegnando sul notebook del finder
+    if (window.__doodleDrawing) {
+      if (_rtRenderTimer) clearTimeout(_rtRenderTimer);
+      _rtRenderTimer = setTimeout(_doRtRender, 1500);
+      return;
+    }
     // Skip se l'utente sta interagendo (input/select/textarea/contenteditable)
     const active = document.activeElement;
     if (active && active !== document.body) {
@@ -9203,6 +9209,7 @@ setRoute();
     function pt(e){ var r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
     cv.addEventListener('pointerdown', function(e){
       if (e.button !== 0) return;
+      window.__doodleDrawing = true;
       try { cv.setPointerCapture(e.pointerId); } catch(_){}
       var p = pt(e); cur = { pts: [{ x: p.x, y: p.y, w: 2.5, a: 0.9 }] }; strokes.push(cur);
       last = { x: p.x, y: p.y, t: performance.now() }; dirty = true; e.preventDefault();
@@ -9217,7 +9224,7 @@ setRoute();
       var a = 0.80 + Math.random() * 0.16;
       cur.pts.push({ x: p.x, y: p.y, w: w, a: a }); last = { x: p.x, y: p.y, t: now }; dirty = true;
     });
-    function endStroke(){ cur = null; save(); }
+    function endStroke(){ cur = null; window.__doodleDrawing = false; save(); }
     cv.addEventListener('pointerup', endStroke); cv.addEventListener('pointercancel', endStroke);
     // Gomma (in alto a destra) → cancella tutto
     var eraser = document.createElement('button'); eraser.type = 'button'; eraser.className = 'doodle-eraser'; eraser.title = 'Clear drawing';
