@@ -9175,11 +9175,11 @@ setRoute();
 
 // ============================================================
 // NOTEBOOK DOODLE — nei finder (stato vuoto) si scrive sullo sfondo a quadretti
-// con una "Bic blu"; i tratti svaniscono da soli dopo qualche secondo. Nessun pulsante.
+// con una "Bic blu". I tratti restano finché non premi la gomma in alto a destra.
 // ============================================================
 (function(){
   if (window.__doodleInit) return; window.__doodleInit = true;
-  var HOLD = 3000, FADE = 1100, INK = 'rgba(26,57,187,'; // bic blu
+  var INK = 'rgba(26,57,187,'; // bic blu
   function setup(panel){
     if (panel.__doodle) return; panel.__doodle = true;
     var cs = getComputedStyle(panel); if (cs.position === 'static') panel.style.position = 'relative';
@@ -9187,73 +9187,66 @@ setRoute();
     panel.insertBefore(cv, panel.firstChild);
     var ctx = cv.getContext('2d');
     var dpr = Math.max(1, window.devicePixelRatio || 1);
+    var strokes = [], cur = null, last = null, dirty = true;
     function resize(){
       var r = panel.getBoundingClientRect();
       cv.width = Math.max(1, Math.round(r.width * dpr));
       cv.height = Math.max(1, Math.round(r.height * dpr));
       cv.style.width = r.width + 'px'; cv.style.height = r.height + 'px';
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); dirty = true;
     }
     resize();
     var ro = new ResizeObserver(resize); ro.observe(panel);
-    var strokes = [], cur = null, last = null;
     function pt(e){ var r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
     cv.addEventListener('pointerdown', function(e){
       if (e.button !== 0) return;
       try { cv.setPointerCapture(e.pointerId); } catch(_){}
-      var p = pt(e);
-      cur = { pts: [{ x: p.x, y: p.y, w: 2.5, a: 0.9 }], done: null };
-      strokes.push(cur); last = { x: p.x, y: p.y, t: performance.now() };
-      e.preventDefault();
+      var p = pt(e); cur = { pts: [{ x: p.x, y: p.y, w: 2.5, a: 0.9 }] }; strokes.push(cur);
+      last = { x: p.x, y: p.y, t: performance.now() }; dirty = true; e.preventDefault();
     });
     cv.addEventListener('pointermove', function(e){
       if (!cur) return;
       var p = pt(e); var now = performance.now();
-      var dx = p.x - last.x, dy = p.y - last.y; var dist = Math.hypot(dx, dy);
+      var dx = p.x - last.x, dy = p.y - last.y, dist = Math.hypot(dx, dy);
       if (dist < 1.1) return;
-      var dt = Math.max(8, now - last.t);
-      var speed = dist / dt * 16;                       // ~px per frame
-      var w = 2.8 - Math.min(speed * 0.10, 1.9);        // penna: più veloce = più sottile
-      w = Math.max(0.9, w) + (Math.random() - 0.5) * 0.5;
-      var a = 0.80 + Math.random() * 0.16;              // leggera imperfezione ballpoint
-      cur.pts.push({ x: p.x, y: p.y, w: w, a: a });
-      last = { x: p.x, y: p.y, t: now };
+      var dt = Math.max(8, now - last.t); var speed = dist / dt * 16;
+      var w = 2.8 - Math.min(speed * 0.10, 1.9); w = Math.max(0.9, w) + (Math.random() - 0.5) * 0.5;
+      var a = 0.80 + Math.random() * 0.16;
+      cur.pts.push({ x: p.x, y: p.y, w: w, a: a }); last = { x: p.x, y: p.y, t: now }; dirty = true;
     });
-    function endStroke(){ if (cur){ cur.done = performance.now(); cur = null; } }
-    cv.addEventListener('pointerup', endStroke);
-    cv.addEventListener('pointercancel', endStroke);
+    function endStroke(){ cur = null; }
+    cv.addEventListener('pointerup', endStroke); cv.addEventListener('pointercancel', endStroke);
+    // Gomma (in alto a destra) → cancella tutto
+    var eraser = document.createElement('button'); eraser.type = 'button'; eraser.className = 'doodle-eraser'; eraser.title = 'Clear drawing';
+    eraser.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></svg>';
+    panel.appendChild(eraser);
+    eraser.addEventListener('click', function(){ strokes.length = 0; dirty = true; });
     function frame(){
       if (!panel.isConnected){ try { ro.disconnect(); } catch(_){} return; }
-      var now = performance.now();
-      ctx.clearRect(0, 0, cv.width, cv.height);
-      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-      for (var i = strokes.length - 1; i >= 0; i--){
-        var s = strokes[i]; var fade = 1;
-        if (s.done != null){
-          var age = now - s.done;
-          if (age > HOLD + FADE){ strokes.splice(i, 1); continue; }
-          if (age > HOLD) fade = 1 - (age - HOLD) / FADE;
-        }
-        var pts = s.pts; if (pts.length < 2) continue;
-        for (var j = 1; j < pts.length; j++){
-          var a = pts[j-1], b = pts[j];
-          ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
-          ctx.lineWidth = b.w;
-          ctx.strokeStyle = INK + (fade * b.a).toFixed(3) + ')';
-          ctx.stroke();
+      if (dirty){
+        dirty = false;
+        ctx.clearRect(0, 0, cv.width, cv.height);
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        for (var i = 0; i < strokes.length; i++){
+          var pts = strokes[i].pts; if (pts.length < 2) continue;
+          for (var j = 1; j < pts.length; j++){
+            var a = pts[j-1], b = pts[j];
+            ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+            ctx.lineWidth = b.w; ctx.strokeStyle = INK + b.a.toFixed(3) + ')'; ctx.stroke();
+          }
         }
       }
       requestAnimationFrame(frame);
     }
     requestAnimationFrame(frame);
   }
-  var obs = new MutationObserver(function(){
-    var p = document.querySelector('.panel.finder-empty');
-    if (p) setup(p);
-  });
+  var obs = new MutationObserver(function(){ var p = document.querySelector('.panel.finder-empty'); if (p) setup(p); });
   function start(){
     var st = document.createElement('style');
-    st.textContent = '.doodle-canvas{position:absolute;inset:0;z-index:0;pointer-events:auto;touch-action:none;cursor:crosshair}.panel.finder-empty{position:relative}.panel.finder-empty .filters{position:relative;z-index:1}';
+    st.textContent = '.doodle-canvas{position:absolute;inset:0;z-index:0;pointer-events:auto;touch-action:none;cursor:crosshair}'
+      + '.panel.finder-empty{position:relative}.panel.finder-empty .filters{position:relative;z-index:1}'
+      + '.doodle-eraser{position:absolute;top:14px;right:16px;z-index:3;width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid var(--line);background:var(--bg-2);color:var(--text-dim);cursor:pointer;box-shadow:0 4px 12px rgba(15,23,42,.12);transition:color .12s,border-color .12s,background .12s}'
+      + '.doodle-eraser:hover{color:#dc2626;border-color:#dc2626;background:var(--bg-3)}';
     document.head.appendChild(st);
     var c = document.getElementById('content') || document.body;
     obs.observe(c, { childList: true, subtree: true });
@@ -9261,6 +9254,7 @@ setRoute();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })();
+
 
 
 // ============================================================
