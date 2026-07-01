@@ -5966,7 +5966,7 @@ routes['vsl'] = function() {
   $('#content').innerHTML = `<div class="panel">
     <div class="filters">
       <div class="group"><label>Cgo Load Area</label>
-        <select id="vf-cgoarea" class="area-color-select"><option value="">All</option>${VSL_FINDER_LOAD_AREAS.map(a => `<option class="area-opt area-opt-${areaClass(a)}">${a}</option>`).join('')}</select></div>
+        <select id="vf-cgoarea" class="area-color-select"><option value="">All</option>${VSL_FINDER_LOAD_AREAS.filter(a => !['NCHINA','SCHINA'].includes(a)).map(a => `<option class="area-opt area-opt-${areaClass(a)}">${a}</option>`).join('')}</select></div>
       <div class="group"><label>Laycan</label><div id="vf-daterange"></div></div>
       <div class="group"><label>Search</label><input id="vf-q" placeholder="vessel / ideas / owner…"/></div>
       <button class="ghost" id="vf-reset">✕ Clear filters</button>
@@ -6238,7 +6238,7 @@ routes['cgo'] = function() {
   $('#content').innerHTML = `<div class="panel">
     <div class="filters">
       <div class="group"><label>Vsl Open Area</label>
-        <select id="cf-vslarea" class="area-color-select"><option value="">All</option>${CGO_FINDER_VESSEL_AREAS.map(a => `<option class="area-opt area-opt-${areaClass(a)}">${a}</option>`).join('')}</select></div>
+        <select id="cf-vslarea" class="area-color-select"><option value="">All</option>${CGO_FINDER_VESSEL_AREAS.filter(a => !['INDO','ECAUS','WCAUS','NOPAC','FEAST','CIS'].includes(a)).map(a => `<option class="area-opt area-opt-${areaClass(a)}">${a}</option>`).join('')}</select></div>
       <div class="group"><label>Laycan</label><div id="cf-daterange"></div></div>
       <div class="group"><label>Search</label><input id="cf-q" placeholder="cargo / chrtr / load…"/></div>
       <button class="ghost" id="cf-reset">✕ Clear filters</button>
