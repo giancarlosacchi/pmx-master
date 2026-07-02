@@ -2432,6 +2432,15 @@ function cloudToast(text, opts = {}) {
 const KEY_LOCAL = 'lspmx_v4';
 const MIGRATED_FLAG = 'lspmx_cloud_migrated';
 
+// Correzione robusta: sul foglio i cargo India stanno sotto INDIA (area ECI/WCI),
+// ma il sync a volte scrive section='SAFR'. L'area è affidabile: forziamo la sezione.
+function normCgoSection(c){
+  if (c && c.basin === 'PAC'){
+    var a = String(c.area || '').trim().toUpperCase();
+    if ((a === 'ECI' || a === 'WCI') && String(c.section || '').trim().toUpperCase() !== 'INDIA') c.section = 'INDIA';
+  }
+  return c;
+}
 async function loadDataFromCloud() {
   try {
     const [v, c, a, r] = await Promise.all([
@@ -2468,6 +2477,7 @@ async function loadDataFromCloud() {
     if (cloudV.length || cloudC.length || (a.data && a.data.length)) {
       DATA.vessels = cloudV;
       DATA.cargoes = cloudC;
+      DATA.cargoes.forEach(normCgoSection);
       DATA.accounts = a.data || [];
       if (r.data && r.data.length) {
         DATA.rundowns = DATA.rundowns || {};
@@ -2906,6 +2916,7 @@ function applyRtRow(table, payload) {
   } else {
     const row = payload.new;
     if (!row || row.id == null) return;
+    if (table === 'cargoes') normCgoSection(row);
     // Se è l'eco della MIA stessa modifica (round-trip cloud), aggiorno solo
     // lo snapshot interno e NON ri-faccio re-render: evita flicker su UI.
     const wasMine = _isProbablyMyChange(table, row);
