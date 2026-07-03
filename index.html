@@ -9261,7 +9261,18 @@ setRoute();
     }
     requestAnimationFrame(frame);
   }
-  var obs = new MutationObserver(function(){ var p = document.querySelector('.panel.finder-empty'); if (p) setup(p); });
+  var obs = new MutationObserver(function(){
+    var p = document.querySelector('.panel.finder-empty'); if (p) setup(p);
+    // quando il pannello mostra i risultati (non più finder-empty) togli subito il disegno
+    document.querySelectorAll('.doodle-canvas').forEach(function(cv){
+      var pan = cv.closest('.panel');
+      if (!pan || !pan.classList.contains('finder-empty')){
+        var er = pan && pan.querySelector('.doodle-eraser'); if (er) er.remove();
+        cv.remove();
+        if (pan) pan.__doodle = false;
+      }
+    });
+  });
   function start(){
     var st = document.createElement('style');
     st.textContent = '.doodle-canvas{position:absolute;inset:0;z-index:0;pointer-events:auto;touch-action:none;cursor:crosshair}'
@@ -9270,7 +9281,7 @@ setRoute();
       + '.doodle-eraser:hover{color:#dc2626;border-color:#dc2626;background:var(--bg-3)}';
     document.head.appendChild(st);
     var c = document.getElementById('content') || document.body;
-    obs.observe(c, { childList: true, subtree: true });
+    obs.observe(c, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
     var p = document.querySelector('.panel.finder-empty'); if (p) setup(p);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
