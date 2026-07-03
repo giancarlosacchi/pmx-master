@@ -9278,7 +9278,8 @@ setRoute();
     st.textContent = '.doodle-canvas{position:absolute;inset:0;z-index:0;pointer-events:auto;touch-action:none;cursor:crosshair}'
       + '.panel.finder-empty{position:relative}.panel.finder-empty .filters{position:relative;z-index:1}'
       + '.doodle-eraser{position:absolute;top:14px;right:16px;z-index:3;width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:10px;border:1px solid var(--line);background:var(--bg-2);color:var(--text-dim);cursor:pointer;box-shadow:0 4px 12px rgba(15,23,42,.12);transition:color .12s,border-color .12s,background .12s}'
-      + '.doodle-eraser:hover{color:#dc2626;border-color:#dc2626;background:var(--bg-3)}';
+      + '.doodle-eraser:hover{color:#dc2626;border-color:#dc2626;background:var(--bg-3)}'
+      + '.panel:not(.finder-empty) .doodle-canvas,.panel:not(.finder-empty) .doodle-eraser{display:none !important}';
     document.head.appendChild(st);
     var c = document.getElementById('content') || document.body;
     obs.observe(c, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
