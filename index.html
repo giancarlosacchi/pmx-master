@@ -1986,6 +1986,9 @@ table.grid th.col-del, table.grid td.col-del { width: 30px; max-width: 30px; ove
 .personal-block th:not(.col-ideas), .personal-block td:not(.col-ideas) { width: 1px !important; max-width: none !important; white-space: nowrap; }
 .personal-block .col-ideas { width: 100% !important; max-width: none !important; min-width: 120px !important; }
 .personal-block .col-ideas .ideas-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.personal-cols { display: flex; gap: 16px; align-items: flex-start; }
+.personal-cols > .personal-block { flex: 1 1 0; min-width: 0; margin-bottom: 0; }
+.personal-block .tbl-wrap { overflow-x: auto; }
 /* Larghezze fisse legacy mantenute per altre viste: */
 table.grid th.col-c-chrtrs, table.grid td.col-c-chrtrs { width: 135px; max-width: 135px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 table.grid th.col-c-dates,  table.grid td.col-c-dates  { width: 110px; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 10px !important; padding-right: 8px !important; }
@@ -5208,8 +5211,9 @@ function renderPersonal(){
       <div class="stat-card green"><div class="stat-label">Vessels</div><div class="stat-val">${mineV.length}</div><div class="stat-sub">followed by you</div></div>
       <div class="stat-card amber"><div class="stat-label">Cargoes</div><div class="stat-val">${mineC.length}</div><div class="stat-sub">followed by you</div></div>
     </div>
+    <div class="personal-cols">
     <div class="panel personal-block"><div class="pers-h">Vessels · ${mineV.length}</div><div class="tbl-wrap"><table class="grid"><thead><tr><th>Vessel</th><th>DWT</th><th>Open</th><th>Laycan</th><th class="col-ideas">Ideas / Info</th><th>Ows</th><th>LS</th><th>Upd</th><th>Status</th></tr></thead><tbody>${vBody()}</tbody></table></div></div>
-    <div class="panel personal-block"><div class="pers-h">Cargoes · ${mineC.length}</div><div class="tbl-wrap"><table class="grid"><thead><tr><th>Chrtrs</th><th>Laycan</th><th>Load</th><th>Disch</th><th>Cargo</th><th>Size</th><th class="col-ideas">Notes / Rates</th><th>LS</th><th>Status</th></tr></thead><tbody>${cBody()}</tbody></table></div></div>`;
+    <div class="panel personal-block"><div class="pers-h">Cargoes · ${mineC.length}</div><div class="tbl-wrap"><table class="grid"><thead><tr><th>Chrtrs</th><th>Laycan</th><th>Load</th><th>Disch</th><th>Cargo</th><th>Size</th><th class="col-ideas">Notes / Rates</th><th>LS</th><th>Status</th></tr></thead><tbody>${cBody()}</tbody></table></div></div></div>`;
 }
 routes['personal'] = renderPersonal;
 
