@@ -1973,6 +1973,13 @@ table.grid th.col-del, table.grid td.col-del { width: 30px; max-width: 30px; ove
 #ca-tbl .col-ideas .ideas-text { width: 100%; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Hover: il testo va a capo e si vede per intero (override della regola sopra) */
 #ca-tbl .col-ideas .ideas-text:hover { white-space: normal; overflow: visible; text-overflow: clip; word-break: break-word; }
+/* Finder (Vsl/Cgo): colonne larghe quanto il contenuto, tranne Ideas/Notes che assorbe lo spazio */
+#vf-results table.grid, #cf-results table.grid { table-layout: auto; width: 100%; }
+#vf-results th:not(.col-ideas), #vf-results td:not(.col-ideas),
+#cf-results th:not(.col-ideas), #cf-results td:not(.col-ideas) { width: 1px !important; max-width: none !important; white-space: nowrap; }
+#vf-results .col-ideas, #cf-results .col-ideas { width: 100% !important; max-width: none !important; min-width: 120px !important; }
+#vf-results .col-ideas .ideas-text, #cf-results .col-ideas .ideas-text { width: 100%; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#vf-results .col-ideas .ideas-text:hover, #cf-results .col-ideas .ideas-text:hover { white-space: normal; overflow: visible; text-overflow: clip; word-break: break-word; }
 /* Larghezze fisse legacy mantenute per altre viste: */
 table.grid th.col-c-chrtrs, table.grid td.col-c-chrtrs { width: 135px; max-width: 135px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 table.grid th.col-c-dates,  table.grid td.col-c-dates  { width: 110px; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 10px !important; padding-right: 8px !important; }
@@ -9527,18 +9534,4 @@ setRoute();
           if (showArrow){
             var a = ensureArrow(p); a.style.display='';
             a.style.left = (rect.left - el.scrollLeft + p.fx*sw) + 'px';
-            a.style.top  = (rect.top  - el.scrollTop  + p.fy*sh) + 'px';
-          } else if (p.el){ p.el.style.display='none'; }
-        }
-        requestAnimationFrame(loop);
-      }
-      requestAnimationFrame(loop);
-      function pulse(id){ var p=peers[id]; if(!p) return; p.lastCur=Date.now();
-        var el = mainScroller();
-        el.scrollTop  = Math.max(0, p.fy*Math.max(1,el.scrollHeight) - el.clientHeight/2);
-        el.scrollLeft = Math.max(0, p.fx*Math.max(1,el.scrollWidth)  - el.clientWidth/2);
-        setTimeout(function(){ if (p.el && p.el.animate) p.el.animate([{transform:'scale(1)'},{transform:'scale(2)'},{transform:'scale(1)'}],{duration:700,iterations:2}); }, 150);
-      }
-      function renderList(){
-        var nav = document.getElementById('online-list'); if (!nav) return;
-        var now = Date.now(); var ids = Object.ke                                                          
+            a.style.top  = (rect.top  - el.sc
