@@ -1980,6 +1980,12 @@ table.grid th.col-del, table.grid td.col-del { width: 30px; max-width: 30px; ove
 #vf-results .col-ideas, #cf-results .col-ideas { width: 100% !important; max-width: none !important; min-width: 120px !important; }
 #vf-results .col-ideas .ideas-text, #cf-results .col-ideas .ideas-text { width: 100%; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #vf-results .col-ideas .ideas-text:hover, #cf-results .col-ideas .ideas-text:hover { white-space: normal; overflow: visible; text-overflow: clip; word-break: break-word; }
+.personal-block { margin-bottom: 16px; }
+.personal-block .pers-h { padding: 10px 14px; font-weight: 700; font-size: 13px; color: var(--text); border-bottom: 1px solid var(--line-soft); }
+.personal-block table.grid { table-layout: auto; width: 100%; }
+.personal-block th:not(.col-ideas), .personal-block td:not(.col-ideas) { width: 1px !important; max-width: none !important; white-space: nowrap; }
+.personal-block .col-ideas { width: 100% !important; max-width: none !important; min-width: 120px !important; }
+.personal-block .col-ideas .ideas-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Larghezze fisse legacy mantenute per altre viste: */
 table.grid th.col-c-chrtrs, table.grid td.col-c-chrtrs { width: 135px; max-width: 135px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 table.grid th.col-c-dates,  table.grid td.col-c-dates  { width: 110px; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 10px !important; padding-right: 8px !important; }
@@ -2307,6 +2313,7 @@ body:not(.logged-in) .app { visibility: hidden; }
       <a data-route="ecsa-list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18"/></svg><span class="nav-label">ECSA List</span></a>
       <a data-route="calc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h2M14 11h2M8 15h2M14 15h2"/></svg><span class="nav-label">Calc DOP/APS</span></a>
       <a data-route="distances"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg><span class="nav-label">Distances</span></a>
+      <a data-route="personal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M5 21v-1a7 7 0 0 1 14 0v1"/></svg><span class="nav-label">Personal</span></a>
     </nav>
   </div>
   <div class="sb-block sb-reference">
@@ -4569,6 +4576,7 @@ const PAGES = {
   'distances': ['Distances', 'Sailing days matrix'],
   'accounts':  ['Lightship Accounts', 'Who covers which clients'],
   'roadmap':   ['Broker Roadmap', 'Broker reference'],
+  'personal':  ['Personal', 'Vessels & cargoes you follow'],
 };
 
 let _lastRoute = null;
@@ -5156,6 +5164,55 @@ function openVesselForm(id, basin) {
   // Focus iniziale sul primo campo
   setTimeout(() => { const first = $('#vform [name=vessel]'); if (first) first.focus(); }, 50);
 }
+// ============== PERSONAL (navi/carichi seguiti dal broker loggato) ==============
+function _personalCode(){
+  var e = (typeof CURRENT_USER !== 'undefined' && CURRENT_USER && CURRENT_USER.email) || '';
+  return String(e.split('@')[0] || '').toUpperCase();
+}
+function _brkTokens(s){ return String(s || '').toUpperCase().split(/[^A-Z0-9]+/).filter(Boolean); }
+function renderPersonal(){
+  const code = _personalCode();
+  const mineV = (DATA.vessels || []).filter(v => _brkTokens(v.ls_brkr).includes(code));
+  const mineC = (DATA.cargoes || []).filter(c => _brkTokens(c.ls_brkr).includes(code));
+  const cmpV = makeDateRangeCmp('open_from', 'open_to');
+  const cmpC = makeDateRangeCmp('laycan_from', 'laycan_to');
+  const stCls = x => !x.status ? '' : x.status === 'on_subs' ? 'status-subs' : x.status === 'off_mkt' ? 'status-off' : 'status-fresh';
+  const pill = x => !x.status ? '<span class="dim">—</span>' : `<span class="pill ${x.status === 'on_subs' ? 'subs' : x.status === 'off_mkt' ? 'off' : 'fresh'}">${x.status === 'on_subs' ? 'On subs' : x.status === 'off_mkt' ? 'Off mkt' : 'Fresh'}</span>`;
+  function vBody(){
+    if (!mineV.length) return `<tr><td colspan="9" class="dim" style="padding:16px;text-align:center">No vessels followed by ${esc(code || '—')}</td></tr>`;
+    const by = {}; mineV.forEach(v => (by[v.area || '—'] = by[v.area || '—'] || []).push(v));
+    let h = '';
+    for (const a of Object.keys(by).sort()){
+      h += `<tr class="section-area ${areaClass(a)}"><td colspan="9">${esc(a)}<span class="area-count">${by[a].length}</span></td></tr>`;
+      by[a].slice().sort(cmpV).forEach(v => {
+        h += `<tr class="${stCls(v)}"><td class="col-vessel"><b>${esc(v.vessel || '')}</b></td><td class="dim">${esc(v.dwt_blt || '')}</td><td>${esc(v.open_port || '')}</td><td>${fmtDateRange(v.open_from, v.open_to)}</td><td class="col-ideas"><div class="ideas-text">${esc(v.ideas || '')}</div></td><td class="dim">${esc(v.ows_brkr || '')}</td><td class="dim">${esc(v.ls_brkr || '')}</td><td class="dim">${fmtUpdate(v.update_date)}</td><td>${pill(v)}</td></tr>`;
+      });
+    }
+    return h;
+  }
+  function cBody(){
+    if (!mineC.length) return `<tr><td colspan="9" class="dim" style="padding:16px;text-align:center">No cargoes followed by ${esc(code || '—')}</td></tr>`;
+    const by = {}; mineC.forEach(c => (by[c.section || c.area || '—'] = by[c.section || c.area || '—'] || []).push(c));
+    let h = '';
+    for (const s of Object.keys(by).sort()){
+      h += `<tr class="section-area ${areaClass(s)}"><td colspan="9">${esc(s)}<span class="area-count">${by[s].length}</span></td></tr>`;
+      by[s].slice().sort(cmpC).forEach(c => {
+        h += `<tr class="${stCls(c)}"><td class="col-vessel"><b>${esc(c.chrtrs || '')}</b></td><td>${fmtDateRange(c.laycan_from, c.laycan_to)}</td><td>${esc(c.load_port || '')}</td><td>${esc(c.disch_port || '')}</td><td>${esc(c.cgo || '')}</td><td class="dim">${esc(c.size || '')}</td><td class="col-ideas"><div class="ideas-text">${esc(c.notes || '')}</div></td><td class="dim">${esc(c.ls_brkr || '')}</td><td>${pill(c)}</td></tr>`;
+      });
+    }
+    return h;
+  }
+  $('#content').innerHTML = `
+    <div class="stats">
+      <div class="stat-card cyan"><div class="stat-label">Your code</div><div class="stat-val">${esc(code || '—')}</div><div class="stat-sub">${esc((typeof CURRENT_USER !== 'undefined' && CURRENT_USER && CURRENT_USER.email) || '')}</div></div>
+      <div class="stat-card green"><div class="stat-label">Vessels</div><div class="stat-val">${mineV.length}</div><div class="stat-sub">followed by you</div></div>
+      <div class="stat-card amber"><div class="stat-label">Cargoes</div><div class="stat-val">${mineC.length}</div><div class="stat-sub">followed by you</div></div>
+    </div>
+    <div class="panel personal-block"><div class="pers-h">Vessels · ${mineV.length}</div><div class="tbl-wrap"><table class="grid"><thead><tr><th>Vessel</th><th>DWT</th><th>Open</th><th>Laycan</th><th class="col-ideas">Ideas / Info</th><th>Ows</th><th>LS</th><th>Upd</th><th>Status</th></tr></thead><tbody>${vBody()}</tbody></table></div></div>
+    <div class="panel personal-block"><div class="pers-h">Cargoes · ${mineC.length}</div><div class="tbl-wrap"><table class="grid"><thead><tr><th>Chrtrs</th><th>Laycan</th><th>Load</th><th>Disch</th><th>Cargo</th><th>Size</th><th class="col-ideas">Notes / Rates</th><th>LS</th><th>Status</th></tr></thead><tbody>${cBody()}</tbody></table></div></div>`;
+}
+routes['personal'] = renderPersonal;
+
 routes['atl-tng'] = () => renderMasterList('ATL');
 routes['pac-tng'] = () => renderMasterList('PAC');
 
