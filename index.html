@@ -1855,12 +1855,12 @@ table.grid tbody td, table.grid thead th { padding: 6px 8px; }
 /* ===== COLONNE AUTO-FIT al contenuto (tranne Ideas/Info) =====
    Solo Master List (#content > .panel > #tbl). NON applicare alla ECSA List
    che ha #tbl annidato dentro .ecsa-list-col e usa larghezze percentuali sue. */
-#content > .panel > #tbl table.grid { table-layout: auto; width: 100%; }
-#content > .panel > #tbl th:not(.col-ideas),
-#content > .panel > #tbl td:not(.col-ideas) { width: auto !important; max-width: none !important; }
-#content > .panel > #tbl .col-ideas { width: 100% !important; max-width: 0 !important; min-width: 0 !important; }
-#content > .panel > #tbl .col-ideas .ideas-text { width: 100%; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#content > .panel > #tbl .col-ideas .ideas-text:hover { white-space: normal; overflow: visible; text-overflow: clip; word-break: break-word; }
+.panel-list #tbl table.grid { table-layout: auto; width: 100%; }
+.panel-list #tbl th:not(.col-ideas),
+.panel-list #tbl td:not(.col-ideas) { width: 1px !important; max-width: none !important; white-space: nowrap; }
+.panel-list #tbl .col-ideas { width: 100% !important; max-width: none !important; min-width: 120px !important; }
+.panel-list #tbl .col-ideas .ideas-text { width: 100%; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.panel-list #tbl .col-ideas .ideas-text:hover { white-space: normal; overflow: visible; text-overflow: clip; word-break: break-word; }
 /* Larghezze fisse legacy (ora ignorate per via degli override sopra, mantenute per altre tabelle): */
 table.grid th.col-vessel, table.grid td.col-vessel { width: 140px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-left: 22px !important; }
 table.grid th.col-dwt, table.grid td.col-dwt { width: 55px; max-width: 55px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
