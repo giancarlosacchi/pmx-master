@@ -98,7 +98,7 @@
   --halfsection-bg: #e8f0fe;
   --halfsection-color: #1967D2;
   --off-bg: #FEF7E0; --off-border: #F9AB00; --off-text: #B06000;
-  --subs-bg: #FCE8E6; --subs-border: #EA4335; --subs-text: #B31412;
+  --subs-bg: #FCE8E6; --subs-border: #EA4335; --subs-text: #FF1A1A;
   --bg-grad: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
   --radius: 10px; --radius-sm: 6px; --radius-lg: 14px;
 }
@@ -1121,7 +1121,7 @@ pre.rundown { white-space: pre-wrap; font-family: inherit;
   line-height: 1.5;
 }
 .cp-row:hover { background: var(--bg-hover); }
-.cp-row.subs { color: var(--subs-text); }
+.cp-row.subs { color: var(--subs-text); font-weight: 700; }
 .cp-cam-btn { width:30px; height:30px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--line); background:transparent; color:var(--text-dim); cursor:pointer; margin-left:6px; padding:0; transition:all .15s; }
 .cp-cam-btn:hover { background:var(--bg-hover); color:var(--text); }
 .cp-cam-btn.ok { color:#2D8A4F; border-color:#2D8A4F; }
@@ -1690,7 +1690,7 @@ tr.row-area.dragging td { opacity: 0.35; }
 
 
 /* Navi on subs: testo barrato */
-tr.status-subs td { color: var(--subs-text); }
+tr.status-subs td { color: var(--subs-text); font-weight: 700; }
 /* Eccezioni: status pill, flag chips e icon edit non devono essere barrati */
 tr.status-subs .status-chip,
 tr.status-subs .area-pill,
