@@ -5962,8 +5962,8 @@ routes['vsl'] = function() {
   $('#topbar-actions').innerHTML = '';
 
   let lastVfRows = [], lastVfArea = '', lastVfFrom = '', lastVfTo = '';
-  const hiddenRows = new Set();
-  const hiddenCols = new Set();
+  FINDER_STATE.vsl.hidden = FINDER_STATE.vsl.hidden || new Set(); const hiddenRows = FINDER_STATE.vsl.hidden;
+  FINDER_STATE.vsl.hiddenCols = FINDER_STATE.vsl.hiddenCols || new Set(); const hiddenCols = FINDER_STATE.vsl.hiddenCols;
   FINDER_STATE.vsl.excl = FINDER_STATE.vsl.excl || new Set(); const excludedAreas = FINDER_STATE.vsl.excl;
   // Colonne nascondibili e loro label
   const VF_COLS = [
@@ -6277,8 +6277,8 @@ routes['cgo'] = function() {
   });
   $('#cf-daterange').appendChild(drCgo);
   FINDER_STATE.cgo.excl = FINDER_STATE.cgo.excl || new Set(); const excludedCgoAreas = FINDER_STATE.cgo.excl;
-  const hiddenCgoRows = new Set();
-  const hiddenCgoCols = new Set();
+  FINDER_STATE.cgo.hidden = FINDER_STATE.cgo.hidden || new Set(); const hiddenCgoRows = FINDER_STATE.cgo.hidden;
+  FINDER_STATE.cgo.hiddenCols = FINDER_STATE.cgo.hiddenCols || new Set(); const hiddenCgoCols = FINDER_STATE.cgo.hiddenCols;
   let lastCfRows = [], lastCfArea = '';
   const CF = getFilter('cgo');
 // daterange selezionato nello step 'date' della mappa
