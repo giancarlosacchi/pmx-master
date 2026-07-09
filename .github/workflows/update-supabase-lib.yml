@@ -1,0 +1,36 @@
+name: Update supabase-js locale
+
+# Scarica la libreria supabase-js dal CDN, ne VERIFICA l'hash SHA-256
+# e la committa nel repo come supabase.min.js (self-hosted, zero CDN).
+# Si lancia solo a mano (workflow_dispatch) quando serve aggiornarla.
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  vendor:
+    runs-on: ubuntu-latest
+    env:
+      VERSION: 2.110.1
+      SHA256: 739d338edbd73a3390df5f97dfc142979e79520ec20c59653a1593fb9f6e33f5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scarica e verifica supabase-js
+        run: |
+          set -e
+          curl -sSL --fail -m 120 -o supabase.min.js \
+            "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@${VERSION}/dist/umd/supabase.js"
+          echo "${SHA256}  supabase.min.js" | sha256sum -c -
+          echo "OK: hash verificato."
+
+      - name: Commit nel repo
+        run: |
+          git config user.name  "vendor-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add supabase.min.js
+          git commit -m "Add: supabase-js ${VERSION} self-hosted nel repo (sha256 verificata)" || { echo "Nessuna modifica da committare."; exit 0; }
+          git push
