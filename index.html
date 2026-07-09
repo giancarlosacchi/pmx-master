@@ -30,6 +30,7 @@
 })();
 </script>
 <title>LS PMX Master — Lightship</title>
+<meta name="robots" content="noindex, nofollow" />
 <link rel="icon" type="image/png" href="./logo.png" />
 <script type="application/json" id="cowork-artifact-meta">
 {
@@ -2629,7 +2630,7 @@ function scheduleCloudSync() {
   // Salvataggio quasi immediato (50ms): permette di batch-are azioni rapide
   // tipo click multipli su flag, ma per l'utente è impercettibile.
   if (_syncTimer) clearTimeout(_syncTimer);
-  _syncTimer = setTimeout(syncDirtyToCloud, 50);
+  _syncTimer = setTimeout(() => { _syncTimer = null; syncDirtyToCloud(); }, 50);
 }
 
 async function syncDirtyToCloud() {
@@ -2694,7 +2695,17 @@ async function syncDirtyToCloud() {
   if (tasks.length === 0) return;
   // Salvataggio silenzioso: niente toast per non dare percezione di lentezza.
   // Il toast appare SOLO in caso di errore (vedi handleErr).
-  await Promise.all(tasks);
+  const results = await Promise.all(tasks);
+  // FIX: se anche una sola scrittura è fallita (rete instabile, sessione scaduta…)
+  // NON aggiorniamo lo snapshot: le righe fallite restano "dirty" e vengono
+  // ritentate tra 5s. Prima venivano marcate come salvate e la modifica
+  // spariva al refresh successivo, senza retry.
+  if (results.some(x => x === false)) {
+    cloudToast('Some changes not saved to cloud — retrying in 5s…', { kind: 'error', duration: 4000 });
+    if (_syncTimer) clearTimeout(_syncTimer);
+    _syncTimer = setTimeout(() => { _syncTimer = null; syncDirtyToCloud(); }, 5000);
+    return;
+  }
   // Update snapshot
   _lastSyncSnapshot.vessels = new Map((DATA.vessels||[]).map(v => [v.id, _hash(v)]));
   _lastSyncSnapshot.cargoes = new Map((DATA.cargoes||[]).map(c => [c.id, _hash(c)]));
@@ -2705,8 +2716,27 @@ function handleErr(label) {
     if (error) {
       console.error('Cloud ' + label + ' failed:', error);
       cloudToast('Save error (' + label + '): ' + error.message, { kind: 'error', duration: 4000 });
+      return false;
     }
+    return true;
   };
+}
+
+// True se ci sono modifiche locali non ancora confermate dal cloud.
+// Usato per: (a) ritentare le scritture fallite, (b) NON sovrascrivere DATA
+// col refresh periodico finché ci sono modifiche in attesa di sync.
+function _hasPendingCloudWrites() {
+  try {
+    if (_syncTimer) return true;
+    if (!_lastSyncSnapshot) return false;
+    const chk = (arr, snap) => {
+      const cur = new Map((arr || []).map(r => [r.id, r]));
+      if (cur.size !== snap.size) return true;
+      for (const [id, r] of cur) { if (!snap.has(id) || snap.get(id) !== _hash(r)) return true; }
+      return false;
+    };
+    return chk(DATA.vessels, _lastSyncSnapshot.vessels) || chk(DATA.cargoes, _lastSyncSnapshot.cargoes);
+  } catch (e) { return false; }
 }
 
 // Quando Postgres assegna un nuovo ID a una insert (al posto del nostro 'tmp_xxx'),
@@ -2889,6 +2919,10 @@ function startRealtimeSync() {
         }
         startRealtimeSync();
       } catch (e) { console.warn('[wake] realtime reconnect failed:', e); }
+      // 1b) FIX: se ci sono modifiche locali non ancora salvate sul cloud
+      // (es. sync fallito prima dello standby), spingile PRIMA di ricaricare,
+      // altrimenti il reload le sovrascriverebbe.
+      try { if (typeof _hasPendingCloudWrites === 'function' && _hasPendingCloudWrites()) await syncDirtyToCloud(); } catch (e) { console.warn('[wake] pending sync failed:', e); }
       // 2) Ricarica i dati dal cloud (vessels, cargoes, accounts, rundowns)
       try { await loadDataFromCloud(); } catch (e) { console.warn('[wake] reload failed:', e); }
       // 3) Ridisegna la pagina corrente
@@ -2930,6 +2964,12 @@ function startRealtimeSync() {
     const active = document.activeElement;
     if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT' || active.isContentEditable)) return;
     if (document.querySelector('.dr-popup.open, .modal[style*="display: flex"], .status-menu:hover')) return;
+    // FIX: se ci sono modifiche locali in attesa di sync (o un retry in corso),
+    // NON ricaricare dal cloud — le sovrascriverebbe. Prima completa il sync.
+    if (typeof _hasPendingCloudWrites === 'function' && _hasPendingCloudWrites()) {
+      try { await syncDirtyToCloud(); } catch (e) { console.warn('[poll] pending sync failed:', e); }
+      return;
+    }
     try {
       await loadDataFromCloud();
       _scheduleRtRender();
@@ -4221,7 +4261,15 @@ function bootstrap() {
     live: SEED_DATA.live,
   };
 }
-function saveData(d) { localStorage.setItem(KEY, JSON.stringify(d)); }
+function saveData(d) {
+  // Guardia quota: se localStorage è pieno non deve rompere l'azione dell'utente
+  // (i dati veri sono comunque nel cloud; la cache locale è solo per velocità).
+  try { localStorage.setItem(KEY, JSON.stringify(d)); }
+  catch (e) {
+    console.warn('saveData: localStorage write failed (quota?):', e);
+    try { cloudToast('Local cache full — data is safe in the cloud', { kind: 'error', duration: 3000 }); } catch (_) {}
+  }
+}
 let DATA = loadData();
 window.DATA = DATA;
 
