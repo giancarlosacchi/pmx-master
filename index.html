@@ -2244,10 +2244,17 @@ body:not(.logged-in) .app { visibility: hidden; }
 .cloud-toast.error { border-color: rgba(239,83,80,.35); color: #C5392B; }
 .cloud-toast.ok { border-color: rgba(45,138,79,.35); color: #2D8A4F; }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./supabase.min.js?v=2.110.1"></script>
 <script>
-/* Fallback CDN: se jsdelivr è irraggiungibile (rete aziendale/proxy), prova unpkg.
+/* La libreria supabase-js è ora servita dal repo stesso (zero dipendenze esterne).
+   Fallback 1: se il file locale non si carica, prova jsdelivr (CDN).
    document.write blocca il parser, quindi la libreria è pronta prima dello script principale. */
+if (!window.supabase) {
+  document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"><\/script>');
+}
+</script>
+<script>
+/* Fallback 2: se anche jsdelivr è bloccato, prova unpkg. */
 if (!window.supabase) {
   document.write('<script src="https://unpkg.com/@supabase/supabase-js@2"><\/script>');
 }
