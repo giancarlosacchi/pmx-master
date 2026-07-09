@@ -1,12 +1,5 @@
 <!doctype html>
-<!-- build: 20260708-1500 ideas-inherit -->
-<script type="application/json" id="cowork-artifact-meta">
-{
-  "name": "Ls Pmx Master",
-  "schemaVersion": 1,
-  "description": "App PMX Master List Lightship: master list navi (Master, Vsl Finder, Cgo Finder, Cargoes, Rundowns, Calc DOP/APS) con CRUD, color coding fresh/off mkt/on subs, generazione testo rundown e import/export JSON. Dati salvati nel browser via localStorage."
-}
-</script>
+<!-- build: 20260709-fixes truncated-script + cdn-fallback + favicon -->
 <html lang="it">
 <head>
 <meta charset="utf-8" />
@@ -37,6 +30,14 @@
 })();
 </script>
 <title>LS PMX Master — Lightship</title>
+<link rel="icon" type="image/png" href="./logo.png" />
+<script type="application/json" id="cowork-artifact-meta">
+{
+  "name": "Ls Pmx Master",
+  "schemaVersion": 1,
+  "description": "App PMX Master List Lightship: master list navi (Master, Vsl Finder, Cgo Finder, Cargoes, Rundowns, Calc DOP/APS) con CRUD, color coding fresh/off mkt/on subs, generazione testo rundown e import/export JSON. Dati salvati nel browser via localStorage."
+}
+</script>
 <style>
 /* Glass tokens: usati da panel/sidebar/topbar/modal per effetto vetro satinato.
    Dark mode: più contrasto → glass-bg più opaco, bordi più visibili, ombre più nette. */
@@ -2161,7 +2162,6 @@ body:not(.logged-in) .app { visibility: hidden; }
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0,0,0,.18);
   display: flex; flex-direction: column; align-items: center; gap: 14px;
-  font-family: var(--font);
 }
 .login-box img { width: 64px; height: 64px; object-fit: contain; }
 .login-box h1 { margin: 0; font-size: 18px; letter-spacing: .12em; text-align: center; color: var(--text, #2A2A2A); }
@@ -2245,6 +2245,13 @@ body:not(.logged-in) .app { visibility: hidden; }
 .cloud-toast.ok { border-color: rgba(45,138,79,.35); color: #2D8A4F; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* Fallback CDN: se jsdelivr è irraggiungibile (rete aziendale/proxy), prova unpkg.
+   document.write blocca il parser, quindi la libreria è pronta prima dello script principale. */
+if (!window.supabase) {
+  document.write('<script src="https://unpkg.com/@supabase/supabase-js@2"><\/script>');
+}
+</script>
 </head>
 <body>
 
@@ -2375,10 +2382,51 @@ body:not(.logged-in) .app { visibility: hidden; }
 // ============================================================
 const SUPABASE_URL = 'https://ngtyjxcjodwwznatubjm.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5ndHlqeGNqb2R3d3puYXR1YmptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NzkwMzUsImV4cCI6MjA5NTQ1NTAzNX0.xIFSL1dBB9T5A1DrwxZV9Z1TVoLflnEaxLzkYLvTpC8';
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'implicit' }
-});
+/* Se la libreria supabase-js non è stata caricata (entrambi i CDN bloccati),
+   non far morire tutta l'app con un'eccezione: usa un client "offline" che
+   restituisce sempre errore, e mostra un messaggio chiaro sulla schermata di login. */
+function _makeOfflineSb() {
+  const err = () => new Error('Cloud library not loaded (CDN unreachable). Check your connection / firewall and reload.');
+  const res = () => Promise.resolve({ data: null, error: err() });
+  const qb = () => {
+    const p = Promise.resolve({ data: null, error: err() });
+    const h = {};
+    ['select','eq','neq','ilike','like','in','order','limit','range','insert','upsert','update','delete','gte','gt','lte','lt','not','or','is'].forEach(k => { h[k] = () => h; });
+    h.single = h.maybeSingle = () => p;
+    h.then = (a, b) => p.then(a, b);
+    h.catch = (f) => p.catch(f);
+    h.finally = (f) => p.finally(f);
+    return h;
+  };
+  const ch = { on(){ return ch; }, subscribe(){ return ch; }, send: async () => {}, unsubscribe: async () => {} };
+  return {
+    auth: {
+      getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe(){} } } }),
+      signInWithOtp: res, signInWithOAuth: res, signInWithPassword: res, verifyOtp: res,
+      signOut: () => Promise.resolve({ error: null })
+    },
+    from: qb,
+    channel: () => ch,
+    removeChannel: async () => {}
+  };
+}
+const _sbLibOk = !!(window.supabase && window.supabase.createClient);
+const sb = _sbLibOk
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'implicit' }
+    })
+  : _makeOfflineSb();
 window.sb = sb;
+if (!_sbLibOk) {
+  const _showCdnErr = () => {
+    const m = document.getElementById('login-msg');
+    if (m) { m.textContent = 'Cannot reach the cloud library (CDN blocked?). Check connection/firewall and reload.'; m.className = 'login-msg error'; }
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _showCdnErr);
+  else _showCdnErr();
+  console.error('supabase-js not loaded: both CDNs unreachable.');
+}
 
 // Currently signed-in user (set after successful login)
 let CURRENT_USER = null;
@@ -9593,4 +9641,46 @@ setRoute();
           if (showArrow){
             var a = ensureArrow(p); a.style.display='';
             a.style.left = (rect.left - el.scrollLeft + p.fx*sw) + 'px';
-            a.style.top  = (rect.top  - e
+            a.style.top  = (rect.top  - el.scrollTop  + p.fy*sh) + 'px';
+          } else if (p.el) {
+            p.el.style.display = 'none';
+          }
+          // Peer silenzioso da >15s: rimuovi freccia e voce dalla lista
+          if (now - (p.lastSeen || 0) > 15000) {
+            if (p.el) { try { p.el.remove(); } catch(_){} }
+            delete peers[id];
+          }
+        }
+        // Pannello "Online" in sidebar (aggiornato max ~1 volta al secondo)
+        if (now - lastListRender > 1000) {
+          lastListRender = now;
+          var list = document.getElementById('online-list');
+          if (list) {
+            var esc = function(s){ return String(s == null ? '' : s).replace(/[<>&]/g, ''); };
+            var items = '';
+            for (var pid in peers) {
+              var q = peers[pid];
+              items += '<div style="display:flex;align-items:center;gap:7px;padding:5px 12px;font-size:11.5px;color:var(--text-dim)">'
+                    +  '<span style="width:8px;height:8px;border-radius:50%;background:' + q.col + ';flex:none"></span>'
+                    +  '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(q.name || '?') + '</span>'
+                    +  '<span style="margin-left:auto;color:var(--text-mute);font-size:10px">' + esc(q.route || '') + '</span>'
+                    +  '</div>';
+            }
+            list.innerHTML = items || '<div style="padding:6px 12px;font-size:11px;color:var(--text-mute)">none</div>';
+          }
+        }
+        requestAnimationFrame(loop);
+      }
+      var lastListRender = 0;
+      requestAnimationFrame(loop);
+    }
+    ch.subscribe(function (status) {
+      if (status === 'SUBSCRIBED') subscribed = true;
+    });
+  }
+  start();
+})();
+</script>
+
+</body>
+</html>
