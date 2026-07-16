@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260708-1530 finder-ideas-clip -->
+<!-- build: 20260716-dedupe -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2456,6 +2456,35 @@ function normCgoSection(c){
   }
   return c;
 }
+// Rimuove doppioni: righe con lo STESSO copy_text (contenuto identico) vengono
+// unificate tenendo la riga canonica (quella con sync_id, altrimenti id piu' basso).
+// Difende dai doppioni presenti nel DB (righe inserite senza sync_id) e da
+// eventuali inserimenti duplicati via realtime. Righe senza copy_text non toccate.
+function dedupeData(){
+  ['vessels','cargoes'].forEach(function(t){
+    var arr = DATA[t];
+    if (!Array.isArray(arr) || arr.length < 2) return;
+    var best = Object.create(null);
+    arr.forEach(function(r){
+      var key = String((r && r.copy_text) || '').trim().toLowerCase().replace(/\s+/g,' ');
+      if (!key) return;
+      var cur = best[key];
+      if (!cur){ best[key] = r; return; }
+      var rHas = r.sync_id != null, cHas = cur.sync_id != null;
+      if (rHas && !cHas) best[key] = r;
+      else if (rHas === cHas && (Number(r.id)||0) < (Number(cur.id)||0)) best[key] = r;
+    });
+    var before = arr.length;
+    DATA[t] = arr.filter(function(r){
+      var key = String((r && r.copy_text) || '').trim().toLowerCase().replace(/\s+/g,' ');
+      if (!key) return true;
+      return best[key] === r;
+    });
+    if (DATA[t].length !== before) {
+      try { console.info('[dedupe] ' + t + ': ' + before + ' -> ' + DATA[t].length + ' (' + (before - DATA[t].length) + ' doppioni rimossi)'); } catch(e){}
+    }
+  });
+}
 async function loadDataFromCloud() {
   try {
     const [v, c, a, r] = await Promise.all([
@@ -2493,6 +2522,7 @@ async function loadDataFromCloud() {
       DATA.vessels = cloudV;
       DATA.cargoes = cloudC;
       DATA.cargoes.forEach(normCgoSection);
+      dedupeData();
       DATA.accounts = a.data || [];
       if (r.data && r.data.length) {
         DATA.rundowns = DATA.rundowns || {};
@@ -2938,6 +2968,7 @@ function applyRtRow(table, payload) {
     const idx = arr.findIndex(r => r.id === row.id);
     // Preserva il flag __sessionNew (in-memory, per il bold "appena aggiunta")
     const wasSessionNew = idx >= 0 && !!arr[idx].__sessionNew;
+    const wasInsert = idx < 0;
     if (idx >= 0) arr[idx] = row;
     else arr.push(row);
     if (wasSessionNew) {
@@ -2945,6 +2976,7 @@ function applyRtRow(table, payload) {
       if (i2 >= 0) arr[i2].__sessionNew = true;
     }
     if (_lastSyncSnapshot && _lastSyncSnapshot[table]) _lastSyncSnapshot[table].set(row.id, _hash(row));
+    if (wasInsert) dedupeData(); // un nuovo INSERT potrebbe essere un doppione: unifica
     saveData(DATA);
     if (wasMine) return; // marker: salta il re-render scheduler upstream
   }
@@ -9574,23 +9606,4 @@ setRoute();
         if (p.el) return p.el;
         var el = document.createElement('div');
         el.style.cssText = 'position:absolute;will-change:left,top';
-        el.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,.45))"><path d="M5 3l15 9-7 1.4L9.6 20z" fill="'+p.col+'" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg><span style="position:absolute;left:17px;top:13px;background:'+p.col+';color:#fff;font:600 10px/1.5 system-ui,sans-serif;padding:1px 7px;border-radius:9px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.3)">'+String(p.name||'?').replace(/[<>&]/g,'')+'</span>';
-        layer.appendChild(el); p.el = el; return el;
-      }
-      function update(d, isCur){
-        var p = peers[d.id] || (peers[d.id] = { col: colorFor(d.id) });
-        p.name=d.name; p.route=d.route; p.fx=d.fx; p.fy=d.fy; p.lastSeen=Date.now();
-        if (isCur) p.lastCur=Date.now();
-      }
-      ch.on('broadcast', { event:'cur' }, function (m){ if (m.payload && m.payload.id !== me) update(m.payload, true); });
-      ch.on('broadcast', { event:'ping' }, function (m){ if (m.payload && m.payload.id !== me) update(m.payload, false); });
-      function loop(){
-        var el = mainScroller(); var rect = el.getBoundingClientRect();
-        var sw = Math.max(1, el.scrollWidth), sh = Math.max(1, el.scrollHeight);
-        var cur = routeNow(), now = Date.now();
-        for (var id in peers){ var p = peers[id];
-          var showArrow = (p.route === cur) && (now - (p.lastCur||0) < 4000);
-          if (showArrow){
-            var a = ensureArrow(p); a.style.display='';
-            a.style.left = (rect.left - el.scrollLeft + p.fx*sw) + 'px';
-            a.style.top  = (rect.top  - e
+        el.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" style="filter:drop-shadow(0 1px 2px r
