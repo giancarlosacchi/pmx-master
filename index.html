@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260716-dedupe -->
+<!-- build: 20260716-quota-cheappoll -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2894,10 +2894,21 @@ function startRealtimeSync() {
     lastBlurAt = null;
     if (blurredFor > 10000) refreshNow('focus ' + Math.round(blurredFor/1000) + 's');
   });
-  // SAFETY NET POLLING — ogni 30s, se la pagina è visibile, refetch silenzioso
-  // dal cloud così se realtime perde un evento o un trigger Apps Script fallisce
-  // l'utente vede comunque i dati aggiornati al massimo dopo 30s.
-  // Non tocca il canale realtime — solo loadDataFromCloud + re-render leggero.
+  // SAFETY NET POLLING — ogni 30s, se la pagina è visibile, controlla se il
+  // cloud è cambiato. IMPORTANTE (quota Supabase): il check è "cheap" — chiede
+  // solo count + ultimo updated_at (~1 KB) e scarica il database completo
+  // (~500 KB) SOLO se la firma è cambiata. Prima scaricava tutto ogni 30s:
+  // ~460 MB/giorno per client → superava la quota egress del piano.
+  let _lastPollSig = null;
+  async function _cloudSig() {
+    const [v, c] = await Promise.all([
+      sb.from('vessels').select('updated_at', { count: 'exact' }).order('updated_at', { ascending: false }).limit(1),
+      sb.from('cargoes').select('updated_at', { count: 'exact' }).order('updated_at', { ascending: false }).limit(1),
+    ]);
+    if (v.error) throw v.error;
+    if (c.error) throw c.error;
+    return [v.count, (v.data && v.data[0] ? v.data[0].updated_at : ''), c.count, (c.data && c.data[0] ? c.data[0].updated_at : '')].join('|');
+  }
   setInterval(async () => {
     if (document.visibilityState !== 'visible') return;
     if (!document.body.classList.contains('logged-in')) return;
@@ -2907,7 +2918,10 @@ function startRealtimeSync() {
     if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT' || active.isContentEditable)) return;
     if (document.querySelector('.dr-popup.open, .modal[style*="display: flex"], .status-menu:hover')) return;
     try {
+      const sig = await _cloudSig();
+      if (sig === _lastPollSig) return; // niente di nuovo: non scaricare nulla
       await loadDataFromCloud();
+      _lastPollSig = sig;
       _scheduleRtRender();
     } catch (e) {
       console.warn('[poll] safety net refresh failed:', e);
