@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260716-quota-cheappoll -->
+<!-- build: 20260721-rundown-align -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -7215,7 +7215,7 @@ function autoUpdateRundowns() {
 }
 
 // ===== ECSA + N.ATL RUNDOWN GENERATORS (traduzione dello script Apps Script) =====
-const PPMX_DWT_THRESHOLD_R = 88;
+const PPMX_DWT_THRESHOLD_R = 84; // allineato allo Sheet: DWT >= 84 -> PPMX (anche senza P6)
 const MONTHS_R = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const MONTH_MAP_R = { JAN:1, FEB:2, MAR:3, APR:4, MAY:5, JUN:6, JUL:7, AUG:8, SEP:9, OCT:10, NOV:11, DEC:12 };
 const MONTH_FULL_R = { JAN:'JANUARY', FEB:'FEBRUARY', MAR:'MARCH', APR:'APRIL', MAY:'MAY', JUN:'JUNE', JUL:'JULY', AUG:'AUGUST', SEP:'SEPTEMBER', OCT:'OCTOBER', NOV:'NOVEMBER', DEC:'DECEMBER' };
@@ -7344,7 +7344,7 @@ function transformCargoTextR_(s) {
 function isValidOfferPartR_(s) {
   const t = String(s || '').trim().toUpperCase();
   if (!t) return false;
-  if (/^(SEEN|HOLDING|ON\s*SUBS|GUIDE)\b/.test(t)) return false;
+  if (/^(SEEN|HOLDING|ON\s*SUBS)\b/.test(t)) return false; // allineato allo Sheet: GUIDE non più in blacklist
   const hasPrice = /\b\d{3,6}\b/.test(t) || /\b\d+K\b/.test(t);
   const hasRoute = /\b(DOP|APS|REDEL|RDLY|USD|OFFER)\b/.test(t);
   return hasPrice && hasRoute;
@@ -7410,7 +7410,7 @@ function generateEcsaRundown(refIso) {
     // Solo navi modificate OGGI (update_date = tIso). Se non c'è nulla aggiornato oggi → rundown vuoto.
     if (v.update_date !== tIso) continue;
     const ideas = String(v.ideas || '').trim();
-    if (!/^OFFERS?\s+USD/i.test(ideas)) continue;
+    if (!/^(OFFERS?\s+USD|IDEA|GUIDE)\b/i.test(ideas)) continue; // allineato allo Sheet: accetta anche IDEA/GUIDE
     if (/\*\s*$/.test(ideas)) continue;
 
     // Macro section: dal campo .section (ECSA, NCSA, PG / RSEA, ecc.) — convertito in maiuscolo
@@ -7531,7 +7531,7 @@ function generateEcsaRundown(refIso) {
       const data = byClass[cls];
       const parts = data.rights.map((r, i) => {
         if (i === 0) {
-          if (!/^(yday\s+|last\s+)?offer\b/.test(r)) r = 'offer usd ' + r;
+          if (!/^(yday\s+|last\s+)?(offer|idea|guide)\b/.test(r)) r = 'offer usd ' + r; // allineato allo Sheet: niente prefisso su idea/guide
           return r;
         }
         const cleaned = r.replace(/^(yday\s+|last\s+)?offer\s+usd\s+/i, '').replace(/^(yday\s+|last\s+)?offer\s+/i, '');
