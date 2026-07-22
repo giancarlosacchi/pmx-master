@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260721-rundown-align -->
+<!-- build: 20260722-dedupe-v2 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2475,11 +2475,32 @@ function dedupeData(){
       else if (rHas === cHas && (Number(r.id)||0) < (Number(cur.id)||0)) best[key] = r;
     });
     var before = arr.length;
-    DATA[t] = arr.filter(function(r){
+    var kept = arr.filter(function(r){
       var key = String((r && r.copy_text) || '').trim().toLowerCase().replace(/\s+/g,' ');
       if (!key) return true;
       return best[key] === r;
     });
+    // 2° passaggio: righe orfane dei batch difettosi (insert di massa del 10/14/16 Lug
+    // senza sync_id). Se il foglio è stato modificato dopo, il copy_text del doppione
+    // non combacia più e sfugge al 1° passaggio: qui lo becchiamo per NOME+DWT/basin,
+    // ma SOLO per le righe create in quei batch (timestamp noti) — le righe create
+    // dal sito in futuro non vengono mai toccate.
+    var BAD_BATCH = ['2026-07-16T07:45:42', '2026-07-14T06:13:1', '2026-07-10T11:41:25'];
+    var entKey = function(r){
+      var name = (t === 'vessels') ? r.vessel : r.chrtrs;
+      var extra = (t === 'vessels') ? r.dwt_blt : r.load_port;
+      return String(name||'').trim().toUpperCase() + '|' + String(extra||'').trim().toUpperCase() + '|' + String(r.basin||'').toUpperCase();
+    };
+    var syncedKeys = Object.create(null);
+    kept.forEach(function(r){ if (r.sync_id != null) syncedKeys[entKey(r)] = true; });
+    kept = kept.filter(function(r){
+      if (r.sync_id != null) return true;
+      var created = String(r.created_at||'');
+      var fromBadBatch = BAD_BATCH.some(function(ts){ return created.indexOf(ts) === 0; });
+      if (!fromBadBatch) return true;
+      return !syncedKeys[entKey(r)];
+    });
+    DATA[t] = kept;
     if (DATA[t].length !== before) {
       try { console.info('[dedupe] ' + t + ': ' + before + ' -> ' + DATA[t].length + ' (' + (before - DATA[t].length) + ' doppioni rimossi)'); } catch(e){}
     }
