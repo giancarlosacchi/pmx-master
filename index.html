@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260722-dedupe-v2 -->
+<!-- build: 20260729-ta-contgib -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -7302,6 +7302,7 @@ function expandMonthNameR_(group) {
 function classifyOfferR_(offerText, dwt) {
   const t = offerText.toUpperCase();
   if (/\bSKAW[-\s]*GIB\b/.test(t) ||
+      /\bCONT[-\s]*GIB\b/.test(t) ||
       /\b(REDEL|RDLY|FOR)\s+TA\b/.test(t) ||
       /\bTA\s*$/.test(t) ||
       /\bTARV\b/.test(t)) return 'TA';
