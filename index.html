@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260730-half-count-v3 -->
+<!-- build: 20260730-half-count-v4 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -4842,7 +4842,7 @@ function renderMasterTable(rows, cbCols, basin) {
     for (const v of byArea[area]) (buckets[bucketFor(v.open_from)] ??= []).push(v);
     for (const k of Object.keys(buckets).sort(bucketSort)) {
       buckets[k].sort(cmpVessel);
-      if (area === 'ECSA') html.push(`<tr class="section-half ${areaClass(area)}"><td colspan="${colspan}">${esc(k)}<span class="half-count">(${buckets[k].length})</span></td></tr>`);
+      if (area === 'ECSA') html.push(`<tr class="section-half ${areaClass(area)}"><td colspan="${colspan}">${esc(k)}<span class="half-count">(&thinsp;${buckets[k].length}&thinsp;)</span></td></tr>`);
       for (const v of buckets[k]) html.push(renderVesselRow(v, cbCols));
     }
   }
