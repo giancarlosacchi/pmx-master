@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260730-half-count -->
+<!-- build: 20260730-half-count-soft -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -1479,6 +1479,13 @@ tr.section-area .area-count {
 [data-theme="dark"] tr.section-area .area-count { background: rgba(11,16,32,.25); }
 
 /* Titoli laycan 1H/2H — sottile, piatto, in colore area */
+tr.section-half td .half-count {
+  font-weight: 400;
+  opacity: .55;
+  font-size: 10px;
+  margin-left: 7px;
+  letter-spacing: 0;
+}
 tr.section-half td {
   background: var(--ac-soft) !important;
   color: var(--ac-text) !important;
@@ -4835,7 +4842,7 @@ function renderMasterTable(rows, cbCols, basin) {
     for (const v of byArea[area]) (buckets[bucketFor(v.open_from)] ??= []).push(v);
     for (const k of Object.keys(buckets).sort(bucketSort)) {
       buckets[k].sort(cmpVessel);
-      if (area === 'ECSA') html.push(`<tr class="section-half ${areaClass(area)}"><td colspan="${colspan}">${esc(k)} (${buckets[k].length})</td></tr>`);
+      if (area === 'ECSA') html.push(`<tr class="section-half ${areaClass(area)}"><td colspan="${colspan}">${esc(k)}<span class="half-count">(${buckets[k].length})</span></td></tr>`);
       for (const v of buckets[k]) html.push(renderVesselRow(v, cbCols));
     }
   }
