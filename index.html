@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260729-ta-contgib -->
+<!-- build: 20260730-ta-gib-full -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -7301,8 +7301,9 @@ function expandMonthNameR_(group) {
 }
 function classifyOfferR_(offerText, dwt) {
   const t = offerText.toUpperCase();
-  if (/\bSKAW[-\s]*GIB\b/.test(t) ||
-      /\bCONT[-\s]*GIB\b/.test(t) ||
+  if (/\b(SK|SKA|SKAW|CONT|EMED|BALTIC|MED|UKC|ADAM|AMST|IJM|ROTT)[-\s]*GIB\b/.test(t) ||
+      /\/\s*GIB\b/.test(t) ||
+      /\b(REDEL|RDLY)\s+GIB\b/.test(t) ||
       /\b(REDEL|RDLY|FOR)\s+TA\b/.test(t) ||
       /\bTA\s*$/.test(t) ||
       /\bTARV\b/.test(t)) return 'TA';
@@ -7368,7 +7369,7 @@ function isValidOfferPartR_(s) {
   if (!t) return false;
   if (/^(SEEN|HOLDING|ON\s*SUBS)\b/.test(t)) return false; // allineato allo Sheet: GUIDE non più in blacklist
   const hasPrice = /\b\d{3,6}\b/.test(t) || /\b\d+K\b/.test(t);
-  const hasRoute = /\b(DOP|APS|REDEL|RDLY|USD|OFFER)\b/.test(t);
+  const hasRoute = /\b(DOP|APS|REDEL|RDLY|USD|OFFER|IDEA|GUIDE)\b/.test(t);
   return hasPrice && hasRoute;
 }
 function extractP6ValueR_(s) {
@@ -7556,7 +7557,7 @@ function generateEcsaRundown(refIso) {
           if (!/^(yday\s+|last\s+)?(offer|idea|guide)\b/.test(r)) r = 'offer usd ' + r; // allineato allo Sheet: niente prefisso su idea/guide
           return r;
         }
-        const cleaned = r.replace(/^(yday\s+|last\s+)?offer\s+usd\s+/i, '').replace(/^(yday\s+|last\s+)?offer\s+/i, '');
+        const cleaned = r.replace(/^(yday\s+|last\s+)?(offer|idea|guide)\s+usd\s+/i, '').replace(/^(yday\s+|last\s+)?(offer|idea|guide)\s+/i, '');
         return 'alt. ' + cleaned;
       });
       let aggregated = parts.join(' ');
