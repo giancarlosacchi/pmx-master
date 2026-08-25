@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260825-glass-v2 -->
+<!-- build: 20260825-glass-v4-settings -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -41,19 +41,22 @@
 /* Glass tokens: usati da panel/sidebar/topbar/modal per effetto vetro satinato.
    Dark mode: più contrasto → glass-bg più opaco, bordi più visibili, ombre più nette. */
 :root {
-  --glass-bg: rgba(13, 20, 38, 0.62);
+  --glass-op-d: 0.62;
+  --glass-op-l: 0.60;
+  --glass-blur-px: 40px;
+  --glass-bg: rgba(13, 20, 38, var(--glass-op-d));
   --glass-bg-strong: rgba(13, 20, 38, 0.88);
   --glass-border: rgba(255, 255, 255, 0.16);
   --glass-shadow: 0 18px 60px -18px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255,255,255,0.28), inset 1px 0 0 rgba(255,255,255,0.14), inset -1px 0 0 rgba(255,255,255,0.06);
-  --glass-blur: blur(40px) saturate(180%);
+  --glass-blur: blur(var(--glass-blur-px)) saturate(180%);
   --glass-sheen: .35;
 }
 [data-theme="light"] {
-  --glass-bg: rgba(255, 255, 255, 0.60);
+  --glass-bg: rgba(255, 255, 255, var(--glass-op-l));
   --glass-bg-strong: rgba(255, 255, 255, 0.85);
   --glass-border: rgba(255, 255, 255, 0.65);
   --glass-shadow: 0 18px 60px -18px rgba(10, 25, 60, 0.45), inset 0 1px 0 rgba(255,255,255,0.40), inset 1px 0 0 rgba(255,255,255,0.18), inset -1px 0 0 rgba(255,255,255,0.08);
-  --glass-blur: blur(40px) saturate(180%);
+  --glass-blur: blur(var(--glass-blur-px)) saturate(180%);
   --glass-sheen: .7;
 }
 :root, [data-theme="dark"] {
@@ -122,8 +125,27 @@ body {
     linear-gradient(158deg, #f5bb3e 0%, #e8447f 34%, #4b46cf 62%, #12234f 100%);
   background-size: 100% 100%;
   background-attachment: fixed; min-height: 100vh;
-  -webkit-font-smoothing: antialiased; font-feature-settings: "tnum" 1;
 }
+html[data-app-bg="soft"] body {
+  background-color: #6d82b4;
+  background-image:
+    radial-gradient(58% 52% at 10% 8%, rgba(255,216,79,.45) 0%, transparent 62%),
+    radial-gradient(46% 42% at 60% 12%, rgba(255,46,122,.30) 0%, transparent 58%),
+    radial-gradient(50% 46% at 96% 26%, rgba(0,179,255,.40) 0%, transparent 62%),
+    radial-gradient(46% 42% at 22% 72%, rgba(10,138,208,.35) 0%, transparent 58%),
+    radial-gradient(64% 55% at 60% 105%, rgba(18,51,110,.55) 0%, transparent 72%),
+    linear-gradient(158deg, #dfe6f2 0%, #cdd8ec 40%, #9fb2d8 75%, #6d82b4 100%);
+}
+html[data-app-bg="blue"] body {
+  background-color: #1f3a75;
+  background-image:
+    radial-gradient(58% 52% at 10% 8%, rgba(120,190,255,.50) 0%, transparent 62%),
+    radial-gradient(46% 42% at 60% 12%, rgba(56,189,248,.35) 0%, transparent 58%),
+    radial-gradient(50% 46% at 96% 26%, rgba(26,115,232,.45) 0%, transparent 62%),
+    radial-gradient(46% 42% at 22% 72%, rgba(76,110,245,.35) 0%, transparent 58%),
+    linear-gradient(158deg, #eaf1fb 0%, #c9d9f2 38%, #7e9bd6 72%, #1f3a75 100%);
+}
+body { -webkit-font-smoothing: antialiased; font-feature-settings: "tnum" 1; }
 :root, [data-theme="dark"] {
   --paper-line: rgba(120,180,240,.22);
   --paper-fold-light: rgba(255,255,255,.06);
@@ -2073,7 +2095,7 @@ table.grid th.col-c-stato { overflow: hidden; }
 }
 .panel.finder-empty::before { display: none; }
 [data-theme="light"] table.grid td, [data-theme="light"] table.grid th { border-color: rgba(90,110,150,.16) !important; }
-[data-theme="light"] table.grid thead th { background: rgba(255,255,255,.70); border-bottom-color: rgba(90,110,150,.24) !important; }
+[data-theme="light"] table.grid thead th { background: rgba(255,255,255,.70) !important; border-bottom-color: rgba(90,110,150,.24) !important; }
 [data-theme="dark"] table.grid td, [data-theme="dark"] table.grid th, :root:not([data-theme="light"]) table.grid td { border-color: rgba(255,255,255,.09) !important; }
 .panel.finder-empty {
   background-color: transparent !important;
@@ -4754,12 +4776,6 @@ function renderMasterList(basin) {
     ...[...usedAreas].filter(a => !allAreas.includes(a)).sort()
   ];
   $('#content').innerHTML = `
-    <div class="stats">
-      <div class="stat-card cyan"><div class="stat-label">Total vessels</div><div class="stat-val">${s.total}</div><div class="stat-sub">${s.areas} active areas</div></div>
-      <div class="stat-card green"><div class="stat-label">Fresh</div><div class="stat-val">${s.fresh}</div><div class="stat-sub">${pct(s.fresh, s.total)}%</div></div>
-      <div class="stat-card amber"><div class="stat-label">Off mkt</div><div class="stat-val">${s.off}</div><div class="stat-sub">${pct(s.off, s.total)}%</div></div>
-      <div class="stat-card rose"><div class="stat-label">On subs</div><div class="stat-val">${s.subs}</div><div class="stat-sub">${pct(s.subs, s.total)}%</div></div>
-    </div>
     <div class="panel panel-filters">
       <div class="filters">
         ${renderAreaDropdown(_pg, areas, 'Area')}
@@ -5650,12 +5666,6 @@ function renderCargoList(basin) {
   };
   const cpct = (a, b) => b > 0 ? Math.round((a/b)*100) : 0;
   $('#content').innerHTML = `
-    <div class="stats">
-      <div class="stat-card cyan"><div class="stat-label">Total cargoes</div><div class="stat-val">${cs.total}</div><div class="stat-sub">${cs.sections} active sections</div></div>
-      <div class="stat-card green"><div class="stat-label">Fresh</div><div class="stat-val">${cs.fresh}</div><div class="stat-sub">${cpct(cs.fresh, cs.total)}%</div></div>
-      <div class="stat-card amber"><div class="stat-label">Off mkt</div><div class="stat-val">${cs.off}</div><div class="stat-sub">${cpct(cs.off, cs.total)}%</div></div>
-      <div class="stat-card rose"><div class="stat-label">On subs</div><div class="stat-val">${cs.subs}</div><div class="stat-sub">${cpct(cs.subs, cs.total)}%</div></div>
-    </div>
     <div class="panel panel-filters">
       <div class="filters">
         ${renderAreaDropdown(_pg, areas, 'Area')}
@@ -9673,3 +9683,81 @@ setRoute();
         var el = document.createElement('div');
         el.style.cssText = 'position:absolute;will-change:left,top';
         el.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" style="filter:drop-shadow(0 1px 2px r
+</script>
+<script>
+/* ===== APPEARANCE SETTINGS (background / opacity / blur / reflection) ===== */
+(function(){
+  var KEY='pmx-appearance';
+  var DEF={bg:'aurora', op:60, blur:40, sheen:70};
+  function load(){ try{ return Object.assign({},DEF,JSON.parse(localStorage.getItem(KEY)||'{}')); }catch(e){ return Object.assign({},DEF); } }
+  function save(s){ try{ localStorage.setItem(KEY,JSON.stringify(s)); }catch(e){} }
+  function apply(s){
+    var r=document.documentElement;
+    if(s.op===DEF.op){ r.style.removeProperty('--glass-op-l'); r.style.removeProperty('--glass-op-d'); }
+    else { r.style.setProperty('--glass-op-l',(s.op/100).toFixed(2)); r.style.setProperty('--glass-op-d',Math.min(.92,s.op/100+.02).toFixed(2)); }
+    if(s.blur===DEF.blur) r.style.removeProperty('--glass-blur-px'); else r.style.setProperty('--glass-blur-px',s.blur+'px');
+    if(s.sheen===DEF.sheen) r.style.removeProperty('--glass-sheen'); else r.style.setProperty('--glass-sheen',(s.sheen/100).toFixed(2));
+    if(s.bg==='aurora') r.removeAttribute('data-app-bg'); else r.setAttribute('data-app-bg', s.bg);
+  }
+  var S=load(); apply(S);
+  var BTN_CSS='font:inherit;font-size:11px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--text-dim);cursor:pointer';
+  function mark(){
+    var bgs=document.getElementById('ap-bgs'); if(!bgs) return;
+    bgs.querySelectorAll('button').forEach(function(b){
+      var on=b.getAttribute('data-bg')===S.bg;
+      b.style.background=on?'var(--gold)':'transparent';
+      b.style.color=on?'#fff':'var(--text-dim)';
+      b.style.borderColor=on?'var(--gold)':'var(--line)';
+    });
+  }
+  function build(){
+    var tb=document.querySelector('.topbar');
+    if(!tb||document.getElementById('appearance-btn')) return;
+    var btn=document.createElement('button');
+    btn.id='appearance-btn'; btn.title='Appearance'; btn.type='button';
+    btn.style.cssText='background:transparent;border:1px solid var(--line);border-radius:9px;padding:5px 8px;cursor:pointer;color:var(--text-dim);display:inline-flex;align-items:center;margin-left:8px;flex:none';
+    btn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2.4" fill="var(--bg-1)"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2.4" fill="var(--bg-1)"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="7" cy="18" r="2.4" fill="var(--bg-1)"/></svg>';
+    tb.appendChild(btn);
+    var pop=document.createElement('div');
+    pop.id='appearance-pop';
+    pop.style.cssText='position:fixed;top:60px;right:16px;z-index:99999;width:265px;padding:14px 16px 12px;border-radius:16px;background:var(--glass-bg-strong);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);border:1px solid var(--glass-border);box-shadow:0 18px 60px -18px rgba(0,0,0,.5);display:none;font-size:12px;color:var(--text)';
+    pop.innerHTML=
+      '<div style="font-weight:700;font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;margin-bottom:11px">Appearance</div>'+
+      '<div style="color:var(--text-mute);font-size:10px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Background</div>'+
+      '<div id="ap-bgs" style="display:flex;gap:6px;margin-bottom:13px">'+
+        '<button type="button" data-bg="aurora" style="'+BTN_CSS+'">Vivid</button>'+
+        '<button type="button" data-bg="soft" style="'+BTN_CSS+'">Soft</button>'+
+        '<button type="button" data-bg="blue" style="'+BTN_CSS+'">Blue</button>'+
+      '</div>'+
+      '<div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;color:var(--text-mute);font-size:10px;text-transform:uppercase;letter-spacing:.08em"><span>Glass opacity</span><span id="ap-op-v"></span></div><input id="ap-op" type="range" min="30" max="90" step="5" style="width:100%"></div>'+
+      '<div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;color:var(--text-mute);font-size:10px;text-transform:uppercase;letter-spacing:.08em"><span>Blur</span><span id="ap-bl-v"></span></div><input id="ap-bl" type="range" min="6" max="60" step="2" style="width:100%"></div>'+
+      '<div style="margin-bottom:13px"><div style="display:flex;justify-content:space-between;color:var(--text-mute);font-size:10px;text-transform:uppercase;letter-spacing:.08em"><span>Reflection</span><span id="ap-sh-v"></span></div><input id="ap-sh" type="range" min="0" max="100" step="5" style="width:100%"></div>'+
+      '<button type="button" id="ap-reset" style="'+BTN_CSS+';width:100%">Reset to default</button>';
+    document.body.appendChild(pop);
+    btn.onclick=function(e){ e.stopPropagation(); pop.style.display = pop.style.display==='none' ? 'block' : 'none'; };
+    document.addEventListener('click', function(e){
+      if(pop.style.display!=='none' && !pop.contains(e.target) && !btn.contains(e.target)) pop.style.display='none';
+    });
+    var op=document.getElementById('ap-op'), bl=document.getElementById('ap-bl'), sh=document.getElementById('ap-sh');
+    function sync(){
+      op.value=S.op; bl.value=S.blur; sh.value=S.sheen;
+      document.getElementById('ap-op-v').textContent=S.op+'%';
+      document.getElementById('ap-bl-v').textContent=S.blur+'px';
+      document.getElementById('ap-sh-v').textContent=S.sheen+'%';
+      mark();
+    }
+    op.oninput=function(){ S.op=+op.value; apply(S); save(S); sync(); };
+    bl.oninput=function(){ S.blur=+bl.value; apply(S); save(S); sync(); };
+    sh.oninput=function(){ S.sheen=+sh.value; apply(S); save(S); sync(); };
+    document.getElementById('ap-bgs').querySelectorAll('button').forEach(function(b){
+      b.onclick=function(){ S.bg=b.getAttribute('data-bg'); apply(S); save(S); sync(); };
+    });
+    document.getElementById('ap-reset').onclick=function(){ S=Object.assign({},DEF); apply(S); save(S); sync(); };
+    sync();
+  }
+  setInterval(build, 1500);
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', build); else build();
+})();
+</script>
+</body>
+</html>
