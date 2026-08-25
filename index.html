@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260827-msel-v3 -->
+<!-- build: 20260827-cellsel -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2892,7 +2892,7 @@ function _doRtRender() {
     }
     // Skip se c'è un modal aperto, un dropdown/menu aperto, o una selezione celle attiva:
     // non vogliamo togliere all'utente quello che sta facendo né flickerare.
-    if (document.querySelector('#modal-bg:not(.hidden), .area-dd.open, .fdd.open, .area-dd-menu.open, tr.row-msel')) {
+    if (document.querySelector('#modal-bg:not(.hidden), .area-dd.open, .fdd.open, .area-dd-menu.open, td.bcell')) {
       if (_rtRenderTimer) clearTimeout(_rtRenderTimer);
       _rtRenderTimer = setTimeout(_doRtRender, 2000);
       return;
@@ -9223,7 +9223,9 @@ setRoute();
 })();
 
 // ============================================================
-// ROW/CELL SELECT — selezione a rettangolo stile Excel + copia formato Copy & Paste
+// CELL SELECT — stile Excel: trascina = rettangolo (copia al rilascio del mouse);
+// Ctrl premuto = selezione ADDITIVA (rettangoli e celle sparse, anche colonne
+// diverse); si copia tutto quando MOLLI il tasto Ctrl. Esc annulla.
 // ============================================================
 (function(){
   if (window.__bselInit) return; window.__bselInit = true;
@@ -9231,29 +9233,22 @@ setRoute();
   const CMAP = { chrtrs:'_name', laycan_from:'dates', dates:'dates', load_port:'route', disch_port:'route', cgo:'cgo', size:'size', notes:'notes', ls_brkr:'ls_brkr', update_date:'update_date' };
   const ALL_V = ['dwt_blt','open_port','dates','ideas','ows_brkr','bunker','ls_brkr','update_date'];
   const ALL_C = ['size','route','dates','cgo','notes','ls_brkr','update_date'];
-  let dragging = false, moved = false, start = null;
+  let dragging = false, moved = false, start = null, additive = false, rectCells = [];
   const cells = () => [...document.querySelectorAll('td.bcell')];
-  function overlayEl(){ let o=document.getElementById('bselOverlay'); if(!o){ o=document.createElement('div'); o.id='bselOverlay'; document.body.appendChild(o); } return o; }
-  function updateOverlay(){ const sel=cells(); const o=overlayEl(); if(!sel.length){ o.style.display='none'; return; } let l=Infinity,t=Infinity,r=-Infinity,b=-Infinity; sel.forEach(td=>{ const rc=td.getBoundingClientRect(); l=Math.min(l,rc.left); t=Math.min(t,rc.top); r=Math.max(r,rc.right); b=Math.max(b,rc.bottom); }); o.style.display='block'; o.style.left=l+'px'; o.style.top=t+'px'; o.style.width=(r-l)+'px'; o.style.height=(b-t)+'px'; }
-  function clearSel(){ cells().forEach(td => td.classList.remove('bcell')); updateOverlay(); updateBar(); }
+  function clearSel(){ cells().forEach(td => td.classList.remove('bcell')); }
   function cellAt(x, y){ const el = document.elementFromPoint(x, y); return el && el.closest ? el.closest('td') : null; }
-  function applyRect(s, endTr, endCi){
-    cells().forEach(td => td.classList.remove('bcell'));
+  function rectCalc(s, endTr, endCi){
     const rows = [...s.tbody.querySelectorAll('tr[data-sel-id]')];
     const i1 = rows.indexOf(s.tr), i2 = rows.indexOf(endTr);
-    if (i1 < 0 || i2 < 0) return;
+    if (i1 < 0 || i2 < 0) return [];
     const rlo = Math.min(i1,i2), rhi = Math.max(i1,i2);
     const clo = Math.min(s.ci, endCi), chi = Math.max(s.ci, endCi);
+    const out = [];
     for (let r = rlo; r <= rhi; r++){
       const tds = rows[r].cells;
-      for (let c = clo; c <= chi && c < tds.length; c++) tds[c].classList.add('bcell');
+      for (let c = clo; c <= chi && c < tds.length; c++) out.push(tds[c]);
     }
-    updateOverlay();
-  }
-  function selectFullRow(tr){
-    cells().forEach(td => td.classList.remove('bcell'));
-    [...tr.cells].forEach(td => td.classList.add('bcell'));
-    updateOverlay();
+    return out;
   }
   function buildText(){
     const sel = cells(); if (!sel.length) return '';
@@ -9275,124 +9270,12 @@ setRoute();
     const D = window.DATA || {};
     const groups = {}, order = [];
     for (const tr of rows){
-      let item = (kind === 'c' ? (D.cargoes||[]) : (D.vessels||[])).find(x => String(x.id) === String(tr.dataset.selId));
-      if (!item) continue;
-      if (tr.dataset.selFrom || tr.dataset.selTo) item = { ...item, open_from: tr.dataset.selFrom || item.open_from, open_to: tr.dataset.selTo || item.open_to };
-      if (tr.dataset.selArea) item = { ...item, area: tr.dataset.selArea };
-      const text = (kind === 'c' ? buildCargoCopyText(item, ex) : buildVesselCopyText(item, ex)).toLowerCase();
-      const area = kind === 'c' ? (item.section || item.area || '—') : (item.area || '—');
-      if (!groups[area]) { groups[area] = []; order.push(area); }
-      groups[area].push(text);
-    }
-    if (!order.length) return '';
-    if (order.length === 1) return groups[order[0]].join('\n').trim();
-    const out = [];
-    for (const k of order){ out.push(k); out.push(''); groups[k].forEach(t => out.push(t)); out.push(''); }
-    return out.join('\n').trim();
-  }
-  function counts(){
-    const sel = cells(); const r = new Set(), c = new Set();
-    sel.forEach(td => { const tr = td.closest('tr[data-sel-id]'); if (tr) r.add(tr); const k = td.dataset.field || td.dataset.col; if (k && (k in VMAP || k in CMAP)) c.add((VMAP[k]||CMAP[k])); });
-    return { rows: r.size, cols: c.size };
-  }
-  async function doCopy(){
-    const txt = buildText(); if (!txt) return;
-    const { rows } = counts();
-    let ok = false;
-    try { await navigator.clipboard.writeText(txt); ok = true; } catch(e){}
-    if (!ok && typeof copyToClipboard === 'function') ok = await copyToClipboard(txt);
-    if (!ok && typeof showCopyFallback === 'function') showCopyFallback(txt);
-  }
-  function updateBar(){
-    const bar = document.getElementById('bselBar'); if (!bar) return;
-    const { rows, cols } = counts();
-    bar.querySelector('.bsel-n').textContent = rows ? (rows + (rows === 1 ? ' row' : ' rows') + ' · ' + cols + (cols === 1 ? ' col' : ' cols')) : '';
-    bar.classList.toggle('show', rows > 0);
-  }
-  // ---- mouse marquee ----
-  document.addEventListener('mousedown', (e) => {
-    if (e.button !== 0) return;
-    if (e.ctrlKey || e.metaKey || e.shiftKey) {
-      const t = e.target.closest && e.target.closest('tr[data-sel-id]');
-      if (t) e.preventDefault();
-      return;
-    }
-    if (e.target.closest('.row-drag, button, input, select, textarea, a, label, .status-menu, .flag-chip, .pill, .status-chip, .row-hide-btn, .opt, .area-dd, .area-dd-menu')) return;
-    const td = e.target.closest('td'); const tr = td && td.closest('tr[data-sel-id]');
-    if (!td || !tr) return;
-    dragging = true; moved = false;
-    start = { tr, ci: td.cellIndex, tbody: tr.parentElement };
-    document.body.style.userSelect = 'none';
-  });
-  document.addEventListener('mousemove', (e) => {
-    if (!dragging) return;
-    const td = cellAt(e.clientX, e.clientY); const tr = td && td.closest('tr[data-sel-id]');
-    if (!td || !tr || tr.parentElement !== start.tbody) return;
-    if (tr === start.tr && td.cellIndex === start.ci) return; // ancora sulla cella iniziale: niente selezione
-    moved = true;
-    applyRect(start, tr, td.cellIndex);
-    const s = window.getSelection && window.getSelection(); if (s && s.removeAllRanges) s.removeAllRanges();
-  });
-  document.addEventListener('mouseup', () => {
-    if (!dragging) return;
-    dragging = false; document.body.style.userSelect = '';
-    if (moved) { justDragged = Date.now(); doCopy(); clearSel(); }   // drag su piu celle: copia automatica + deseleziona
-    else clearSel();                        // click singolo: nessuna selezione
-  });
-  // ---- copy ----
-  document.addEventListener('copy', (e) => {
-    const ae = document.activeElement;
-    if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) return;
-    let txt = '';
-    if (cells().length) txt = buildText();
-    else if (msel.length) txt = buildRowsText(msel);
-    if (!txt) return;
-    e.preventDefault();
-    if (e.clipboardData) e.clipboardData.setData('text/plain', txt);
-  });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (cells().length) clearSel(); if (msel.length) mclear(); } });
-  let msel = []; let manchor = null; let justDragged = 0;
-  function mclear(){ msel.forEach(tr => tr.classList.remove('row-msel')); msel = []; manchor = null; updateMbar(); }
-  function mtoggle(tr){
-    if (tr.classList.toggle('row-msel')) msel.push(tr);
-    else msel = msel.filter(x => x !== tr);
-    manchor = tr; updateMbar();
-    const s = window.getSelection && window.getSelection(); if (s && s.removeAllRanges) s.removeAllRanges();
-  }
-  function updateMbar(){
-    let bar = document.getElementById('mselBar');
-    if (!bar){
-      bar = document.createElement('div'); bar.id = 'mselBar';
-      bar.innerHTML = '<span class="msel-n"></span><button type="button" class="msel-copy">Copy</button><button type="button" class="msel-clear">Clear</button>';
-      document.body.appendChild(bar);
-      bar.querySelector('.msel-copy').onclick = async function(ev){
-        ev.stopPropagation();
-        const txt = buildRowsText(msel); if (!txt) return;
-        let ok=false; try { await navigator.clipboard.writeText(txt); ok=true; } catch(e){}
-        if (!ok && typeof copyToClipboard === 'function') ok = await copyToClipboard(txt);
-        if (!ok && typeof showCopyFallback === 'function') showCopyFallback(txt);
-        mclear();
-      };
-      bar.querySelector('.msel-clear').onclick = function(ev){ ev.stopPropagation(); mclear(); };
-    }
-    const live = msel.filter(t => document.contains(t)).length;
-    bar.querySelector('.msel-n').textContent = live + (live === 1 ? ' row selected' : ' rows selected');
-    bar.classList.toggle('show', live > 0);
-  }
-  function buildRowsText(trs){
-    const rows = trs.filter(t => document.contains(t));
-    rows.sort((a,b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1);
-    if (!rows.length) return '';
-    const kind = rows[0].dataset.selKind;
-    const D = window.DATA || {};
-    const groups = {}, order = [];
-    for (const tr of rows){
       if (tr.dataset.selKind !== kind) continue;
       let item = (kind === 'c' ? (D.cargoes||[]) : (D.vessels||[])).find(x => String(x.id) === String(tr.dataset.selId));
       if (!item) continue;
       if (tr.dataset.selFrom || tr.dataset.selTo) item = { ...item, open_from: tr.dataset.selFrom || item.open_from, open_to: tr.dataset.selTo || item.open_to };
       if (tr.dataset.selArea) item = { ...item, area: tr.dataset.selArea };
-      const text = (kind === 'c' ? buildCargoCopyText(item) : buildVesselCopyText(item)).toLowerCase();
+      const text = (kind === 'c' ? buildCargoCopyText(item, ex) : buildVesselCopyText(item, ex)).toLowerCase();
       const area = kind === 'c' ? (item.section || item.area || '\u2014') : (item.area || '\u2014');
       if (!groups[area]) { groups[area] = []; order.push(area); }
       groups[area].push(text);
@@ -9403,63 +9286,73 @@ setRoute();
     for (const k of order){ out.push(k); out.push(''); groups[k].forEach(t => out.push(t)); out.push(''); }
     return out.join('\n').trim();
   }
-  document.addEventListener('click', (e) => {
-    const td = e.target.closest('td');
-    const tr = td && td.closest('tr[data-sel-id]');
-    if ((e.ctrlKey || e.metaKey) && tr) {
-      e.preventDefault();
-      mtoggle(tr);
-      return;
-    }
-    if (tr && td && td === tr.firstElementChild && Date.now() - justDragged > 350 &&
-        !e.target.closest('button, input, select, a, .row-drag, .status-menu, .flag-chip, .row-edit, .row-del, .row-hide-btn')) {
-      mtoggle(tr);
-      return;
-    }
-    if (e.shiftKey && tr && manchor && document.contains(manchor) && manchor.parentElement === tr.parentElement) {
-      e.preventDefault();
-      const rows = [...tr.parentElement.querySelectorAll('tr[data-sel-id]')];
-      const a = rows.indexOf(manchor), b = rows.indexOf(tr);
-      if (a >= 0 && b >= 0) {
-        const i = Math.min(a,b), j = Math.max(a,b);
-        for (let k=i; k<=j; k++){ const rr=rows[k]; if(!rr.classList.contains('row-msel')){ rr.classList.add('row-msel'); msel.push(rr); } }
-      }
-      updateMbar();
-      const s = window.getSelection && window.getSelection(); if (s && s.removeAllRanges) s.removeAllRanges();
-      return;
-    }
-    if (msel.length && !e.ctrlKey && !e.metaKey && !e.shiftKey) mclear();
+  async function doCopy(){
+    const txt = buildText(); if (!txt) return;
+    let ok = false;
+    try { await navigator.clipboard.writeText(txt); ok = true; } catch(e){}
+    if (!ok && typeof copyToClipboard === 'function') ok = await copyToClipboard(txt);
+    if (!ok && typeof showCopyFallback === 'function') showCopyFallback(txt);
+  }
+  document.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    if (e.target.closest('.row-drag, button, input, select, textarea, a, label, .status-menu, .flag-chip, .pill, .status-chip, .row-hide-btn, .opt, .area-dd, .area-dd-menu')) return;
+    const td = e.target.closest('td'); const tr = td && td.closest('tr[data-sel-id]');
+    if (!td || !tr) return;
+    additive = e.ctrlKey || e.metaKey;
+    if (additive) e.preventDefault();
+    else clearSel();
+    dragging = true; moved = false;
+    start = { tr, td, ci: td.cellIndex, tbody: tr.parentElement };
+    rectCells = [];
+    document.body.style.userSelect = 'none';
   });
-  function buildBar(){
-    if (document.getElementById('bselBar')) return;
-    const st = document.createElement('style');
-    st.textContent = `
-      tr[data-sel-id] td[data-field], tr[data-sel-id] td[data-col]{cursor:default}
-      td.bcell{background:transparent}
-      tr.row-msel td{background:rgba(37,99,235,.16) !important;box-shadow:inset 0 1px 0 rgba(37,99,235,.25), inset 0 -1px 0 rgba(37,99,235,.25)}
-      tr[data-sel-id] td:first-child{cursor:pointer}
-      #mselBar{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;background:#0f172a;color:#fff;border-radius:12px;padding:8px 10px 8px 16px;display:none;align-items:center;gap:12px;box-shadow:0 12px 34px rgba(15,23,42,.38);z-index:99993;font-size:13px}
-      #mselBar.show{display:flex}
-      #mselBar .msel-n{font-weight:600;white-space:nowrap}
-      #mselBar button{border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer}
-      #mselBar .msel-copy{background:#2563eb;color:#fff}
-      #mselBar .msel-copy:hover{background:#1d4ed8}
-      #mselBar .msel-clear{background:transparent;color:#cbd5e1}
-      #mselBar .msel-clear:hover{color:#fff}
-      #bselOverlay{position:fixed;pointer-events:none;background:rgba(37,99,235,.16);border:1.5px solid rgba(37,99,235,.7);border-radius:8px;z-index:99991;display:none}
-      #bselBar{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#0f172a;color:#fff;border-radius:12px;padding:8px 10px 8px 16px;display:none;align-items:center;gap:12px;box-shadow:0 12px 34px rgba(15,23,42,.38);z-index:99992;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;font-size:13px}
-      #bselBar.show{display:flex}
-      #bselBar .bsel-n{font-weight:600;white-space:nowrap}
-      #bselBar button{border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer}
-      #bselBar .bsel-copy{background:#2563eb;color:#fff}
-      #bselBar .bsel-copy:hover{background:#1d4ed8}
-      #bselBar .bsel-clear{background:transparent;color:#cbd5e1}
-      #bselBar .bsel-clear:hover{color:#fff}
-    `;
+  document.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const td = cellAt(e.clientX, e.clientY); const tr = td && td.closest('tr[data-sel-id]');
+    if (!td || !tr || tr.parentElement !== start.tbody) return;
+    if (!moved && tr === start.tr && td.cellIndex === start.ci) return;
+    moved = true;
+    rectCells.forEach(c => c.classList.remove('bcell'));
+    rectCells = [];
+    rectCalc(start, tr, td.cellIndex).forEach(c => {
+      if (!c.classList.contains('bcell')) { c.classList.add('bcell'); rectCells.push(c); }
+    });
+    const s = window.getSelection && window.getSelection(); if (s && s.removeAllRanges) s.removeAllRanges();
+  });
+  document.addEventListener('mouseup', (e) => {
+    if (!dragging) return;
+    dragging = false; document.body.style.userSelect = '';
+    if (additive) {
+      if (!moved) start.td.classList.toggle('bcell');
+      rectCells = [];
+      if (!(e.ctrlKey || e.metaKey) && cells().length) { doCopy(); clearSel(); }
+    } else {
+      if (moved) { doCopy(); clearSel(); }
+      else clearSel();
+    }
+  });
+  document.addEventListener('keyup', (e) => {
+    if ((e.key === 'Control' || e.key === 'Meta') && !dragging && cells().length) { doCopy(); clearSel(); }
+  });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && cells().length) clearSel(); });
+  window.addEventListener('blur', () => { if (!dragging) clearSel(); });
+  document.addEventListener('copy', (e) => {
+    if (!cells().length) return;
+    const ae = document.activeElement;
+    if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) return;
+    const txt = buildText(); if (!txt) return;
+    e.preventDefault();
+    if (e.clipboardData) e.clipboardData.setData('text/plain', txt);
+  });
+  function addCss(){
+    if (document.getElementById('bselCss')) return;
+    const st = document.createElement('style'); st.id = 'bselCss';
+    st.textContent = 'tr[data-sel-id] td[data-field], tr[data-sel-id] td[data-col]{cursor:default}' +
+      ' td.bcell{background:rgba(37,99,235,.18) !important;box-shadow:inset 0 0 0 1px rgba(37,99,235,.4)}';
     document.head.appendChild(st);
   }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', buildBar);
-  else buildBar();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addCss);
+  else addCss();
 })();
 
 // ============================================================
