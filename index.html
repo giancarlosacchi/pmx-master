@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260827-cellsel -->
+<!-- build: 20260827-cellsel-v2 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -9235,7 +9235,22 @@ setRoute();
   const ALL_C = ['size','route','dates','cgo','notes','ls_brkr','update_date'];
   let dragging = false, moved = false, start = null, additive = false, rectCells = [];
   const cells = () => [...document.querySelectorAll('td.bcell')];
-  function clearSel(){ cells().forEach(td => td.classList.remove('bcell')); }
+  function clearSel(){ cells().forEach(td => { td.classList.remove('bcell'); td.style.boxShadow=''; }); }
+  function refreshEdges(){
+    const C = 'rgba(37,99,235,.45)';
+    cells().forEach(td => {
+      const tr = td.parentElement, ci = td.cellIndex;
+      const selN = (t2) => !!(t2 && t2.classList && t2.classList.contains('bcell'));
+      const up = tr.previousElementSibling && tr.previousElementSibling.hasAttribute('data-sel-id') ? tr.previousElementSibling.cells[ci] : null;
+      const dn = tr.nextElementSibling && tr.nextElementSibling.hasAttribute('data-sel-id') ? tr.nextElementSibling.cells[ci] : null;
+      const parts = [];
+      if (!selN(up)) parts.push('inset 0 1px 0 ' + C);
+      if (!selN(dn)) parts.push('inset 0 -1px 0 ' + C);
+      if (!selN(tr.cells[ci-1])) parts.push('inset 1px 0 0 ' + C);
+      if (!selN(tr.cells[ci+1])) parts.push('inset -1px 0 0 ' + C);
+      td.style.boxShadow = parts.join(', ');
+    });
+  }
   function cellAt(x, y){ const el = document.elementFromPoint(x, y); return el && el.closest ? el.closest('td') : null; }
   function rectCalc(s, endTr, endCi){
     const rows = [...s.tbody.querySelectorAll('tr[data-sel-id]')];
@@ -9312,18 +9327,19 @@ setRoute();
     if (!td || !tr || tr.parentElement !== start.tbody) return;
     if (!moved && tr === start.tr && td.cellIndex === start.ci) return;
     moved = true;
-    rectCells.forEach(c => c.classList.remove('bcell'));
+    rectCells.forEach(c => { c.classList.remove('bcell'); c.style.boxShadow=''; });
     rectCells = [];
     rectCalc(start, tr, td.cellIndex).forEach(c => {
       if (!c.classList.contains('bcell')) { c.classList.add('bcell'); rectCells.push(c); }
     });
+    refreshEdges();
     const s = window.getSelection && window.getSelection(); if (s && s.removeAllRanges) s.removeAllRanges();
   });
   document.addEventListener('mouseup', (e) => {
     if (!dragging) return;
     dragging = false; document.body.style.userSelect = '';
     if (additive) {
-      if (!moved) start.td.classList.toggle('bcell');
+      if (!moved) { start.td.classList.toggle('bcell'); if (!start.td.classList.contains('bcell')) start.td.style.boxShadow=''; refreshEdges(); }
       rectCells = [];
       if (!(e.ctrlKey || e.metaKey) && cells().length) { doCopy(); clearSel(); }
     } else {
@@ -9348,7 +9364,7 @@ setRoute();
     if (document.getElementById('bselCss')) return;
     const st = document.createElement('style'); st.id = 'bselCss';
     st.textContent = 'tr[data-sel-id] td[data-field], tr[data-sel-id] td[data-col]{cursor:default}' +
-      ' td.bcell{background:rgba(37,99,235,.18) !important;box-shadow:inset 0 0 0 1px rgba(37,99,235,.4)}';
+      ' td.bcell{background:rgba(37,99,235,.18) !important}';
     document.head.appendChild(st);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addCss);
