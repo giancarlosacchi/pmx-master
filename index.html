@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260828-thead-tint-v3 -->
+<!-- build: 20260828-thead-tint-v4 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -9700,10 +9700,11 @@ setRoute();
   function tint(){
     document.querySelectorAll('#tbl table.grid').forEach(function(tb){
       var thead = tb.tHead; if (!thead) return;
-      var hb = thead.getBoundingClientRect().bottom;
+      var hth = thead.querySelector('th');
+      var hb = (hth || thead).getBoundingClientRect().bottom;
       var cur = null;
       tb.querySelectorAll('tr.section-area').forEach(function(r){
-        if (r.getBoundingClientRect().top <= hb + 1) cur = r;
+        if (r.getBoundingClientRect().top <= hb + 2) cur = r;
       });
       var cls = null;
       if (cur) { cur.classList.forEach(function(c){ if (c.indexOf('area-') === 0) cls = c; }); }
