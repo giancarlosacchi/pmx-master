@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260828-autoupdate-v2 -->
+<!-- build: 20260828-gutter-fix -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -46,8 +46,11 @@
         }).catch(function(){});
     } catch(e){}
   }
-  check();
-  setInterval(check, 5 * 60 * 1000);
+  var lastCheck = 0;
+  function throttled(){ var now = Date.now(); if (now - lastCheck < 15 * 60 * 1000) return; lastCheck = now; check(); }
+  throttled();
+  document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible') throttled(); });
+  window.addEventListener('focus', throttled);
 })();
 </script>
 <title>LS PMX Master — Lightship</title>
@@ -625,7 +628,7 @@ button.primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
 button.ghost { background: transparent; }
 button.danger { color: var(--red); border-color: rgba(248,113,113,.3); }
 button.danger:hover { background: rgba(248,113,113,.1); }
-.tbl-wrap { overflow: auto; flex: 1; min-height: 0; scrollbar-gutter: stable; }
+.tbl-wrap { overflow: auto; flex: 1; min-height: 0; scrollbar-gutter: auto; }
 table.grid { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 10.5px; line-height: 1.15; font-variant-numeric: tabular-nums; }
 table.grid thead th { position: sticky; top: 0; z-index: 2; background: var(--bg-1); color: var(--text-mute);
   padding: 4px 8px; text-align: left; font-size: 8.5px; font-weight: 600;
