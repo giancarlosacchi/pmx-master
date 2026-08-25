@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260825-glass-v8 -->
+<!-- build: 20260825-dedupe-v3 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2518,14 +2518,19 @@ function dedupeData(){
     var arr = DATA[t];
     if (!Array.isArray(arr) || arr.length < 2) return;
     var best = Object.create(null);
+    var better = function(a, b){
+      var aS = a.sync_id != null, bS = b.sync_id != null;
+      if (aS !== bS) return aS;
+      var au = String(a.updated_at || ''), bu = String(b.updated_at || '');
+      if (au !== bu) return au > bu;
+      return (Number(a.id)||0) > (Number(b.id)||0);
+    };
     arr.forEach(function(r){
       var key = String((r && r.copy_text) || '').trim().toLowerCase().replace(/\s+/g,' ');
       if (!key) return;
       var cur = best[key];
       if (!cur){ best[key] = r; return; }
-      var rHas = r.sync_id != null, cHas = cur.sync_id != null;
-      if (rHas && !cHas) best[key] = r;
-      else if (rHas === cHas && (Number(r.id)||0) < (Number(cur.id)||0)) best[key] = r;
+      if (better(r, cur)) best[key] = r;
     });
     var before = arr.length;
     var kept = arr.filter(function(r){
