@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260828-thead-tint -->
+<!-- build: 20260828-thead-tint-v2 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2099,8 +2099,8 @@ table.grid th.col-c-stato { overflow: hidden; }
 [data-theme="light"] table.grid td, [data-theme="light"] table.grid th { border-color: rgba(90,110,150,.16) !important; }
 [data-theme="light"] table.grid thead th { background: #eef1f5 !important; border-bottom-color: rgba(90,110,150,.24) !important; }
 #tbl table.grid thead th { transition: background .25s; }
-[data-theme="light"] #tbl table.grid thead[class*="area-"] th { background: color-mix(in srgb, var(--ac) 16%, #ffffff) !important; }
-:root:not([data-theme="light"]) #tbl table.grid thead[class*="area-"] th { background: color-mix(in srgb, var(--ac) 30%, var(--bg-1)) !important; }
+#tbl table.grid thead[class*="area-"] th { background: var(--ac) !important; color: #fff !important; }
+[data-theme="dark"] #tbl table.grid thead[class*="area-"] th { color: #0b1020 !important; }
 [data-theme="dark"] table.grid td, [data-theme="dark"] table.grid th, :root:not([data-theme="light"]) table.grid td { border-color: rgba(255,255,255,.09) !important; }
 .panel.finder-empty {
   background: transparent !important;
