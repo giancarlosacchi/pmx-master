@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260828-thead-tint-v4 -->
+<!-- build: 20260828-thead-tint-v5 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -1560,7 +1560,7 @@ table.grid tbody tr.row-area:hover td { background: var(--ac-soft); }
 table.grid thead th.th-filter { padding: 4px 6px !important; }
 table.grid thead th.th-filter input {
   width: 100%; background: var(--bg-3); border: 1px solid var(--line);
-  color: var(--text); border-radius: 4px; padding: 4px 7px; font: inherit; font-size: 11px;
+  color: var(--text); border-radius: 999px; padding: 4px 10px; font: inherit; font-size: 11px;
   height: 24px; outline: none;
   text-transform: uppercase; letter-spacing: .04em; font-weight: 600;
 }
@@ -2098,8 +2098,8 @@ table.grid th.col-c-stato { overflow: hidden; }
 .topbar::before { display: none !important; }
 [data-theme="light"] table.grid td, [data-theme="light"] table.grid th { border-color: rgba(90,110,150,.16) !important; }
 [data-theme="light"] table.grid thead th { background: #eef1f5 !important; border-bottom-color: rgba(90,110,150,.24) !important; }
-#tbl table.grid thead[class*="area-"] th { background: var(--ac) !important; color: #fff !important; }
-[data-theme="dark"] #tbl table.grid thead[class*="area-"] th { color: #0b1020 !important; }
+#tbl table.grid thead[class*="area-"] th, #ca-tbl table.grid thead[class*="area-"] th { background: var(--ac) !important; color: #fff !important; }
+[data-theme="dark"] #tbl table.grid thead[class*="area-"] th, [data-theme="dark"] #ca-tbl table.grid thead[class*="area-"] th { color: #0b1020 !important; }
 [data-theme="dark"] table.grid td, [data-theme="dark"] table.grid th, :root:not([data-theme="light"]) table.grid td { border-color: rgba(255,255,255,.09) !important; }
 .panel.finder-empty {
   background: transparent !important;
@@ -9698,7 +9698,7 @@ setRoute();
 (function(){
   if (window.__theadTint) return; window.__theadTint = true;
   function tint(){
-    document.querySelectorAll('#tbl table.grid').forEach(function(tb){
+    document.querySelectorAll('#tbl table.grid, #ca-tbl table.grid').forEach(function(tb){
       var thead = tb.tHead; if (!thead) return;
       var hth = thead.querySelector('th');
       var hb = (hth || thead).getBoundingClientRect().bottom;
