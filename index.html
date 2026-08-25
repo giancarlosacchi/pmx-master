@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260825-glass-v5 -->
+<!-- build: 20260825-glass-v6 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -41,8 +41,8 @@
 /* Glass tokens: usati da panel/sidebar/topbar/modal per effetto vetro satinato.
    Dark mode: più contrasto → glass-bg più opaco, bordi più visibili, ombre più nette. */
 :root {
-  --glass-op-d: 0.62;
-  --glass-op-l: 0.60;
+  --glass-op-d: 0.82;
+  --glass-op-l: 0.80;
   --glass-blur-px: 40px;
   --glass-bg: rgba(13, 20, 38, var(--glass-op-d));
   --glass-bg-strong: rgba(13, 20, 38, 0.88);
@@ -9689,8 +9689,8 @@ setRoute();
 <script>
 /* ===== APPEARANCE SETTINGS (background / opacity / blur / reflection) ===== */
 (function(){
-  var KEY='pmx-appearance';
-  var DEF={bg:'aurora', op:60, blur:40, sheen:70};
+  var KEY='pmx-appearance-v2';
+  var DEF={bg:'aurora', op:80, blur:40};
   function load(){ try{ return Object.assign({},DEF,JSON.parse(localStorage.getItem(KEY)||'{}')); }catch(e){ return Object.assign({},DEF); } }
   function save(s){ try{ localStorage.setItem(KEY,JSON.stringify(s)); }catch(e){} }
   function apply(s){
@@ -9698,7 +9698,6 @@ setRoute();
     if(s.op===DEF.op){ r.style.removeProperty('--glass-op-l'); r.style.removeProperty('--glass-op-d'); }
     else { r.style.setProperty('--glass-op-l',(s.op/100).toFixed(2)); r.style.setProperty('--glass-op-d',Math.min(.92,s.op/100+.02).toFixed(2)); }
     if(s.blur===DEF.blur) r.style.removeProperty('--glass-blur-px'); else r.style.setProperty('--glass-blur-px',s.blur+'px');
-    if(s.sheen===DEF.sheen) r.style.removeProperty('--glass-sheen'); else r.style.setProperty('--glass-sheen',(s.sheen/100).toFixed(2));
     if(s.bg==='aurora') r.removeAttribute('data-app-bg'); else r.setAttribute('data-app-bg', s.bg);
   }
   var S=load(); apply(S);
@@ -9733,24 +9732,21 @@ setRoute();
       '</div>'+
       '<div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;color:var(--text-mute);font-size:10px;text-transform:uppercase;letter-spacing:.08em"><span>Glass opacity</span><span id="ap-op-v"></span></div><input id="ap-op" type="range" min="30" max="90" step="5" style="width:100%"></div>'+
       '<div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;color:var(--text-mute);font-size:10px;text-transform:uppercase;letter-spacing:.08em"><span>Blur</span><span id="ap-bl-v"></span></div><input id="ap-bl" type="range" min="6" max="60" step="2" style="width:100%"></div>'+
-      '<div style="margin-bottom:13px"><div style="display:flex;justify-content:space-between;color:var(--text-mute);font-size:10px;text-transform:uppercase;letter-spacing:.08em"><span>Reflection</span><span id="ap-sh-v"></span></div><input id="ap-sh" type="range" min="0" max="100" step="5" style="width:100%"></div>'+
       '<button type="button" id="ap-reset" style="'+BTN_CSS+';width:100%">Reset to default</button>';
     document.body.appendChild(pop);
     btn.onclick=function(e){ e.stopPropagation(); pop.style.display = pop.style.display==='none' ? 'block' : 'none'; };
     document.addEventListener('click', function(e){
       if(pop.style.display!=='none' && !pop.contains(e.target) && !btn.contains(e.target)) pop.style.display='none';
     });
-    var op=document.getElementById('ap-op'), bl=document.getElementById('ap-bl'), sh=document.getElementById('ap-sh');
+    var op=document.getElementById('ap-op'), bl=document.getElementById('ap-bl');
     function sync(){
-      op.value=S.op; bl.value=S.blur; sh.value=S.sheen;
+      op.value=S.op; bl.value=S.blur;
       document.getElementById('ap-op-v').textContent=S.op+'%';
       document.getElementById('ap-bl-v').textContent=S.blur+'px';
-      document.getElementById('ap-sh-v').textContent=S.sheen+'%';
       mark();
     }
     op.oninput=function(){ S.op=+op.value; apply(S); save(S); sync(); };
     bl.oninput=function(){ S.blur=+bl.value; apply(S); save(S); sync(); };
-    sh.oninput=function(){ S.sheen=+sh.value; apply(S); save(S); sync(); };
     document.getElementById('ap-bgs').querySelectorAll('button').forEach(function(b){
       b.onclick=function(){ S.bg=b.getAttribute('data-bg'); apply(S); save(S); sync(); };
     });
