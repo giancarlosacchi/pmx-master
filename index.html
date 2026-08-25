@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260827-msel -->
+<!-- build: 20260827-msel-v3 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -9312,7 +9312,11 @@ setRoute();
   // ---- mouse marquee ----
   document.addEventListener('mousedown', (e) => {
     if (e.button !== 0) return;
-    if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+    if (e.ctrlKey || e.metaKey || e.shiftKey) {
+      const t = e.target.closest && e.target.closest('tr[data-sel-id]');
+      if (t) e.preventDefault();
+      return;
+    }
     if (e.target.closest('.row-drag, button, input, select, textarea, a, label, .status-menu, .flag-chip, .pill, .status-chip, .row-hide-btn, .opt, .area-dd, .area-dd-menu')) return;
     const td = e.target.closest('td'); const tr = td && td.closest('tr[data-sel-id]');
     if (!td || !tr) return;
@@ -9332,7 +9336,7 @@ setRoute();
   document.addEventListener('mouseup', () => {
     if (!dragging) return;
     dragging = false; document.body.style.userSelect = '';
-    if (moved) { doCopy(); clearSel(); }   // drag su piu celle: copia automatica + deseleziona
+    if (moved) { justDragged = Date.now(); doCopy(); clearSel(); }   // drag su piu celle: copia automatica + deseleziona
     else clearSel();                        // click singolo: nessuna selezione
   });
   // ---- copy ----
@@ -9347,8 +9351,34 @@ setRoute();
     if (e.clipboardData) e.clipboardData.setData('text/plain', txt);
   });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (cells().length) clearSel(); if (msel.length) mclear(); } });
-  let msel = []; let manchor = null;
-  function mclear(){ msel.forEach(tr => tr.classList.remove('row-msel')); msel = []; manchor = null; }
+  let msel = []; let manchor = null; let justDragged = 0;
+  function mclear(){ msel.forEach(tr => tr.classList.remove('row-msel')); msel = []; manchor = null; updateMbar(); }
+  function mtoggle(tr){
+    if (tr.classList.toggle('row-msel')) msel.push(tr);
+    else msel = msel.filter(x => x !== tr);
+    manchor = tr; updateMbar();
+    const s = window.getSelection && window.getSelection(); if (s && s.removeAllRanges) s.removeAllRanges();
+  }
+  function updateMbar(){
+    let bar = document.getElementById('mselBar');
+    if (!bar){
+      bar = document.createElement('div'); bar.id = 'mselBar';
+      bar.innerHTML = '<span class="msel-n"></span><button type="button" class="msel-copy">Copy</button><button type="button" class="msel-clear">Clear</button>';
+      document.body.appendChild(bar);
+      bar.querySelector('.msel-copy').onclick = async function(ev){
+        ev.stopPropagation();
+        const txt = buildRowsText(msel); if (!txt) return;
+        let ok=false; try { await navigator.clipboard.writeText(txt); ok=true; } catch(e){}
+        if (!ok && typeof copyToClipboard === 'function') ok = await copyToClipboard(txt);
+        if (!ok && typeof showCopyFallback === 'function') showCopyFallback(txt);
+        mclear();
+      };
+      bar.querySelector('.msel-clear').onclick = function(ev){ ev.stopPropagation(); mclear(); };
+    }
+    const live = msel.filter(t => document.contains(t)).length;
+    bar.querySelector('.msel-n').textContent = live + (live === 1 ? ' row selected' : ' rows selected');
+    bar.classList.toggle('show', live > 0);
+  }
   function buildRowsText(trs){
     const rows = trs.filter(t => document.contains(t));
     rows.sort((a,b) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1);
@@ -9378,10 +9408,12 @@ setRoute();
     const tr = td && td.closest('tr[data-sel-id]');
     if ((e.ctrlKey || e.metaKey) && tr) {
       e.preventDefault();
-      if (tr.classList.toggle('row-msel')) { msel.push(tr); }
-      else { msel = msel.filter(x => x !== tr); }
-      manchor = tr;
-      const s = window.getSelection && window.getSelection(); if (s && s.removeAllRanges) s.removeAllRanges();
+      mtoggle(tr);
+      return;
+    }
+    if (tr && td && td === tr.firstElementChild && Date.now() - justDragged > 350 &&
+        !e.target.closest('button, input, select, a, .row-drag, .status-menu, .flag-chip, .row-edit, .row-del, .row-hide-btn')) {
+      mtoggle(tr);
       return;
     }
     if (e.shiftKey && tr && manchor && document.contains(manchor) && manchor.parentElement === tr.parentElement) {
@@ -9392,6 +9424,7 @@ setRoute();
         const i = Math.min(a,b), j = Math.max(a,b);
         for (let k=i; k<=j; k++){ const rr=rows[k]; if(!rr.classList.contains('row-msel')){ rr.classList.add('row-msel'); msel.push(rr); } }
       }
+      updateMbar();
       const s = window.getSelection && window.getSelection(); if (s && s.removeAllRanges) s.removeAllRanges();
       return;
     }
@@ -9404,6 +9437,15 @@ setRoute();
       tr[data-sel-id] td[data-field], tr[data-sel-id] td[data-col]{cursor:default}
       td.bcell{background:transparent}
       tr.row-msel td{background:rgba(37,99,235,.16) !important;box-shadow:inset 0 1px 0 rgba(37,99,235,.25), inset 0 -1px 0 rgba(37,99,235,.25)}
+      tr[data-sel-id] td:first-child{cursor:pointer}
+      #mselBar{position:fixed;left:50%;transform:translateX(-50%);bottom:22px;background:#0f172a;color:#fff;border-radius:12px;padding:8px 10px 8px 16px;display:none;align-items:center;gap:12px;box-shadow:0 12px 34px rgba(15,23,42,.38);z-index:99993;font-size:13px}
+      #mselBar.show{display:flex}
+      #mselBar .msel-n{font-weight:600;white-space:nowrap}
+      #mselBar button{border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer}
+      #mselBar .msel-copy{background:#2563eb;color:#fff}
+      #mselBar .msel-copy:hover{background:#1d4ed8}
+      #mselBar .msel-clear{background:transparent;color:#cbd5e1}
+      #mselBar .msel-clear:hover{color:#fff}
       #bselOverlay{position:fixed;pointer-events:none;background:rgba(37,99,235,.16);border:1.5px solid rgba(37,99,235,.7);border-radius:8px;z-index:99991;display:none}
       #bselBar{position:fixed;left:50%;transform:translateX(-50%);bottom:20px;background:#0f172a;color:#fff;border-radius:12px;padding:8px 10px 8px 16px;display:none;align-items:center;gap:12px;box-shadow:0 12px 34px rgba(15,23,42,.38);z-index:99992;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;font-size:13px}
       #bselBar.show{display:flex}
