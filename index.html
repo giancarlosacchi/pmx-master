@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260827-cellsel-v2 -->
+<!-- build: 20260828-thead-tint -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2097,7 +2097,10 @@ table.grid th.col-c-stato { overflow: hidden; }
 .topbar { background: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; border: none !important; box-shadow: none !important; }
 .topbar::before { display: none !important; }
 [data-theme="light"] table.grid td, [data-theme="light"] table.grid th { border-color: rgba(90,110,150,.16) !important; }
-[data-theme="light"] table.grid thead th { background: rgba(255,255,255,.70) !important; border-bottom-color: rgba(90,110,150,.24) !important; }
+[data-theme="light"] table.grid thead th { background: #eef1f5 !important; border-bottom-color: rgba(90,110,150,.24) !important; }
+#tbl table.grid thead th { transition: background .25s; }
+[data-theme="light"] #tbl table.grid thead[class*="area-"] th { background: color-mix(in srgb, var(--ac) 16%, #ffffff) !important; }
+:root:not([data-theme="light"]) #tbl table.grid thead[class*="area-"] th { background: color-mix(in srgb, var(--ac) 30%, var(--bg-1)) !important; }
 [data-theme="dark"] table.grid td, [data-theme="dark"] table.grid th, :root:not([data-theme="light"]) table.grid td { border-color: rgba(255,255,255,.09) !important; }
 .panel.finder-empty {
   background: transparent !important;
@@ -9692,6 +9695,28 @@ setRoute();
         el.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" style="filter:drop-shadow(0 1px 2px r
 </script>
 <script>
+/* ===== THEAD TINT ===== */
+(function(){
+  if (window.__theadTint) return; window.__theadTint = true;
+  function tint(){
+    document.querySelectorAll('#tbl table.grid').forEach(function(tb){
+      var thead = tb.tHead; if (!thead) return;
+      var hb = thead.getBoundingClientRect().bottom;
+      var cur = null;
+      tb.querySelectorAll('tr.section-area').forEach(function(r){
+        if (r.getBoundingClientRect().top <= hb + 1) cur = r;
+      });
+      var cls = null;
+      if (cur) { cur.classList.forEach(function(c){ if (c.indexOf('area-') === 0) cls = c; }); }
+      [...thead.classList].forEach(function(c){ if (c.indexOf('area-') === 0 && c !== cls) thead.classList.remove(c); });
+      if (cls && !thead.classList.contains(cls)) thead.classList.add(cls);
+    });
+  }
+  var raf = false;
+  document.addEventListener('scroll', function(){ if (raf) return; raf = true; requestAnimationFrame(function(){ raf = false; tint(); }); }, true);
+  setInterval(tint, 1000);
+})();
+
 /* ===== APPEARANCE SETTINGS (background / opacity / blur / reflection) ===== */
 (function(){
   var KEY='pmx-appearance-v2';
