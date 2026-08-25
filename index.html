@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260828-flat-v2 -->
+<!-- build: 20260828-flat-v4 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2083,6 +2083,8 @@ table.grid th.col-c-stato { overflow: hidden; }
 /* Vetro satinato ATTIVO (stile AstaTracker) + riflesso quasi invisibile */
 .panel, .panel-filters, .panel-list, .modal, .stat-card, .cp-view, .rm-panel, .calc-panel { position: relative; }
 /* Riflessi rimossi: superficie piatta */
+#tbl table.grid thead th:first-child, #ca-tbl table.grid thead th:first-child { border-top-left-radius: calc(var(--radius-lg) - 2px); }
+#tbl table.grid thead th:last-child, #ca-tbl table.grid thead th:last-child { border-top-right-radius: calc(var(--radius-lg) - 2px); }
 .topbar { background: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; border: none !important; box-shadow: none !important; }
 .topbar::before { display: none !important; }
 [data-theme="light"] table.grid td, [data-theme="light"] table.grid th { border-color: rgba(90,110,150,.16) !important; }
@@ -9702,8 +9704,12 @@ setRoute();
     });
   }
   var raf = false;
-  document.addEventListener('scroll', function(){ if (raf) return; raf = true; requestAnimationFrame(function(){ raf = false; tint(); }); }, true);
+  function schedule(){ if (raf) return; raf = true; requestAnimationFrame(function(){ raf = false; tint(); }); }
+  document.addEventListener('scroll', schedule, true);
   setInterval(tint, 1000);
+  var mo = new MutationObserver(schedule);
+  if (document.body) mo.observe(document.body, { childList: true, subtree: true });
+  else document.addEventListener('DOMContentLoaded', function(){ mo.observe(document.body, { childList: true, subtree: true }); });
 })();
 
 /* ===== APPEARANCE SETTINGS (background / opacity / blur / reflection) ===== */
