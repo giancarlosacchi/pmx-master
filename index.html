@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260825-dedupe-v3 -->
+<!-- build: 20260825-dedupe-v4 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2543,7 +2543,7 @@ function dedupeData(){
     // non combacia più e sfugge al 1° passaggio: qui lo becchiamo per NOME+DWT/basin,
     // ma SOLO per le righe create in quei batch (timestamp noti) — le righe create
     // dal sito in futuro non vengono mai toccate.
-    var BAD_BATCH = ['2026-07-16T07:45:42', '2026-07-14T06:13:1', '2026-07-10T11:41:25'];
+    var BAD_BATCH = ['2026-07-16T07:45:42', '2026-07-14T06:13:1', '2026-07-10T11:41:25', '2026-08-24T17:35'];
     var entKey = function(r){
       var name = (t === 'vessels') ? r.vessel : r.chrtrs;
       var extra = (t === 'vessels') ? r.dwt_blt : r.load_port;
@@ -2580,8 +2580,8 @@ async function loadDataFromCloud() {
     const cloudV = v.data || [];
     const cloudC = c.data || [];
 
-    // One-shot migration: cloud empty but localStorage has data → upload
-    if (cloudV.length === 0 && cloudC.length === 0 && !localStorage.getItem(MIGRATED_FLAG)) {
+    // One-shot migration DISATTIVATA (re-import di massa: incidenti 16 Lug e 24 Ago)
+    if (false && cloudV.length === 0 && cloudC.length === 0 && !localStorage.getItem(MIGRATED_FLAG)) {
       const raw = localStorage.getItem(KEY_LOCAL);
       if (raw) {
         try {
