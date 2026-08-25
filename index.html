@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260825-dedupe-v5 -->
+<!-- build: 20260826-paper-bg -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -136,14 +136,12 @@ html[data-app-bg="soft"] body {
     radial-gradient(64% 55% at 60% 105%, rgba(18,51,110,.55) 0%, transparent 72%),
     linear-gradient(158deg, #dfe6f2 0%, #cdd8ec 40%, #9fb2d8 75%, #6d82b4 100%);
 }
-html[data-app-bg="blue"] body {
-  background-color: #1f3a75;
+html[data-app-bg="paper"] body {
+  background-color: #ffffff;
   background-image:
-    radial-gradient(58% 52% at 10% 8%, rgba(120,190,255,.50) 0%, transparent 62%),
-    radial-gradient(46% 42% at 60% 12%, rgba(56,189,248,.35) 0%, transparent 58%),
-    radial-gradient(50% 46% at 96% 26%, rgba(26,115,232,.45) 0%, transparent 62%),
-    radial-gradient(46% 42% at 22% 72%, rgba(76,110,245,.35) 0%, transparent 58%),
-    linear-gradient(158deg, #eaf1fb 0%, #c9d9f2 38%, #7e9bd6 72%, #1f3a75 100%);
+    linear-gradient(to right, rgba(0,0,0,.15) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0,0,0,.15) 1px, transparent 1px);
+  background-size: 46px 46px;
 }
 body { -webkit-font-smoothing: antialiased; font-feature-settings: "tnum" 1; }
 :root, [data-theme="dark"] {
@@ -9735,7 +9733,7 @@ setRoute();
       '<div id="ap-bgs" style="display:flex;gap:6px;margin-bottom:13px">'+
         '<button type="button" data-bg="aurora" style="'+BTN_CSS+'">Vivid</button>'+
         '<button type="button" data-bg="soft" style="'+BTN_CSS+'">Soft</button>'+
-        '<button type="button" data-bg="blue" style="'+BTN_CSS+'">Blue</button>'+
+        '<button type="button" data-bg="paper" style="'+BTN_CSS+'">Paper</button>'+
       '</div>'+
       '<div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;color:var(--text-mute);font-size:10px;text-transform:uppercase;letter-spacing:.08em"><span>Glass opacity</span><span id="ap-op-v"></span></div><input id="ap-op" type="range" min="30" max="90" step="5" style="width:100%"></div>'+
       '<div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;color:var(--text-mute);font-size:10px;text-transform:uppercase;letter-spacing:.08em"><span>Blur</span><span id="ap-bl-v"></span></div><input id="ap-bl" type="range" min="6" max="60" step="2" style="width:100%"></div>'+
