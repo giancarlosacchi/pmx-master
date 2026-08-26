@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260829-theme-move -->
+<!-- build: 20260829-search-circle -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -1094,11 +1094,16 @@ pre.rundown { white-space: pre-wrap; font-family: inherit;
 .distance-tbl td.zero { background: rgba(245,177,78,.1); color: var(--gold); font-weight: 600; }
 ::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none; }
 * { scrollbar-width: none; }
-.global-search { position: relative; width: 280px; }
+.global-search { position: relative; width: 36px; transition: width .35s cubic-bezier(.32,.72,0,1); }
 .global-search input { width: 100%; background: var(--bg-2); border: 1px solid var(--line); color: var(--text);
-  padding: 7px 12px 7px 32px; border-radius: var(--radius-sm); font-size: 12.5px; outline: none; height: 32px; }
+  padding: 7px 12px 7px 32px; border-radius: 999px; font-size: 12.5px; outline: none; height: 36px; cursor: pointer; }
+.global-search:focus-within, .global-search.has-text { width: 280px; }
+.global-search:focus-within input, .global-search.has-text input { cursor: text; }
+.global-search input::placeholder { color: transparent; }
+.global-search:focus-within input::placeholder { color: var(--text-mute); }
 .global-search input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-soft); }
-.global-search svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 13px; height: 13px; color: var(--text-mute); }
+.global-search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: var(--text-mute); pointer-events: none; }
+.topbar .primary.round-add { width: 36px; height: 36px; border-radius: 50%; padding: 0; display: inline-flex; align-items: center; justify-content: center; flex: none; }
 .muted { color: var(--text-mute); } .dim { color: var(--text-dim); }
 .cell-truncate { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cell-truncate:hover { white-space: normal; overflow: visible; }
@@ -4775,7 +4780,7 @@ function renderMasterList(basin) {
   $('#topbar-actions').innerHTML = `
     <div class="global-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
     <input id="f-q" placeholder="Search vessel, owner, ideas…" /></div>
-    <button class="primary" id="btn-new-vsl"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>New vessel</button>`;
+    <button class="primary round-add" id="btn-new-vsl" title="New vessel"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg></button>`;
   $('#btn-new-vsl').onclick = () => openVesselForm(null, basin);
   bindCpToggle(_pg);
 
@@ -5669,7 +5674,7 @@ routes['ecsa-list'] = function() {
 function renderCargoList(basin) {
   const _pg = basin === 'ATL' ? 'atl-cgo' : 'pac-cgo';
   $('#topbar-actions').innerHTML = `
-    <button class="primary" id="btn-new-cgo"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>New cargo</button>`;
+    <button class="primary round-add" id="btn-new-cgo" title="New cargo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg></button>`;
   $('#btn-new-cgo').onclick = () => openCargoForm(null, basin);
   bindCpToggle(_pg);
   const all = DATA.cargoes.filter(c => c.basin === basin);
@@ -9843,6 +9848,7 @@ setRoute();
   }
   var S=load(); apply(S);
   try{ ['atl-tng','pac-tng','atl-cgo','pac-cgo','ecsa-list'].forEach(function(p){ localStorage.removeItem('cp-view-'+p); }); }catch(e){}
+  document.addEventListener('input', function(e){ var gs=e.target && e.target.closest ? e.target.closest('.global-search') : null; if(gs) gs.classList.toggle('has-text', !!e.target.value); });
   window.getCopyFormat=function(){ return S.copy||'text'; };
   var BTN='font:inherit;font-size:11.5px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--text-dim);cursor:pointer';
   window.renderAppearanceSettings=function(el){
