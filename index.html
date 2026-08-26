@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260829-settings -->
+<!-- build: 20260829-filter-vis -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -1574,7 +1574,7 @@ table.grid tbody tr.row-area:hover td { background: var(--ac-soft); }
 /* ===== COLUMN FILTERS (input inline negli header) ===== */
 table.grid thead th.th-filter { padding: 4px 6px !important; }
 table.grid thead th.th-filter input {
-  width: 100%; background: var(--bg-3); border: 1px solid var(--line);
+  width: 100%; min-width: 84px; background: var(--bg-3); border: 1px solid var(--line);
   color: var(--text); border-radius: 999px; padding: 4px 10px; font: inherit; font-size: 11px;
   height: 24px; outline: none;
   text-transform: uppercase; letter-spacing: .04em; font-weight: 600;
@@ -1584,7 +1584,8 @@ table.grid thead th.th-filter input::placeholder {
   color: var(--text-mute); text-transform: uppercase; font-weight: 600; letter-spacing: .04em;
   opacity: .9; font-size: 10.5px;
 }
-.filter-active { background: var(--gold-soft) !important; border-color: var(--gold) !important; color: var(--gold) !important; }
+.filter-active { background: #D93025 !important; border-color: #D93025 !important; color: #fff !important; }
+.filter-active::placeholder { color: rgba(255,255,255,.75) !important; }
 
 
 /* ===== IDEAS/INFO: PICCOLA di default, si espande al hover ===== */
