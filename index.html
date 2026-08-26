@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260829-flags-text -->
+<!-- build: 20260829-flags-text2 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -4972,7 +4972,7 @@ function renderMasterTable(rows, cbCols, basin) {
     c.classList.toggle('on', !!newVal);
   });
   // Click sulla scritta flags → mostra le caselle per modificare
-  $('#tbl .flags-label').forEach(l => l.onclick = (e) => {
+  $$('#tbl .flags-label').forEach(l => l.onclick = (e) => {
     e.stopPropagation();
     l.closest('.flags-cell').classList.add('editing');
   });
