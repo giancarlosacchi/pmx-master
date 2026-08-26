@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260829-filter-vis -->
+<!-- build: 20260829-filter-vis2 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -1584,8 +1584,8 @@ table.grid thead th.th-filter input::placeholder {
   color: var(--text-mute); text-transform: uppercase; font-weight: 600; letter-spacing: .04em;
   opacity: .9; font-size: 10.5px;
 }
-.filter-active { background: #D93025 !important; border-color: #D93025 !important; color: #fff !important; }
-.filter-active::placeholder { color: rgba(255,255,255,.75) !important; }
+.filter-active { background: #D93025 !important; border-color: #D93025 !important; color: #000 !important; font-weight: 700 !important; }
+.filter-active::placeholder { color: rgba(0,0,0,.65) !important; }
 
 
 /* ===== IDEAS/INFO: PICCOLA di default, si espande al hover ===== */
@@ -2102,6 +2102,7 @@ table.grid th.col-c-stato { overflow: hidden; }
 .panel, .panel-filters, .panel-list, .modal, .stat-card, .cp-view, .rm-panel, .calc-panel { position: relative; }
 /* Riflessi rimossi: superficie piatta */
 .panel-filters { display: none !important; }
+table.grid thead th { max-width: none !important; overflow: visible !important; }
 #tbl table.grid thead th:first-child, #ca-tbl table.grid thead th:first-child { border-top-left-radius: calc(var(--radius-lg) - 2px); }
 #tbl table.grid thead th:last-child, #ca-tbl table.grid thead th:last-child { border-top-right-radius: calc(var(--radius-lg) - 2px); }
 .topbar { background: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; border: none !important; box-shadow: none !important; }
