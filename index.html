@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260829-compact -->
+<!-- build: 20260829-title -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -331,9 +331,10 @@ table.admin-tbl tbody tr:hover td { background: rgba(255,255,255,.02); }
 .nav a svg { width: 15px; height: 15px; flex-shrink: 0; opacity: .8; }
 .main { padding: 0; min-width: 0; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 .topbar { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: space-between;
-  padding: 13px 26px 10px; background: var(--bg-1);
+  padding: 13px 38px 10px; background: var(--bg-1);
   backdrop-filter: blur(14px); border-bottom: 1px solid var(--line-soft); }
-.page-title { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -.4px; }
+.page-title { margin: 0; font-size: 28px; font-weight: 800; letter-spacing: -.6px; position: relative; padding-bottom: 7px; }
+.page-title::after { content: ''; position: absolute; left: 1px; bottom: 0; width: 26px; height: 4px; border-radius: 99px; background: var(--gold); }
 .page-sub { display: none; }
 .topbar-actions { display: flex; gap: 8px; align-items: center; }
 .topbar-right { display: flex; gap: 14px; align-items: center; }
