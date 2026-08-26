@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260829-flags-empty -->
+<!-- build: 20260829-compact -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -518,7 +518,7 @@ html.theme-transitioning table.grid th {
 .ts-icon-moon { transform: translate(-50%, -50%) rotate(-90deg) scale(0.4); opacity: 0; }
 [data-theme="dark"] .ts-icon-sun  { transform: translate(-50%, -50%) rotate(90deg)  scale(0.4); opacity: 0; }
 [data-theme="dark"] .ts-icon-moon { transform: translate(-50%, -50%) rotate(0deg)   scale(1);   opacity: 1; }
-.content { padding: 14px 26px 16px; flex: 1; overflow: hidden; min-height: 0; display: flex; flex-direction: column; }
+.content { padding: 14px 38px 16px; flex: 1; overflow: hidden; min-height: 0; display: flex; flex-direction: column; }
 /* Wrapper scrollabile per pagine senza panel/tbl-wrap (es. LS Accounts, Roadmap) */
 .page-scroll { flex: 1; min-height: 0; overflow: auto; }
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 9px; margin-bottom: 13px; }
@@ -1949,6 +1949,10 @@ table.grid thead .status-chip, table.grid thead .status-wrap, table.grid thead .
 /* Thead sempre sopra tutto il resto */
 table.grid thead th { z-index: 5; background: var(--bg-1) !important; }
 table.grid th.col-del, table.grid td.col-del { width: 30px; max-width: 30px; overflow: hidden; }
+/* Liste TNG compatte: ogni colonna al minimo per leggere tutto, Ideas/Info assorbe il resto */
+.panel-list #tbl table.grid th:not(.col-ideas), .panel-list #tbl table.grid td:not(.col-ideas) { width: 1px !important; max-width: none !important; white-space: nowrap; }
+.panel-list #tbl table.grid th.th-filter { min-width: 56px; }
+.panel-list #tbl table.grid th.th-filter input { min-width: 0; width: 100%; }
 
 /* ===== BROKER ROADMAP ===== */
 .rm-panel {
