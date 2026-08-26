@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260829-finder-fit -->
+<!-- build: 20260829-noflicker -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2879,12 +2879,21 @@ let _realtimeChannel = null;
 let _rtRenderTimer = null;
 let _lastMouseMoveAt = 0;
 document.addEventListener('mousemove', () => { _lastMouseMoveAt = Date.now(); }, true);
-function _scheduleRtRender() {
+let _rtDirtyTables = new Set();
+function _scheduleRtRender(table) {
+  _rtDirtyTables.add(table || '*');
   if (_rtRenderTimer) clearTimeout(_rtRenderTimer);
   // Debounce 800ms: abbastanza basso da sentire l'update istantaneo
   // dopo edit su Sheet, alto abbastanza da raggruppare i burst di fullSync.
   _rtRenderTimer = setTimeout(_doRtRender, 800);
 }
+// Route che mostrano ogni tabella: se l'update non riguarda la pagina aperta, niente rerender (niente flicker)
+const _RT_ROUTES = {
+  vessels:  ['atl-tng','pac-tng','vsl','ecsa-list','personal'],
+  cargoes:  ['atl-cgo','pac-cgo','cgo','personal'],
+  accounts: ['accounts'],
+  rundowns: ['rundown-ecsa','rundown-natl','rundown-pac'],
+};
 function _doRtRender() {
   try {
     // Skip mentre l'utente sta disegnando sul notebook del finder
@@ -2924,6 +2933,16 @@ function _doRtRender() {
       return;
     }
   } catch(e) {}
+  // Rerender solo se l'update riguarda la pagina aperta
+  try {
+    const _cur = (location.hash.replace(/^#\//, '') || 'atl-tng').split('?')[0];
+    let _relevant = false;
+    for (const t of _rtDirtyTables) {
+      if (t === '*' || !_RT_ROUTES[t] || _RT_ROUTES[t].includes(_cur)) { _relevant = true; break; }
+    }
+    _rtDirtyTables.clear();
+    if (!_relevant) return;
+  } catch(e) {}
   try { if (typeof setRoute === 'function') setRoute(); } catch(e) { console.error('rt setRoute:', e); }
 }
 
@@ -2932,10 +2951,10 @@ function startRealtimeSync() {
   _realtimeChannel = sb.channel('pmx-master-list-rt');
 
   _realtimeChannel
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'vessels'  }, (p) => { applyRtRow('vessels', p);  _scheduleRtRender(); })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'cargoes'  }, (p) => { applyRtRow('cargoes', p);  _scheduleRtRender(); })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'accounts' }, (p) => { applyRtAccount(p);         _scheduleRtRender(); })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'rundowns' }, (p) => { applyRtRundown(p);         _scheduleRtRender(); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'vessels'  }, (p) => { applyRtRow('vessels', p);  _scheduleRtRender('vessels'); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'cargoes'  }, (p) => { applyRtRow('cargoes', p);  _scheduleRtRender('cargoes'); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'accounts' }, (p) => { applyRtAccount(p);         _scheduleRtRender('accounts'); })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'rundowns' }, (p) => { applyRtRundown(p);         _scheduleRtRender('rundowns'); })
     .subscribe((status) => {
       if (status === 'SUBSCRIBED') {
         console.log('[Realtime] Subscribed');
@@ -4748,7 +4767,7 @@ function setRoute() {
   const fn = routes[route] || routes['atl-tng'];
   const [t, s] = PAGES[route] || PAGES['atl-tng'];
   $('#page-title').textContent = t; $('#page-sub').textContent = s;
-  $('#topbar-actions').innerHTML = '';
+  if (!sameRoute) $('#topbar-actions').innerHTML = '';
   // Disabilita animazioni di entrata se stiamo solo rerenderando la stessa pagina (CRUD/edit)
   if (sameRoute) document.body.classList.add('no-anim');
   else document.body.classList.remove('no-anim');
@@ -4759,18 +4778,17 @@ function setRoute() {
     try { checkAllScrollFades(); } catch(e) {}
     try { setupAreaSticky(); } catch(e) {}
   });
-  // Ripristina scroll solo se stessa route (CRUD/edit) — su cambio route va in alto
+  // Ripristina scroll solo se stessa route (CRUD/edit) — su cambio route va in alto.
+  // Sincrono (non rAF): evita il frame con la pagina in cima → niente flicker.
   if (sameRoute) {
-    requestAnimationFrame(() => {
-      window.scrollTo(0, _scrollY);
-      // Ripristina scroll del primo .tbl-wrap (il principale della pagina)
-      const tw = document.querySelector('.tbl-wrap');
-      const saved = _scrollEls.find(s => s.sel.includes('tbl-wrap'));
-      if (tw && saved) { tw.scrollTop = saved.top; tw.scrollLeft = saved.left; }
-      const rd = document.querySelector('pre.rundown');
-      const savedRd = _scrollEls.find(s => s.sel.includes('rundown'));
-      if (rd && savedRd) { rd.scrollTop = savedRd.top; }
-    });
+    window.scrollTo(0, _scrollY);
+    // Ripristina scroll del primo .tbl-wrap (il principale della pagina)
+    const tw = document.querySelector('.tbl-wrap');
+    const saved = _scrollEls.find(s => s.sel.includes('tbl-wrap'));
+    if (tw && saved) { tw.scrollTop = saved.top; tw.scrollLeft = saved.left; }
+    const rd = document.querySelector('pre.rundown');
+    const savedRd = _scrollEls.find(s => s.sel.includes('rundown'));
+    if (rd && savedRd) { rd.scrollTop = savedRd.top; }
   }
 }
 window.addEventListener('hashchange', setRoute);
