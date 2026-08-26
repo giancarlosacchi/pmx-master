@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260829-search-circle4 -->
+<!-- build: 20260829-cgo-search -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -5675,6 +5675,8 @@ routes['ecsa-list'] = function() {
 function renderCargoList(basin) {
   const _pg = basin === 'ATL' ? 'atl-cgo' : 'pac-cgo';
   $('#topbar-actions').innerHTML = `
+    <div class="global-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <input id="ca-q" placeholder="Search chrtr, cargo, ports…" /></div>
     <button class="primary round-add" id="btn-new-cgo" title="New cargo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg></button>`;
   $('#btn-new-cgo').onclick = () => openCargoForm(null, basin);
   bindCpToggle(_pg);
@@ -5699,7 +5701,7 @@ function renderCargoList(basin) {
     <div class="panel panel-filters">
       <div class="filters">
         ${renderAreaDropdown(_pg, areas, 'Area')}
-        <div class="group"><label>Search</label><input id="ca-q" placeholder="chrtr / cargo / load / disch…"/></div>
+        <div class="group"><label>Search</label><input id="ca-q-hidden" placeholder="chrtr / cargo / load / disch…"/></div>
         <button class="filter-clear-all" type="button" title="Clear all filters">✕ Clear filters</button>
         <span class="count-pill" id="ca-count" style="display:none">— cargoes</span>
         ${cpToggleBtn(_pg)}
