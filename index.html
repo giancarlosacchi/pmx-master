@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260829-title -->
+<!-- build: 20260829-helvetica -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -128,7 +128,7 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 body {
-  font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 13px; line-height: 1.4; color: var(--text);
   background-color: #ffffff;
   background-image:
@@ -3852,7 +3852,7 @@ function createSingleDatePicker(opts) {
 function showCopyFallback(text) {
   modal.open('Copy vessels list', `
     <p class="muted" style="margin:0 0 8px;font-size:12px">Select the text below and press Ctrl+C (or Cmd+C on Mac) to copy it.</p>
-    <textarea id="copy-area" style="width:100%;min-height:300px;background:var(--bg-3);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:10px;font-family:monospace;font-size:12px;resize:vertical">${esc(text)}</textarea>
+    <textarea id="copy-area" style="width:100%;min-height:300px;background:var(--bg-3);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:10px;font-family:inherit;font-size:12px;resize:vertical">${esc(text)}</textarea>
     <div class="form-actions full">
       <button type="button" class="primary" id="copy-select-all">Select all</button>
     </div>
@@ -7118,7 +7118,7 @@ function buildSnapshotTable() {
   const head = cols.map(([, l]) => `<th style="padding:9px 14px;text-align:left;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#cbd5e1;font-weight:700;white-space:nowrap;">${esc(l)}</th>`).join('');
   const wrap = document.createElement('div');
   wrap.style.cssText = 'position:absolute;left:-100000px;top:0;background:#ffffff;padding:24px;';
-  wrap.innerHTML = `<table style="border-collapse:collapse;border-radius:12px;overflow:hidden;box-shadow:0 6px 24px rgba(15,23,42,.10);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;font-size:12.5px;line-height:1.4;"><thead><tr style="background:#0f172a;">${head}</tr></thead><tbody>${body}</tbody></table>`;
+  wrap.innerHTML = `<table style="border-collapse:collapse;border-radius:12px;overflow:hidden;box-shadow:0 6px 24px rgba(15,23,42,.10);font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:12.5px;line-height:1.4;"><thead><tr style="background:#0f172a;">${head}</tr></thead><tbody>${body}</tbody></table>`;
   return wrap;
 }
 document.addEventListener('click', (e) => {
@@ -9267,7 +9267,7 @@ setRoute();
       #bchatFab{position:fixed;right:20px;bottom:20px;width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;background:#0f172a;color:#fff;box-shadow:0 8px 24px rgba(15,23,42,.35);display:flex;align-items:center;justify-content:center;z-index:99990;transition:transform .15s}
       #bchatFab:hover{transform:scale(1.06)}
       #bchatFab svg{width:26px;height:26px}
-      #bchatPanel{position:fixed;right:20px;bottom:88px;width:min(440px,calc(100vw - 32px));height:min(70vh,640px);background:#fff;border-radius:16px;box-shadow:0 18px 50px rgba(15,23,42,.30);display:flex;flex-direction:column;overflow:hidden;z-index:99991;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif}
+      #bchatPanel{position:fixed;right:20px;bottom:88px;width:min(440px,calc(100vw - 32px));height:min(70vh,640px);background:#fff;border-radius:16px;box-shadow:0 18px 50px rgba(15,23,42,.30);display:flex;flex-direction:column;overflow:hidden;z-index:99991;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif}
       #bchatPanel.bchat-hidden{display:none}
       #bchatHead{background:#0f172a;color:#fff;padding:13px 16px;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:space-between}
       #bchatHead small{display:block;font-weight:400;font-size:11px;color:#94a3b8;margin-top:2px}
@@ -9485,7 +9485,7 @@ setRoute();
     const head = cols.map(function(c){ return '<th style="padding:9px 14px;text-align:left;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#cbd5e1;font-weight:700;white-space:nowrap;">'+esc(c[1])+'</th>'; }).join('');
     const wrap = document.createElement('div');
     wrap.style.cssText = 'position:absolute;left:-100000px;top:0;background:#ffffff;padding:24px;';
-    wrap.innerHTML = '<table style="border-collapse:collapse;border-radius:12px;overflow:hidden;box-shadow:0 6px 24px rgba(15,23,42,.10);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,system-ui,sans-serif;font-size:12.5px;line-height:1.4;"><thead><tr style="background:#0f172a;">'+head+'</tr></thead><tbody>'+body+'</tbody></table>';
+    wrap.innerHTML = '<table style="border-collapse:collapse;border-radius:12px;overflow:hidden;box-shadow:0 6px 24px rgba(15,23,42,.10);font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:12.5px;line-height:1.4;"><thead><tr style="background:#0f172a;">'+head+'</tr></thead><tbody>'+body+'</tbody></table>';
     document.body.appendChild(wrap);
     try {
       if (!window.html2canvas) {
