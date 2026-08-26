@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260828-gutter-fix -->
+<!-- build: 20260829-settings -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -58,9 +58,9 @@
 /* Glass tokens: usati da panel/sidebar/topbar/modal per effetto vetro satinato.
    Dark mode: più contrasto → glass-bg più opaco, bordi più visibili, ombre più nette. */
 :root {
-  --glass-op-d: 0.82;
-  --glass-op-l: 0.80;
-  --glass-blur-px: 40px;
+  --glass-op-d: 1;
+  --glass-op-l: 1;
+  --glass-blur-px: 0px;
   --glass-bg: rgba(13, 20, 38, var(--glass-op-d));
   --glass-bg-strong: rgba(13, 20, 38, 0.88);
   --glass-border: rgba(255, 255, 255, 0.09);
@@ -130,17 +130,11 @@ html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 body {
   font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
   font-size: 13px; line-height: 1.4; color: var(--text);
-  background-color: #12234f;
+  background-color: #ffffff;
   background-image:
-    radial-gradient(58% 52% at 10% 8%, #ffd84f 0%, rgba(255,216,79,0) 62%),
-    radial-gradient(50% 46% at 42% 4%, #ff7a4d 0%, rgba(255,122,77,0) 60%),
-    radial-gradient(46% 42% at 60% 12%, #ff2e7a 0%, rgba(255,46,122,0) 58%),
-    radial-gradient(44% 44% at 66% 40%, #d024d6 0%, rgba(208,36,214,0) 58%),
-    radial-gradient(50% 46% at 96% 26%, #00b3ff 0%, rgba(0,179,255,0) 62%),
-    radial-gradient(46% 42% at 22% 72%, #0a8ad0 0%, rgba(10,138,208,0) 58%),
-    radial-gradient(64% 55% at 60% 105%, #12336e 0%, rgba(18,51,110,0) 72%),
-    linear-gradient(158deg, #f5bb3e 0%, #e8447f 34%, #4b46cf 62%, #12234f 100%);
-  background-size: 100% 100%;
+    linear-gradient(to right, rgba(0,0,0,.15) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0,0,0,.15) 1px, transparent 1px);
+  background-size: 46px 46px;
   background-attachment: fixed; min-height: 100vh;
 }
 html[data-app-bg="soft"] body {
@@ -153,12 +147,18 @@ html[data-app-bg="soft"] body {
     radial-gradient(64% 55% at 60% 105%, rgba(18,51,110,.55) 0%, transparent 72%),
     linear-gradient(158deg, #dfe6f2 0%, #cdd8ec 40%, #9fb2d8 75%, #6d82b4 100%);
 }
-html[data-app-bg="paper"] body {
-  background-color: #ffffff;
+html[data-app-bg="vivid"] body {
+  background-color: #12234f;
   background-image:
-    linear-gradient(to right, rgba(0,0,0,.15) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(0,0,0,.15) 1px, transparent 1px);
-  background-size: 46px 46px;
+    radial-gradient(58% 52% at 10% 8%, #ffd84f 0%, rgba(255,216,79,0) 62%),
+    radial-gradient(50% 46% at 42% 4%, #ff7a4d 0%, rgba(255,122,77,0) 60%),
+    radial-gradient(46% 42% at 60% 12%, #ff2e7a 0%, rgba(255,46,122,0) 58%),
+    radial-gradient(44% 44% at 66% 40%, #d024d6 0%, rgba(208,36,214,0) 58%),
+    radial-gradient(50% 46% at 96% 26%, #00b3ff 0%, rgba(0,179,255,0) 62%),
+    radial-gradient(46% 42% at 22% 72%, #0a8ad0 0%, rgba(10,138,208,0) 58%),
+    radial-gradient(64% 55% at 60% 105%, #12336e 0%, rgba(18,51,110,0) 72%),
+    linear-gradient(158deg, #f5bb3e 0%, #e8447f 34%, #4b46cf 62%, #12234f 100%);
+  background-size: 100% 100%;
 }
 body { -webkit-font-smoothing: antialiased; font-feature-settings: "tnum" 1; }
 :root, [data-theme="dark"] {
@@ -2100,6 +2100,7 @@ table.grid th.col-c-stato { overflow: hidden; }
 /* Vetro satinato ATTIVO (stile AstaTracker) + riflesso quasi invisibile */
 .panel, .panel-filters, .panel-list, .modal, .stat-card, .cp-view, .rm-panel, .calc-panel { position: relative; }
 /* Riflessi rimossi: superficie piatta */
+.panel-filters { display: none !important; }
 #tbl table.grid thead th:first-child, #ca-tbl table.grid thead th:first-child { border-top-left-radius: calc(var(--radius-lg) - 2px); }
 #tbl table.grid thead th:last-child, #ca-tbl table.grid thead th:last-child { border-top-right-radius: calc(var(--radius-lg) - 2px); }
 .topbar { background: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; border: none !important; box-shadow: none !important; }
@@ -2374,6 +2375,7 @@ body:not(.logged-in) .app { visibility: hidden; }
       <a data-route="calc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h2M14 11h2M8 15h2M14 15h2"/></svg><span class="nav-label">Calc DOP/APS</span></a>
       <a data-route="distances"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg><span class="nav-label">Distances</span></a>
       <a data-route="personal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M5 21v-1a7 7 0 0 1 14 0v1"/></svg><span class="nav-label">Personal</span></a>
+      <a data-route="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4m0 14v4M4.2 4.2l2.8 2.8m10 10 2.8 2.8M1 12h4m14 0h4M4.2 19.8l2.8-2.8m10-10 2.8-2.8"/></svg><span class="nav-label">Settings</span></a>
     </nav>
   </div>
   <div class="sb-block sb-reference">
@@ -4709,6 +4711,7 @@ const PAGES = {
   'accounts':  ['Lightship Accounts', 'Who covers which clients'],
   'roadmap':   ['Broker Roadmap', 'Broker reference'],
   'personal':  ['Personal', 'Vessels & cargoes you follow'],
+  'settings':  ['Settings', 'Appearance & copy preferences'],
 };
 
 let _lastRoute = null;
@@ -5339,6 +5342,11 @@ function renderPersonal(){
     <div class="panel personal-block"><div class="pers-h">Cargoes · ${mineC.length}</div><div class="tbl-wrap"><table class="grid"><thead><tr><th>Chrtrs</th><th>Laycan</th><th>Load</th><th>Disch</th><th>Cargo</th><th>Size</th><th class="col-ideas">Notes / Rates</th><th>LS</th><th>Status</th></tr></thead><tbody>${cBody()}</tbody></table></div></div></div>`;
 }
 routes['personal'] = renderPersonal;
+function renderSettings(){
+  $('#content').innerHTML = '<div class="panel" style="max-width:560px;flex:none;padding:20px 22px;" id="settings-panel"></div>';
+  if (window.renderAppearanceSettings) window.renderAppearanceSettings(document.getElementById('settings-panel'));
+}
+routes['settings'] = renderSettings;
 
 routes['atl-tng'] = () => renderMasterList('ATL');
 routes['pac-tng'] = () => renderMasterList('PAC');
@@ -9312,11 +9320,99 @@ setRoute();
     return out.join('\n').trim();
   }
   async function doCopy(){
+    if (window.getCopyFormat && window.getCopyFormat() === 'image') {
+      try { await copySelectionImage(); return; } catch(e) { console.warn('image copy failed, fallback to text', e); }
+    }
     const txt = buildText(); if (!txt) return;
     let ok = false;
     try { await navigator.clipboard.writeText(txt); ok = true; } catch(e){}
     if (!ok && typeof copyToClipboard === 'function') ok = await copyToClipboard(txt);
     if (!ok && typeof showCopyFallback === 'function') showCopyFallback(txt);
+  }
+  async function copySelectionImage(){
+    const sel = cells(); if (!sel.length) return;
+    const rowSet = new Map(); const colKeys = new Set();
+    for (const td of sel){ const tr = td.closest('tr[data-sel-id]'); if(!tr) continue; rowSet.set(tr,true); const k=td.dataset.field||td.dataset.col; if(k) colKeys.add(k); }
+    const rows=[...rowSet.keys()]; rows.sort((a,b)=>(a.compareDocumentPosition(b)&Node.DOCUMENT_POSITION_FOLLOWING)?-1:1);
+    if(!rows.length) return;
+    const kind = rows[0].dataset.selKind;
+    const MAP = kind==='c'?CMAP:VMAP;
+    const included = new Set(); for (const k of colKeys){ const f=MAP[k]; if(f&&f!=='_name') included.add(f); }
+    const VC=[['vessel','Vessel'],['dwt_blt','DWT'],['open_port','Position'],['dates','Laycan'],['ideas','Ideas / Info'],['ows_brkr','Owner'],['bunker','Bunker'],['ls_brkr','LS'],['update_date','Update']];
+    const CC=[['chrtrs','Charterer'],['size','Size'],['route','Load / Disch'],['dates','Laycan'],['cgo','Cargo'],['notes','Notes / Rates'],['ls_brkr','LS'],['update_date','Update']];
+    const cols=(kind==='v'?VC:CC).filter(function(c){ return c[0]==='vessel'||c[0]==='chrtrs'||included.has(c[0]); });
+    const D=window.DATA||{};
+    const groups={}, order=[];
+    for (const tr of rows){
+      if (tr.dataset.selKind!==kind) continue;
+      let it=(kind==='c'?(D.cargoes||[]):(D.vessels||[])).find(x=>String(x.id)===String(tr.dataset.selId));
+      if(!it) continue;
+      if (tr.dataset.selFrom||tr.dataset.selTo) it={...it, open_from:tr.dataset.selFrom||it.open_from, open_to:tr.dataset.selTo||it.open_to};
+      if (tr.dataset.selArea) it={...it, area:tr.dataset.selArea};
+      const area=kind==='c'?(it.section||it.area||'-'):(it.area||'-');
+      if(!groups[area]){groups[area]=[];order.push(area);}
+      groups[area].push(it);
+    }
+    if(!order.length) return;
+    const ACOL={'area-green':'#2D8A4F','area-blue':'#2563EB','area-red':'#C5392B','area-amber':'#D97706'};
+    function cellVal(it,key){
+      if (kind==='v'){
+        if(key==='vessel') return titleCase(it.vessel||'');
+        if(key==='dwt_blt') return it.dwt_blt||'';
+        if(key==='open_port') return titleCase(it.open_port||'');
+        if(key==='dates') return fmtDateRange(it.open_from,it.open_to)||'';
+        if(key==='ideas') return it.ideas||'';
+        if(key==='ows_brkr') return it.ows_brkr||'';
+        if(key==='bunker') return it.bunker||'';
+        if(key==='ls_brkr') return it.ls_brkr||'';
+        if(key==='update_date') return fmtUpdate(it.update_date)||'';
+      } else {
+        if(key==='chrtrs') return titleCase(it.chrtrs||'');
+        if(key==='size') return it.size||'';
+        if(key==='route'){ const l=titleCase(it.load_port||''), d=titleCase(it.disch_port||''); return (l&&d)?(l+' / '+d):(l||d); }
+        if(key==='dates') return fmtDateRange(it.laycan_from,it.laycan_to)||'';
+        if(key==='cgo') return it.cgo||'';
+        if(key==='notes') return it.notes||'';
+        if(key==='ls_brkr') return it.ls_brkr||'';
+        if(key==='update_date') return fmtUpdate(it.update_date||it.date)||'';
+      }
+      return '';
+    }
+    let body='';
+    for (const area of order){
+      const ac = (typeof areaClass==='function') ? areaClass(area) : '';
+      const col = ACOL[ac] || '#475569';
+      body += '<tr><td colspan="'+cols.length+'" style="background:'+col+';color:#fff;font-weight:700;font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:8px 14px;">'+esc(area)+'</td></tr>';
+      let i=0;
+      for (const it of groups[area]){
+        const subs = it.status==='on_subs';
+        const tds = cols.map(function(c){
+          const v=cellVal(it,c[0]);
+          const wide=(c[0]==='ideas'||c[0]==='notes');
+          const style='padding:7px 14px;border-bottom:1px solid #eef1f5;'+(subs?'color:#B31412;':'color:#1f2937;')+((c[0]==='vessel'||c[0]==='chrtrs')?'font-weight:700;':'')+(wide?'max-width:360px;white-space:normal;':'white-space:nowrap;');
+          return '<td style="'+style+'">'+esc(v)+'</td>';
+        }).join('');
+        body += '<tr style="background:'+(i%2?'#fbfcfe':'#ffffff')+';">'+tds+'</tr>';
+        i++;
+      }
+    }
+    const head = cols.map(function(c){ return '<th style="padding:9px 14px;text-align:left;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#cbd5e1;font-weight:700;white-space:nowrap;">'+esc(c[1])+'</th>'; }).join('');
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:absolute;left:-100000px;top:0;background:#ffffff;padding:24px;';
+    wrap.innerHTML = '<table style="border-collapse:collapse;border-radius:12px;overflow:hidden;box-shadow:0 6px 24px rgba(15,23,42,.10);font-family:-apple-system,BlinkMacSystemFont,Segoe UI,system-ui,sans-serif;font-size:12.5px;line-height:1.4;"><thead><tr style="background:#0f172a;">'+head+'</tr></thead><tbody>'+body+'</tbody></table>';
+    document.body.appendChild(wrap);
+    try {
+      if (!window.html2canvas) {
+        await new Promise(function(res,rej){ const sc=document.createElement('script'); sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'; sc.onload=res; sc.onerror=rej; document.head.appendChild(sc); });
+      }
+      const canvas = await window.html2canvas(wrap, { scale: 2, backgroundColor: '#ffffff', logging: false });
+      const blob = await new Promise(function(r){ canvas.toBlob(r,'image/png'); });
+      if (!blob) throw new Error('no blob');
+      let copied=false;
+      try { if (navigator.clipboard && window.ClipboardItem){ await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]); copied=true; } } catch(e){}
+      if (!copied){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='selection.png'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){URL.revokeObjectURL(a.href);},3000); }
+      if (typeof cloudToast==='function') cloudToast(copied?'Image copied to clipboard':'Image downloaded',{kind:'ok'});
+    } finally { wrap.remove(); }
   }
   document.addEventListener('mousedown', (e) => {
     if (e.button !== 0) return;
@@ -9729,74 +9825,56 @@ setRoute();
   else document.addEventListener('DOMContentLoaded', function(){ mo.observe(document.body, { childList: true, subtree: true }); });
 })();
 
-/* ===== APPEARANCE SETTINGS (background / opacity / blur / reflection) ===== */
+/* ===== APPEARANCE & COPY SETTINGS ===== */
 (function(){
-  var KEY='pmx-appearance-v2';
-  var DEF={bg:'aurora', op:80, blur:40};
+  var KEY='pmx-appearance-v3';
+  var DEF={bg:'paper', op:100, blur:0, copy:'text'};
   function load(){ try{ return Object.assign({},DEF,JSON.parse(localStorage.getItem(KEY)||'{}')); }catch(e){ return Object.assign({},DEF); } }
   function save(s){ try{ localStorage.setItem(KEY,JSON.stringify(s)); }catch(e){} }
   function apply(s){
     var r=document.documentElement;
-    if(s.op===DEF.op){ r.style.removeProperty('--glass-op-l'); r.style.removeProperty('--glass-op-d'); }
-    else { r.style.setProperty('--glass-op-l',(s.op/100).toFixed(2)); r.style.setProperty('--glass-op-d',Math.min(.92,s.op/100+.02).toFixed(2)); }
-    if(s.blur===DEF.blur) r.style.removeProperty('--glass-blur-px'); else r.style.setProperty('--glass-blur-px',s.blur+'px');
-    if(s.bg==='aurora') r.removeAttribute('data-app-bg'); else r.setAttribute('data-app-bg', s.bg);
+    if(s.op===100){ r.style.removeProperty('--glass-op-l'); r.style.removeProperty('--glass-op-d'); }
+    else { r.style.setProperty('--glass-op-l',(s.op/100).toFixed(2)); r.style.setProperty('--glass-op-d',Math.min(1,s.op/100+.02).toFixed(2)); }
+    if(s.blur===0) r.style.removeProperty('--glass-blur-px'); else r.style.setProperty('--glass-blur-px',s.blur+'px');
+    if(s.bg==='paper') r.removeAttribute('data-app-bg'); else r.setAttribute('data-app-bg', s.bg);
   }
   var S=load(); apply(S);
-  var BTN_CSS='font:inherit;font-size:11px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--text-dim);cursor:pointer';
-  function mark(){
-    var bgs=document.getElementById('ap-bgs'); if(!bgs) return;
-    bgs.querySelectorAll('button').forEach(function(b){
-      var on=b.getAttribute('data-bg')===S.bg;
-      b.style.background=on?'var(--gold)':'transparent';
-      b.style.color=on?'#fff':'var(--text-dim)';
-      b.style.borderColor=on?'var(--gold)':'var(--line)';
-    });
-  }
-  function build(){
-    var tb=document.querySelector('.topbar');
-    if(!tb||document.getElementById('appearance-btn')) return;
-    var btn=document.createElement('button');
-    btn.id='appearance-btn'; btn.title='Appearance'; btn.type='button';
-    btn.style.cssText='background:transparent;border:1px solid var(--line);border-radius:9px;padding:5px 8px;cursor:pointer;color:var(--text-dim);display:inline-flex;align-items:center;margin-left:8px;flex:none';
-    btn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2.4" fill="var(--bg-1)"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2.4" fill="var(--bg-1)"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="7" cy="18" r="2.4" fill="var(--bg-1)"/></svg>';
-    tb.appendChild(btn);
-    var pop=document.createElement('div');
-    pop.id='appearance-pop';
-    pop.style.cssText='position:fixed;top:60px;right:16px;z-index:99999;width:265px;padding:14px 16px 12px;border-radius:16px;background:var(--glass-bg-strong);backdrop-filter:blur(30px) saturate(180%);-webkit-backdrop-filter:blur(30px) saturate(180%);border:1px solid var(--glass-border);box-shadow:0 18px 60px -18px rgba(0,0,0,.5);display:none;font-size:12px;color:var(--text)';
-    pop.innerHTML=
-      '<div style="font-weight:700;font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;margin-bottom:11px">Appearance</div>'+
-      '<div style="color:var(--text-mute);font-size:10px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Background</div>'+
-      '<div id="ap-bgs" style="display:flex;gap:6px;margin-bottom:13px">'+
-        '<button type="button" data-bg="aurora" style="'+BTN_CSS+'">Vivid</button>'+
-        '<button type="button" data-bg="soft" style="'+BTN_CSS+'">Soft</button>'+
-        '<button type="button" data-bg="paper" style="'+BTN_CSS+'">Paper</button>'+
-      '</div>'+
-      '<div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;color:var(--text-mute);font-size:10px;text-transform:uppercase;letter-spacing:.08em"><span>Glass opacity</span><span id="ap-op-v"></span></div><input id="ap-op" type="range" min="30" max="90" step="5" style="width:100%"></div>'+
-      '<div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;color:var(--text-mute);font-size:10px;text-transform:uppercase;letter-spacing:.08em"><span>Blur</span><span id="ap-bl-v"></span></div><input id="ap-bl" type="range" min="6" max="60" step="2" style="width:100%"></div>'+
-      '<button type="button" id="ap-reset" style="'+BTN_CSS+';width:100%">Reset to default</button>';
-    document.body.appendChild(pop);
-    btn.onclick=function(e){ e.stopPropagation(); pop.style.display = pop.style.display==='none' ? 'block' : 'none'; };
-    document.addEventListener('click', function(e){
-      if(pop.style.display!=='none' && !pop.contains(e.target) && !btn.contains(e.target)) pop.style.display='none';
-    });
-    var op=document.getElementById('ap-op'), bl=document.getElementById('ap-bl');
-    function sync(){
+  try{ ['atl-tng','pac-tng','atl-cgo','pac-cgo','ecsa-list'].forEach(function(p){ localStorage.removeItem('cp-view-'+p); }); }catch(e){}
+  window.getCopyFormat=function(){ return S.copy||'text'; };
+  var BTN='font:inherit;font-size:11.5px;padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--text-dim);cursor:pointer';
+  window.renderAppearanceSettings=function(el){
+    if(!el) return;
+    function seg(id,opts){ return '<div id="'+id+'" style="display:flex;gap:6px;margin-bottom:18px">'+opts.map(function(o){return '<button type="button" data-v="'+o[0]+'" style="'+BTN+'">'+o[1]+'</button>';}).join('')+'</div>'; }
+    el.innerHTML =
+      '<div style="color:var(--text-mute);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px">Background</div>'+
+      seg('set-bg',[['vivid','Vivid'],['soft','Soft'],['paper','Paper']])+
+      '<div style="margin-bottom:18px"><div style="display:flex;justify-content:space-between;color:var(--text-mute);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px"><span>Glass opacity</span><span id="set-op-v"></span></div><input id="set-op" type="range" min="30" max="100" step="5" style="width:100%"></div>'+
+      '<div style="margin-bottom:18px"><div style="display:flex;justify-content:space-between;color:var(--text-mute);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px"><span>Blur</span><span id="set-bl-v"></span></div><input id="set-bl" type="range" min="0" max="60" step="2" style="width:100%"></div>'+
+      '<div style="color:var(--text-mute);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px">Copy format (multi-select)</div>'+
+      seg('set-copy',[['text','Text'],['image','Screenshot']])+
+      '<button type="button" id="set-reset" style="'+BTN+';width:100%">Reset to default</button>';
+    var op=el.querySelector('#set-op'), bl=el.querySelector('#set-bl');
+    function mark(){
+      [['set-bg',S.bg],['set-copy',S.copy||'text']].forEach(function(p){
+        var box=el.querySelector('#'+p[0]); if(!box) return;
+        box.querySelectorAll('button').forEach(function(b){
+          var on=b.getAttribute('data-v')===p[1];
+          b.style.background=on?'var(--gold)':'transparent';
+          b.style.color=on?'#fff':'var(--text-dim)';
+          b.style.borderColor=on?'var(--gold)':'var(--line)';
+        });
+      });
       op.value=S.op; bl.value=S.blur;
-      document.getElementById('ap-op-v').textContent=S.op+'%';
-      document.getElementById('ap-bl-v').textContent=S.blur+'px';
-      mark();
+      el.querySelector('#set-op-v').textContent=S.op+'%';
+      el.querySelector('#set-bl-v').textContent=S.blur+'px';
     }
-    op.oninput=function(){ S.op=+op.value; apply(S); save(S); sync(); };
-    bl.oninput=function(){ S.blur=+bl.value; apply(S); save(S); sync(); };
-    document.getElementById('ap-bgs').querySelectorAll('button').forEach(function(b){
-      b.onclick=function(){ S.bg=b.getAttribute('data-bg'); apply(S); save(S); sync(); };
-    });
-    document.getElementById('ap-reset').onclick=function(){ S=Object.assign({},DEF); apply(S); save(S); sync(); };
-    sync();
-  }
-  setInterval(build, 1500);
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', build); else build();
+    op.oninput=function(){ S.op=+op.value; apply(S); save(S); mark(); };
+    bl.oninput=function(){ S.blur=+bl.value; apply(S); save(S); mark(); };
+    el.querySelector('#set-bg').querySelectorAll('button').forEach(function(b){ b.onclick=function(){ S.bg=b.getAttribute('data-v'); apply(S); save(S); mark(); }; });
+    el.querySelector('#set-copy').querySelectorAll('button').forEach(function(b){ b.onclick=function(){ S.copy=b.getAttribute('data-v'); save(S); mark(); }; });
+    el.querySelector('#set-reset').onclick=function(){ S=Object.assign({},DEF); apply(S); save(S); mark(); };
+    mark();
+  };
 })();
 </script>
 </body>
