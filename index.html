@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260829-flags-text2 -->
+<!-- build: 20260829-flags-empty -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -1636,15 +1636,16 @@ table.grid tbody td.col-ideas {
 
 /* ===== COMPACT FLAGS / STATUS / EDIT ===== */
 .flags-cell { display: inline-flex; gap: 3px; align-items: center; }
-/* Flag attivi: scritta al posto delle caselle; click sulla scritta → tornano le caselle */
+/* Flags: scritta (o vuoto) al posto delle caselle; click sulla cella → compaiono le caselle */
 .flags-cell.has-label:not(.editing) .flag-chip { display: none; }
 .flags-cell.editing .flags-label { display: none; }
+.flags-cell.has-label { min-width: 56px; min-height: 16px; cursor: pointer; }
 .flags-label {
   font-size: 9.5px; font-weight: 700; letter-spacing: .03em; white-space: nowrap;
   color: var(--text); cursor: pointer; user-select: none;
 }
 .flags-label:hover { color: var(--gold); }
-body:not(.is-admin) .flags-label { pointer-events: none; cursor: default; }
+body:not(.is-admin) .flags-cell, body:not(.is-admin) .flags-label { pointer-events: none; cursor: default; }
 .flag-chip {
   display: inline-flex; align-items: center; justify-content: center;
   width: 16px; height: 16px;
@@ -4971,10 +4972,9 @@ function renderMasterTable(rows, cbCols, basin) {
     updVessel(id, { [col]: newVal });
     c.classList.toggle('on', !!newVal);
   });
-  // Click sulla scritta flags → mostra le caselle per modificare
-  $$('#tbl .flags-label').forEach(l => l.onclick = (e) => {
-    e.stopPropagation();
-    l.closest('.flags-cell').classList.add('editing');
+  // Click sulla cella flags (scritta o vuota) → mostra le caselle per modificare
+  $$('#tbl .flags-cell').forEach(c => c.onclick = (e) => {
+    if (!c.classList.contains('editing')) { e.stopPropagation(); c.classList.add('editing'); }
   });
   if (!window.__flagsExitBound) {
     window.__flagsExitBound = true;
@@ -5018,7 +5018,7 @@ function renderVesselRow(v, cbCols) {
   }).join('');
   // Flag attivi → scritta al posto delle caselle (click sulla scritta per rimodificare)
   const _activeFlags = cbCols.filter(([k]) => v[k]);
-  let flagsCellInner = flagChips, flagsCellCls = '';
+  let flagsCellInner = flagChips, flagsCellCls = ' has-label';
   if (_activeFlags.length) {
     const _TR = { ukr_trader: 'UKR', rus_trader: 'RUS', iran_trader: 'IRAN' };
     const _NM = { scr_ftd: 'SCRFTD', ex_our_cp: 'EX OUR CP' };
@@ -5027,7 +5027,6 @@ function renderVesselRow(v, cbCols) {
     const _parts = [];
     if (_tr.length) _parts.push(_tr.join('-') + ' TRADER');
     _parts.push(..._others);
-    flagsCellCls = ' has-label';
     flagsCellInner = flagChips + `<span class="flags-label" data-id="${v.id}" title="Click to edit flags">${esc(_parts.join(' / '))}</span>`;
   }
   const statusCls = !v.status ? 'none' : v.status === 'on_subs' ? 'subs' : v.status === 'off_mkt' ? 'off' : 'fresh';
@@ -9498,7 +9497,7 @@ setRoute();
   }
   document.addEventListener('mousedown', (e) => {
     if (e.button !== 0) return;
-    if (e.target.closest('.row-drag, button, input, select, textarea, a, label, .status-menu, .flag-chip, .flags-label, .pill, .status-chip, .row-hide-btn, .opt, .area-dd, .area-dd-menu')) return;
+    if (e.target.closest('.row-drag, button, input, select, textarea, a, label, .status-menu, .flag-chip, .flags-cell, .flags-label, .pill, .status-chip, .row-hide-btn, .opt, .area-dd, .area-dd-menu')) return;
     const td = e.target.closest('td'); const tr = td && td.closest('tr[data-sel-id]');
     if (!td || !tr) return;
     additive = e.ctrlKey || e.metaKey;
