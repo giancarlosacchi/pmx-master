@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260829-finder-search -->
+<!-- build: 20260829-finder-fit -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -533,6 +533,11 @@ html.theme-transitioning table.grid th {
 .panel { background: var(--bg-2); border: 1px solid var(--line);
   border-radius: var(--radius-lg); overflow: hidden;
   display: flex; flex-direction: column; min-height: 0; flex: 1; }
+/* Finder: il pannello si stringe all'altezza della lista (scroll interno se lunga) */
+.panel:has(#vf-results):not(.finder-empty),
+.panel:has(#cf-results):not(.finder-empty) { flex: 0 1 auto; max-height: 100%; }
+.panel:has(#vf-results):not(.finder-empty) .tbl-wrap,
+.panel:has(#cf-results):not(.finder-empty) .tbl-wrap { flex: 0 1 auto; }
 /* ===== Glassmorphism: vetro satinato su tutti i contenitori principali ===== */
 .panel, .panel-filters, .panel-list,
 .sidebar, .topbar, .modal, .stat-card, .cp-view,
