@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260829-theme-set -->
+<!-- build: 20260829-theme-move -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2103,6 +2103,7 @@ table.grid th.col-c-stato { overflow: hidden; }
 /* Riflessi rimossi: superficie piatta */
 .panel-filters { display: none !important; }
 table.grid thead th { max-width: none !important; overflow: visible !important; }
+.topbar #theme-toggle { display: none !important; }
 #tbl table.grid thead th:first-child, #ca-tbl table.grid thead th:first-child { border-top-left-radius: calc(var(--radius-lg) - 2px); }
 #tbl table.grid thead th:last-child, #ca-tbl table.grid thead th:last-child { border-top-right-radius: calc(var(--radius-lg) - 2px); }
 .topbar { background: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; border: none !important; box-shadow: none !important; }
@@ -3368,7 +3369,7 @@ function toggleTheme() {
   const cur = document.documentElement.getAttribute('data-theme') || 'light';
   const next = cur === 'dark' ? 'light' : 'dark';
   // Coordinate del bottone toggle = centro dell'onda
-  const btn = document.getElementById('theme-toggle');
+  const btn = window.__themeWaveEl || document.getElementById('theme-toggle');
   const rect = btn ? btn.getBoundingClientRect() : { left: window.innerWidth, top: 0, width: 0, height: 0 };
   const cx = rect.left + rect.width / 2;
   const cy = rect.top + rect.height / 2;
@@ -9849,7 +9850,7 @@ setRoute();
     function seg(id,opts){ return '<div id="'+id+'" style="display:flex;gap:6px;margin-bottom:18px">'+opts.map(function(o){return '<button type="button" data-v="'+o[0]+'" style="'+BTN+'">'+o[1]+'</button>';}).join('')+'</div>'; }
     el.innerHTML =
       '<div style="color:var(--text-mute);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px">Theme</div>'+
-      seg('set-theme',[['light','Light'],['dark','Dark']])+
+      '<div id="set-theme-slot" style="margin-bottom:18px"></div>'+
       '<div style="color:var(--text-mute);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px">Background</div>'+
       seg('set-bg',[['vivid','Vivid'],['soft','Soft'],['paper','Paper']])+
       '<div style="margin-bottom:18px"><div style="display:flex;justify-content:space-between;color:var(--text-mute);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px"><span>Glass opacity</span><span id="set-op-v"></span></div><input id="set-op" type="range" min="30" max="100" step="5" style="width:100%"></div>'+
@@ -9859,8 +9860,7 @@ setRoute();
       '<button type="button" id="set-reset" style="'+BTN+';width:100%">Reset to default</button>';
     var op=el.querySelector('#set-op'), bl=el.querySelector('#set-bl');
     function mark(){
-      var th=document.documentElement.getAttribute('data-theme')||'light';
-      [['set-bg',S.bg],['set-copy',S.copy||'text'],['set-theme',th]].forEach(function(p){
+      [['set-bg',S.bg],['set-copy',S.copy||'text']].forEach(function(p){
         var box=el.querySelector('#'+p[0]); if(!box) return;
         box.querySelectorAll('button').forEach(function(b){
           var on=b.getAttribute('data-v')===p[1];
@@ -9876,7 +9876,21 @@ setRoute();
     op.oninput=function(){ S.op=+op.value; apply(S); save(S); mark(); };
     bl.oninput=function(){ S.blur=+bl.value; apply(S); save(S); mark(); };
     el.querySelector('#set-bg').querySelectorAll('button').forEach(function(b){ b.onclick=function(){ S.bg=b.getAttribute('data-v'); apply(S); save(S); mark(); }; });
-    el.querySelector('#set-theme').querySelectorAll('button').forEach(function(b){ b.onclick=function(){ if (typeof applyTheme==='function') applyTheme(b.getAttribute('data-v')); mark(); }; });
+    (function(){
+      var orig=document.getElementById('theme-toggle');
+      var slot=el.querySelector('#set-theme-slot');
+      if(orig&&slot){
+        var c=orig.cloneNode(true);
+        c.id='theme-toggle-settings';
+        c.style.display='inline-flex';
+        slot.appendChild(c);
+        c.onclick=function(){
+          window.__themeWaveEl=c;
+          try { if (typeof toggleTheme==='function') toggleTheme(); }
+          finally { setTimeout(function(){ window.__themeWaveEl=null; }, 200); }
+        };
+      }
+    })();
     el.querySelector('#set-copy').querySelectorAll('button').forEach(function(b){ b.onclick=function(){ S.copy=b.getAttribute('data-v'); save(S); mark(); }; });
     el.querySelector('#set-reset').onclick=function(){ S=Object.assign({},DEF); apply(S); save(S); mark(); };
     mark();
