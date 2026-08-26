@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260829-helvetica2 -->
+<!-- build: 20260829-login-clean -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2245,11 +2245,11 @@ table.grid tbody tr { transition: background 140ms var(--ease-mac); }
 .login-overlay {
   position: fixed; inset: 0; z-index: 10000;
   display: flex; align-items: center; justify-content: center;
-  background:
-    radial-gradient(1200px 800px at 20% 10%, rgba(245,177,78,.18), transparent 60%),
-    radial-gradient(900px 700px at 85% 90%, rgba(74,144,226,.16), transparent 60%),
-    var(--paper-bg, #ECE9E2);
-  backdrop-filter: blur(8px);
+  background-color: #ffffff;
+  background-image:
+    linear-gradient(to right, rgba(0,0,0,.15) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0,0,0,.15) 1px, transparent 1px);
+  background-size: 46px 46px;
 }
 body.logged-in .login-overlay { display: none !important; }
 body:not(.logged-in) .app { visibility: hidden; }
@@ -2358,13 +2358,6 @@ body:not(.logged-in) .app { visibility: hidden; }
     <input type="email" id="login-email" class="login-input" placeholder="name@lightshipchartering.com" autocomplete="email" />
     <input type="password" id="login-password" class="login-input" placeholder="Password" autocomplete="current-password" />
     <button id="login-pwd-signin" class="login-btn">Sign in</button>
-    <div class="login-divider"><span>or</span></div>
-    <button id="login-send" class="login-btn login-btn-ms" type="button">Email me a one-time code</button>
-    <div id="login-otp-wrap" hidden style="width:100%; display:flex; flex-direction:column; gap:10px;">
-      <p style="margin-top:6px;">Check your inbox. Paste the code below.</p>
-      <input type="text" id="login-otp" class="login-input" placeholder="6-digit code" inputmode="numeric" autocomplete="one-time-code" />
-      <button id="login-verify" class="login-btn">Verify &amp; sign in</button>
-    </div>
     <div id="login-msg" class="login-msg"></div>
     <div class="login-foot">Access restricted to authorized Lightship brokers.</div>
   </div>
