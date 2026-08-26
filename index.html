@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260829-noflicker -->
+<!-- build: 20260829-pill-tint -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2123,6 +2123,17 @@ table.grid thead th { max-width: none !important; overflow: visible !important; 
 [data-theme="light"] table.grid thead th { background: #eef1f5 !important; border-bottom-color: rgba(90,110,150,.24) !important; }
 #tbl table.grid thead[class*="area-"] th, #ca-tbl table.grid thead[class*="area-"] th { background: var(--ac) !important; color: #fff !important; }
 [data-theme="dark"] #tbl table.grid thead[class*="area-"] th, [data-theme="dark"] #ca-tbl table.grid thead[class*="area-"] th { color: #0b1020 !important; }
+/* Celle filtro nella striscia colorata: interno = colore area ma piu chiaro (non bianco) */
+#tbl table.grid thead[class*="area-"] th.th-filter input:not(.filter-active),
+#ca-tbl table.grid thead[class*="area-"] th.th-filter input:not(.filter-active) {
+  background: color-mix(in srgb, var(--ac) 26%, #fff) !important;
+  border-color: color-mix(in srgb, var(--ac) 48%, #fff) !important;
+  color: #1c2430 !important;
+}
+#tbl table.grid thead[class*="area-"] th.th-filter input:not(.filter-active)::placeholder,
+#ca-tbl table.grid thead[class*="area-"] th.th-filter input:not(.filter-active)::placeholder {
+  color: rgba(20,30,45,.55) !important;
+}
 [data-theme="dark"] table.grid td, [data-theme="dark"] table.grid th, :root:not([data-theme="light"]) table.grid td { border-color: rgba(255,255,255,.09) !important; }
 .panel.finder-empty {
   background: transparent !important;
