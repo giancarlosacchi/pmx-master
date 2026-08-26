@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260829-search-circle3 -->
+<!-- build: 20260829-search-circle4 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -1097,6 +1097,7 @@ pre.rundown { white-space: pre-wrap; font-family: inherit;
 .global-search { position: relative; width: 36px; height: 36px; margin-right: 9px; transition: width .35s cubic-bezier(.32,.72,0,1); }
 .global-search input { width: 100%; min-width: 0; box-sizing: border-box; background: var(--bg-2); border: 1px solid var(--line); color: var(--text);
   padding: 0 12px 0 32px; border-radius: 999px; font-size: 12.5px; outline: none; height: 36px; cursor: pointer; }
+.global-search:not(:focus-within):not(.has-text) input { padding: 0; }
 .global-search:focus-within, .global-search.has-text { width: 280px; }
 .global-search:focus-within input, .global-search.has-text input { cursor: text; }
 .global-search input::placeholder { color: transparent; }
