@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260830-p6cols -->
+<!-- build: 20260830-p6cols2 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -10007,6 +10007,9 @@ setRoute();
     var raw = m[1].replace(',', '.').trim();
     var rate = /K$/.test(raw) ? parseFloat(raw)*1000 : parseFloat(raw);
     if (!(rate > 3000 && rate < 200000)) return null;
+    var rest = T.slice(m.index + m[0].length, m.index + m[0].length + 90);
+    var forM = rest.match(/\b(?:FOR|FPR)\s+([A-Z0-9\/ \-]{2,32})/);
+    if (forM && !/ECSA/.test(forM[1])) return null;
     var bb = 0;
     var b = T.match(/\+\s*([0-9]+(?:[.,][0-9]+)?)\s*(MLN|MIL|M(?![A-Z])|K(?![A-Z]))?/);
     if (b) {
