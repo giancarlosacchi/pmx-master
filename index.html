@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260829-login-clean -->
+<!-- build: 20260830-p6cols -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -1462,13 +1462,15 @@ pre.rundown { white-space: pre-wrap; font-family: inherit;
 .ecsa-list-col table.grid th:nth-child(4)  { width: 9%;  } /* Dates */
 .ecsa-list-col table.grid td:nth-child(4) { white-space: nowrap; }
 .ecsa-list-col table.grid th:nth-child(5)  { width: auto;} /* Ideas/Info → resto */
-.ecsa-list-col table.grid th:nth-child(6)  { width: 7%;  } /* Ows/Brkr */
-.ecsa-list-col table.grid th:nth-child(7)  { width: 9%;  } /* Bunker (più largo, wrap) */
-.ecsa-list-col table.grid th:nth-child(8)  { width: 5%;  } /* LS Brkr */
-.ecsa-list-col table.grid th:nth-child(9)  { width: 5%;  } /* Update */
-.ecsa-list-col table.grid th:nth-child(10) { width: 6%;  } /* Stato */
+.ecsa-list-col table.grid th:nth-child(6)  { width: 5%;  } /* P6 EQUIV */
+.ecsa-list-col table.grid th:nth-child(7)  { width: 5%;  } /* P6 VALUE */
+.ecsa-list-col table.grid th:nth-child(8)  { width: 7%;  } /* Ows/Brkr */
+.ecsa-list-col table.grid th:nth-child(9)  { width: 9%;  } /* Bunker (più largo, wrap) */
+.ecsa-list-col table.grid th:nth-child(10) { width: 5%;  } /* LS Brkr */
+.ecsa-list-col table.grid th:nth-child(11) { width: 5%;  } /* Update */
+.ecsa-list-col table.grid th:nth-child(12) { width: 6%;  } /* Stato */
 /* Bunker: permetti wrap del testo per vedere tutto */
-.ecsa-list-col table.grid tbody td:nth-child(7) {
+.ecsa-list-col table.grid tbody td:nth-child(9) {
   white-space: normal;
   overflow: visible;
   text-overflow: clip;
@@ -5570,6 +5572,7 @@ function renderEcsaRow(entry) {
     <td>${esc(entry.eta || '')}</td>
     <td data-kind="v" data-id="${v.id}" data-field="open_from" class="editable" title="Double-click to edit (laycan from)">${fmtDateRange(entry.adjFrom, entry.adjTo)}</td>
     <td ${E('ideas')} class="col-ideas editable"><div class="ideas-text">${fmtIdeas(ideasDisplay, v.update_date)}</div></td>
+    ${(window.P6 && window.P6.loaded) ? window.P6.cells(v, ideasDisplay) : '<td class="p6cell"></td><td class="p6cell"></td>'}
     <td ${E('ows_brkr')} class="editable dim">${esc(v.ows_brkr || '')}</td>
     <td ${E('bunker')} class="editable dim">${esc(v.bunker || '')}</td>
     <td ${E('ls_brkr')} class="editable dim">${esc(v.ls_brkr || '')}</td>
@@ -5597,6 +5600,12 @@ routes['ecsa-list'] = function() {
             <div class="group"><label>Status</label>
               <select id="f-status"><option value="">All</option><option value="fresh">Fresh</option><option value="off_mkt">Off mkt</option><option value="on_subs">On subs</option></select></div>
             <button class="filter-clear-all" type="button" title="Clear all filters">✕ Clear filters</button>
+            <span class="p6-set" title="Prezzi bunker e ultimo P6 — condivisi con tutti i broker">
+              <label>HSFO</label><input id="p6-hsfo" type="number" step="1"/>
+              <label>VLSFO</label><input id="p6-vlsfo" type="number" step="1"/>
+              <label>MGO</label><input id="p6-mgo" type="number" step="1"/>
+              <label class="p6-last-lbl">LAST P6</label><input id="p6-lastp6" type="number" step="25"/>
+            </span>
         <span class="count-pill cnt-with-tooltip" id="cnt">—</span>${cpToggleBtn('ecsa-list')}
             <span class="cp-switch" id="ecsa-rd-sw" title="Show/hide ECSA Rundown"><span class="cp-sw-label">Rundown</span><button class="cp-sw-track" type="button" id="ecsa-toggle-rd" data-rdtoggle="1"><span class="cp-sw-knob"></span></button></span>
           </div>
@@ -5696,6 +5705,8 @@ routes['ecsa-list'] = function() {
       <th class="th-filter"><input data-col="eta" placeholder="ETA" value="${attr(F.eta||'')}"></th>
       <th class="th-filter"><input class="filter-date-range" type="text" readonly data-col="dates" placeholder="Dates" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.dates_from, F.dates_to))}"></th>
       <th class="th-filter col-ideas"><input data-col="ideas" placeholder="Ideas / Info" value="${attr(F.ideas||'')}"></th>
+      <th class="p6-th">P6 EQUIV</th>
+      <th class="p6-th">P6 VALUE</th>
       <th class="th-filter"><input data-col="ows_brkr" placeholder="Ows" value="${attr(F.ows_brkr||'')}"></th>
       <th class="th-filter"><input data-col="bunker" placeholder="Bunker" value="${attr(F.bunker||'')}"></th>
       <th class="th-filter"><input data-col="ls_brkr" placeholder="LS" value="${attr(F.ls_brkr||'')}"></th>
@@ -5705,6 +5716,7 @@ routes['ecsa-list'] = function() {
     for (const e of entries) html.push(renderEcsaRow(e));
     html.push('</tbody></table>');
     $('#tbl').innerHTML = html.join('');
+    if (window.P6) window.P6.after(entries.map(e => e.v.vessel), refresh);
     $$('#tbl .status-menu .opt').forEach(o => o.onclick = (e) => {
       e.stopPropagation();
       const id = Number(o.dataset.id);
@@ -5738,6 +5750,10 @@ routes['ecsa-list'] = function() {
   bindAreaDropdown('ecsa-list', ['ECSA','PG / RSEA','SAFR','WCI','ECI','SEASIA'], refresh);
   $('#f-status').onchange = refresh;
   $('#f-q').oninput = debounce(refresh, 200);
+  // P6: campi bunker + last P6 (condivisi su Supabase)
+  if (window.P6) {
+    window.P6.wireInputs(refresh);
+  }
   refresh();
 };
 
@@ -9875,6 +9891,224 @@ setRoute();
         var el = document.createElement('div');
         el.style.cssText = 'position:absolute;will-change:left,top';
         el.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" style="filter:drop-shadow(0 1px 2px r
+</script>
+<script>
+/* ===== P6 CALC: bunkers/last-P6 condivisi + colonne P6 EQUIV / P6 VALUE (ECSA List) ===== */
+(function(){
+  if (window.__p6Init) return; window.__p6Init = true;
+  var P6 = window.P6 = { set: { hsfo:590, vlsfo:740, lsmgo:1180, p6_last:null }, dist:{}, specs:{}, loaded:false, _pending:false };
+  var STD = { intake:69300, days:106.32, vlsfo_t:1872.0, mgo_t:10.63, fixed:145000 };
+  var Mm = 1.095;
+  var ALIAS = { 'SPORE':'SINGAPORE','PMO':'MUSCAT','PAKISTAN':'KARACHI','RECA':'RECALADA','PSSG RECALADA':'RECALADA','KRISHNA':'KRISHNAPATNAM','GIZAN':'JIZAN','HON GAI':'HONGAI','ECSA':'SANTOS' };
+  function normPort(p){ p = String(p||'').toUpperCase().trim(); return ALIAS[p] || p; }
+  P6.portNm = function(name){
+    if (!name) return null;
+    var p = normPort(name);
+    if (P6.dist[p] != null) return P6.dist[p];
+    var keys = Object.keys(P6.dist);
+    for (var i=0;i<keys.length;i++){ if (keys[i].replace(/\s+/g,'') === p.replace(/\s+/g,'')) return P6.dist[keys[i]]; }
+    return null;
+  };
+  P6.load = function(){
+    return Promise.all([
+      sb.from('p6_settings').select('*').eq('id',1).single(),
+      sb.from('ballast_distances').select('port,nm')
+    ]).then(function(res){
+      var s = res[0], d = res[1];
+      if (s.data) P6.set = { hsfo:+s.data.hsfo||590, vlsfo:+s.data.vlsfo||740, lsmgo:+s.data.lsmgo||1180, p6_last: (s.data.p6_last!=null && s.data.p6_last!=='') ? +s.data.p6_last : null };
+      if (d.data) { P6.dist = {}; d.data.forEach(function(r){ P6.dist[String(r.port).toUpperCase()] = +r.nm; }); }
+      P6.loaded = true;
+      P6.syncInputs();
+    }).catch(function(e){ console.warn('P6 load:', e); });
+  };
+  P6.loadSpecs = function(names){
+    var need = []; var seen = {};
+    (names||[]).forEach(function(n){ n = String(n||'').toUpperCase().trim(); if (n && !(n in P6.specs) && !seen[n]) { seen[n]=1; need.push(n); } });
+    if (!need.length) return Promise.resolve();
+    var chunks = []; for (var i=0;i<need.length;i+=100) chunks.push(need.slice(i,i+100));
+    return chunks.reduce(function(pr, ch){
+      return pr.then(function(){ return sb.from('vessel_specs').select('*').in('vessel', ch).then(function(r){ (r.data||[]).forEach(function(x){ P6.specs[x.vessel] = x; }); }); });
+    }, Promise.resolve()).then(function(){ need.forEach(function(n){ if (!(n in P6.specs)) P6.specs[n] = null; }); });
+  };
+  P6.after = function(names, cb){
+    if (P6._pending) return;
+    var missing = false;
+    (names||[]).forEach(function(n){ n = String(n||'').toUpperCase().trim(); if (n && !(n in P6.specs)) missing = true; });
+    if (P6.loaded && !missing) return;
+    P6._pending = true;
+    (P6.loaded ? Promise.resolve() : P6.load()).then(function(){ return P6.loadSpecs(names); })
+      .then(function(){ P6._pending = false; if (cb) cb(); })
+      .catch(function(){ P6._pending = false; });
+  };
+  var saveTimer = null;
+  P6.saveSet = function(){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function(){
+      sb.from('p6_settings').update({ hsfo:P6.set.hsfo, vlsfo:P6.set.vlsfo, lsmgo:P6.set.lsmgo, p6_last:P6.set.p6_last, updated_at:new Date().toISOString() }).eq('id',1)
+        .then(function(r){ if (r.error) console.warn('P6 save:', r.error); });
+    }, 600);
+  };
+  P6.syncInputs = function(){
+    var m = { 'p6-hsfo':'hsfo', 'p6-vlsfo':'vlsfo', 'p6-mgo':'lsmgo', 'p6-lastp6':'p6_last' };
+    Object.keys(m).forEach(function(id){
+      var el = document.getElementById(id);
+      if (el && document.activeElement !== el) el.value = P6.set[m[id]] != null ? P6.set[m[id]] : '';
+    });
+  };
+  P6.wireInputs = function(refresh){
+    var m = { 'p6-hsfo':'hsfo', 'p6-vlsfo':'vlsfo', 'p6-mgo':'lsmgo', 'p6-lastp6':'p6_last' };
+    Object.keys(m).forEach(function(id){
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.oninput = function(){
+        var v = parseFloat(el.value);
+        P6.set[m[id]] = isFinite(v) ? v : null;
+        P6.saveSet();
+        clearTimeout(el._t); el._t = setTimeout(refresh, 500);
+      };
+    });
+    P6.syncInputs();
+  };
+  function stdEx(){ return STD.vlsfo_t * P6.set.vlsfo + STD.mgo_t * P6.set.lsmgo + STD.fixed; }
+  function intakeOf(sp){
+    var dwt = +sp.dwt||0, draft = +sp.draft||0, tpc = +sp.tpc||72, cubic = +sp.cubic||0;
+    if (!dwt || !draft) return null;
+    var byDraft = dwt - Math.max(0,(draft-13))*100*tpc - 2000;
+    var byCubic = cubic ? cubic*35.3147/49*1.01605 : Infinity;
+    return Math.min(byDraft, byCubic, 70400);
+  }
+  function modesOf(sp){
+    var out = [];
+    if (+sp.eco_bal_kts && +sp.eco_lad_kts && +sp.eco_bal_cons && +sp.eco_lad_cons)
+      out.push({ name:'eco', bk:+sp.eco_bal_kts, bc:+sp.eco_bal_cons, lk:+sp.eco_lad_kts, lc:+sp.eco_lad_cons, mgo: sp.eco_mgo!=null? +sp.eco_mgo : null });
+    if (+sp.full_bal_kts && +sp.full_lad_kts && +sp.full_bal_cons && +sp.full_lad_cons)
+      out.push({ name:'full', bk:+sp.full_bal_kts, bc:+sp.full_bal_cons, lk:+sp.full_lad_kts, lc:+sp.full_lad_cons, mgo: sp.full_mgo!=null? +sp.full_mgo : null });
+    return out;
+  }
+  function fixedCost(sp){
+    var age = sp.built ? (new Date().getFullYear() - (+sp.built)) : 0;
+    return 145000 + (age >= 15 ? 40000 : 0);
+  }
+  function voy(sp, md, D, mainPrice){
+    var intake = intakeOf(sp); if (intake == null) return null;
+    var tb = D/md.bk/24*Mm, tl1 = 9015/md.lk/24*Mm, tl2 = 2494/md.lk/24*Mm;
+    var wd = intake/8000, le = wd*1.3333, de = wd*1.5555;
+    var tot = tb+tl1+tl2+le+0.75+0.25+de+0.75+1;
+    var work = sp.port_work!=null ? +sp.port_work : 5;
+    var idle = sp.port_idle!=null ? +sp.port_idle : 4;
+    var fuel = md.bc*tb + md.lc*(tl1+tl2) + work*2*wd + idle*(le-wd+de-wd+1.5+0.25+1);
+    var mgoT = (md.mgo!=null? md.mgo : 0.1)*tot;
+    return { intake: intake, tot: tot, bunk: fuel*mainPrice + mgoT*P6.set.lsmgo };
+  }
+  P6.parseOffer = function(text){
+    var T = String(text||'').toUpperCase();
+    var m = T.match(/OFFERS?\s+(?:USD\s*)?([0-9]{2}(?:[.,][0-9]+)?\s*K(?![A-Z])|[0-9]{4,6})/);
+    if (!m) return null;
+    var raw = m[1].replace(',', '.').trim();
+    var rate = /K$/.test(raw) ? parseFloat(raw)*1000 : parseFloat(raw);
+    if (!(rate > 3000 && rate < 200000)) return null;
+    var bb = 0;
+    var b = T.match(/\+\s*([0-9]+(?:[.,][0-9]+)?)\s*(MLN|MIL|M(?![A-Z])|K(?![A-Z]))?/);
+    if (b) {
+      var val = parseFloat(b[1].replace(',', '.'));
+      var u = b[2] || '';
+      if (/^M/.test(u)) val *= 1000000;
+      else if (u === 'K') val *= 1000;
+      else if (val < 10) val *= 1000000;
+      else if (val < 10000) val *= 1000;
+      bb = val;
+    }
+    var port = null;
+    var r = T.match(/(?:RETRO|DOP|PSSG|PASSING)\s+([A-Z][A-Z ]{2,24}?)(?=\s+\d|\s+(?:FOR|BSS|SCRUB|SCR|RDLY|REDEL|ECSA|WITH)|\s*[-\/]|\s*$)/);
+    if (r) port = r[1].trim();
+    var scrub = null;
+    if (/SCR(?:UB)?\s*4\s*OWN|SCRB4OWNS|SCRUB4OWNS|SCR4OWNS/.test(T)) scrub = 'owns';
+    else if (/SCR(?:UB)?\s*4\s*CH|SCRUB4CHTR|SCR4CHTR/.test(T)) scrub = 'chtr';
+    return { rate: rate, bb: bb, port: port, scrub: scrub };
+  };
+  function originOf(v, offer, ideasText){
+    var port = (offer && offer.port) || null;
+    if (!port) {
+      var op = String(v.open_port||'').toUpperCase().trim();
+      port = op || null;
+    }
+    return { port: port, nm: P6.portNm(port) };
+  }
+  function fmtK(x){
+    var k = x/1000;
+    var s = (Math.round(k*20)/20).toFixed(2).replace(/0$/,'').replace(/\.$/,'');
+    return s + 'K';
+  }
+  P6.equiv = function(v, ideasText){
+    var sp = P6.specs[String(v.vessel||'').toUpperCase().trim()];
+    var offer = P6.parseOffer(ideasText != null ? ideasText : v.ideas);
+    if (!offer) return { txt:'', title:'Nessuna offerta rilevata' };
+    if (!sp) return { txt:'?', title:'Descrizione nave mancante (Vessel Data)' };
+    var modes = modesOf(sp);
+    if (!modes.length) return { txt:'?', title:'Velocita/consumi mancanti' };
+    var D, bb = offer.bb || 0;
+    if (bb > 0) { D = 0; }
+    else {
+      var o = originOf(v, offer, ideasText);
+      if (o.nm == null) return { txt:'?', title:'Distanza mancante: ' + (o.port||'?') };
+      D = o.nm;
+    }
+    var price = P6.set.vlsfo;
+    if (sp.scrubber) {
+      if (offer.scrub === 'chtr') price = P6.set.hsfo;
+      else if (offer.scrub !== 'owns') return { txt:'?', title:'Nave scrubber: offerta senza 4 OWNS / 4 CHTR' };
+    }
+    var best = null;
+    for (var i=0;i<modes.length;i++){
+      var r = voy(sp, modes[i], D, price); if (!r) continue;
+      var cost = offer.rate*0.95*r.tot + bb + r.bunk + fixedCost(sp);
+      var ratemt = cost / r.intake / 0.95;
+      if (!best || ratemt < best.ratemt) best = { ratemt: ratemt, mode: modes[i].name };
+    }
+    if (!best) return { txt:'?', title:'Calcolo non riuscito' };
+    var p6 = ((best.ratemt*0.95*STD.intake) - stdEx()) / STD.days / 0.95;
+    return { txt: fmtK(p6), title: 'Offerta ' + offer.rate + (bb ? ' + BB ' + bb : '') + ' → ' + best.ratemt.toFixed(2) + ' $/mt (' + best.mode + ')' };
+  };
+  P6.value = function(v, ideasText){
+    if (P6.set.p6_last == null) return { txt:'', title:'Imposta LAST P6 in alto' };
+    var sp = P6.specs[String(v.vessel||'').toUpperCase().trim()];
+    if (!sp) return { txt:'?', title:'Descrizione nave mancante (Vessel Data)' };
+    var modes = modesOf(sp);
+    if (!modes.length) return { txt:'?', title:'Velocita/consumi mancanti' };
+    var offer = P6.parseOffer(ideasText != null ? ideasText : v.ideas);
+    var o = originOf(v, offer, ideasText);
+    if (o.nm == null) return { txt:'?', title:'Distanza mancante: ' + (o.port||'?') };
+    var ratemt = (P6.set.p6_last*0.95*STD.days + stdEx()) / STD.intake / 0.95;
+    var price = P6.set.vlsfo;
+    if (sp.scrubber && offer && offer.scrub === 'chtr') price = P6.set.hsfo;
+    var best = null;
+    for (var i=0;i<modes.length;i++){
+      var r = voy(sp, modes[i], o.nm, price); if (!r) continue;
+      var gtc = ((ratemt*0.95*r.intake) - r.bunk - fixedCost(sp)) / (0.95*r.tot);
+      if (!best || gtc > best.gtc) best = { gtc: gtc, mode: modes[i].name };
+    }
+    if (!best) return { txt:'?', title:'Calcolo non riuscito' };
+    return { txt: fmtK(best.gtc), title: 'P6 ' + P6.set.p6_last + ' → ' + ratemt.toFixed(2) + ' $/mt → DOP ' + (o.port||'') + ' (' + best.mode + ')' };
+  };
+  P6.cells = function(v, ideasText){
+    var eq, va;
+    try { eq = P6.equiv(v, ideasText); } catch(e){ eq = { txt:'?', title:'err: '+e.message }; }
+    try { va = P6.value(v, ideasText); } catch(e){ va = { txt:'?', title:'err: '+e.message }; }
+    function td(c){ return '<td class="p6cell' + (c.txt==='?' ? ' p6warn' : '') + '" title="' + String(c.title||'').replace(/"/g,'&quot;') + '">' + c.txt + '</td>'; }
+    return td(eq) + td(va);
+  };
+  // CSS
+  var st = document.createElement('style');
+  st.textContent = '.p6cell{font-weight:700;white-space:nowrap;text-align:center;cursor:default}' +
+    '.p6cell.p6warn{color:#D93025;font-weight:800}' +
+    'th.p6-th{font-size:8.5px;white-space:nowrap;text-align:center !important}' +
+    '.p6-set{display:inline-flex;align-items:center;gap:4px;margin-left:6px}' +
+    '.p6-set label{font-size:9.5px;text-transform:uppercase;color:var(--text-mute);letter-spacing:.04em;font-weight:700}' +
+    '.p6-set label.p6-last-lbl{color:var(--gold);}' +
+    '.p6-set input{width:54px;background:var(--bg-3);border:1px solid var(--line);color:var(--text);border-radius:var(--radius-sm);padding:3px 6px;font:inherit;font-size:11.5px;height:26px;outline:none}' +
+    '.p6-set input#p6-lastp6{width:62px;border-color:var(--gold);font-weight:700}';
+  document.head.appendChild(st);
+})();
 </script>
 <script>
 /* ===== THEAD TINT ===== */
