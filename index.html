@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260831-p6value-title -->
+<!-- build: 20260831-p6-format -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -10217,9 +10217,8 @@ setRoute();
     return { port: port, nm: P6.portNm(port) };
   }
   function fmtK(x){
-    var k = x/1000;
-    var s = (Math.round(k*20)/20).toFixed(2).replace(/0$/,'').replace(/\.$/,'');
-    return s + 'K';
+    var n = Math.round(x/50)*50;
+    return (n/1000).toFixed(3);
   }
   P6.equiv = function(v, ideasText){
     var sp = P6.specs[String(v.vessel||'').toUpperCase().trim()];
