@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260831-finder-copy -->
+<!-- build: 20260831-copy-dedup -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -6533,12 +6533,15 @@ routes['vsl'] = function() {
         const s = ` eta ${lastVfArea.toLowerCase()} ${fmtDateLow(v.eta_from, v.eta_to)}`;
         line += s; h += esc(s);
       }
-      // porto + open dates
+      // porto + open dates (saltato se e' una ripetizione dell'eta area)
       if (!hiddenCols.has('open_port') && v.open_port) {
         const portDates = fmtDateLow(v.open_from, v.open_to);
         const portStr = portDates ? `${v.open_port.toLowerCase()} ${portDates}` : v.open_port.toLowerCase();
-        const s = lastVfArea ? ` /  ${portStr}` : ` ${portStr}`;
-        line += s; h += esc(s);
+        const etaCmp = (lastVfArea && v.eta_from && v.eta_to) ? `${lastVfArea.toLowerCase()} ${fmtDateLow(v.eta_from, v.eta_to)}` : null;
+        if (portStr !== etaCmp) {
+          const s = lastVfArea ? ` /  ${portStr}` : ` ${portStr}`;
+          line += s; h += esc(s);
+        }
       }
       // ideas in grassetto (se la colonna non è nascosta)
       if (!hiddenCols.has('ideas') && v.ideas) { line += ` / *${v.ideas.toLowerCase()}*`; h += ` / <b>${esc(v.ideas.toLowerCase())}</b>`; }
