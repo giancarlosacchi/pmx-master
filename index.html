@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260831-copy-image -->
+<!-- build: 20260831-cursors-fix -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -9955,7 +9955,7 @@ setRoute();
 </script>
 
 <script>
-/* ===== LIVE CURSORS + ONLINE - solo Giancarlo. Frecce ancorate al contenuto, solo stessa pagina ===== */
+/* ===== LIVE CURSORS + ONLINE - solo Giancarlo. Frecce ancorate al contenuto, visibili anche da fermi ===== */
 (function () {
   var VIEWER = 'gsc@lightshipchartering.com';
   function routeNow(){ return (location.hash || '').replace('#/', '') || 'home'; }
@@ -9965,6 +9965,7 @@ setRoute();
     for (var i=0;i<cands.length;i++){ var el=cands[i]; if (el && el.scrollHeight - el.clientHeight > 6 && el.scrollHeight > bestH){ best=el; bestH=el.scrollHeight; } }
     return best || document.getElementById('content') || document.body;
   }
+  function escName(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function start() {
     if (!window.sb || !window.CURRENT_USER || !window.CURRENT_USER.email) { return setTimeout(start, 1000); }
     var me = String(window.CURRENT_USER.email).toLowerCase();
@@ -9972,7 +9973,8 @@ setRoute();
     var amViewer = (me === VIEWER);
     var ch = window.sb.channel('pmx-cursors', { config: { broadcast: { self: false } } });
     var subscribed = false;
-    var last = { route:'home', fx:0.5, fy:0.5 };
+    var last = { route: routeNow(), fx: 0.5, fy: 0.5 };
+    window.addEventListener('hashchange', function(){ last.route = routeNow(); });
     function computeFrac(e){
       var el = mainScroller(); var rect = el.getBoundingClientRect();
       var sw = Math.max(1, el.scrollWidth), sh = Math.max(1, el.scrollHeight);
@@ -9980,15 +9982,16 @@ setRoute();
     }
     var lastSent = 0;
     window.addEventListener('mousemove', function (e) {
-      var f = computeFrac(e); last = { route: routeNow(), fx: f.fx, fy: f.fy };
+      var f = computeFrac(e); last.fx = f.fx; last.fy = f.fy; last.route = routeNow();
       if (!subscribed) return;
       var now = Date.now(); if (now - lastSent < 50) return; lastSent = now;
       ch.send({ type:'broadcast', event:'cur', payload: { id: me, name: myName, fx: f.fx, fy: f.fy, route: last.route } });
     }, { passive: true });
+    // ping periodico: presenza e posizione anche quando l'utente e' fermo
     setInterval(function () {
       if (!subscribed) return;
-      ch.send({ type:'broadcast', event:'ping', payload: { id: me, name: myName, fx: last.fx, fy: last.fy, route: last.route } });
-    }, 4000);
+      ch.send({ type:'broadcast', event:'ping', payload: { id: me, name: myName, fx: last.fx, fy: last.fy, route: routeNow() } });
+    }, 3000);
     if (amViewer) {
       var layer = document.createElement('div');
       layer.id = 'cursor-layer';
@@ -10004,8 +10007,69 @@ setRoute();
       function ensureArrow(p){
         if (p.el) return p.el;
         var el = document.createElement('div');
-        el.style.cssText = 'position:absolute;will-change:left,top';
-        el.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" style="filter:drop-shadow(0 1px 2px r
+        el.style.cssText = 'position:absolute;will-change:left,top;transition:left .12s linear,top .12s linear;display:none';
+        el.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))"><path d="M5.5 3.2 L19 12 L12 13.2 L8.6 20 Z" fill="' + p.color + '" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/></svg>' +
+          '<div style="margin:-4px 0 0 12px;background:' + p.color + ';color:#fff;font:600 10px/1.5 Helvetica,Arial,sans-serif;padding:1px 7px;border-radius:8px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.25)">' + escName(p.name) + '</div>';
+        layer.appendChild(el);
+        p.el = el;
+        return el;
+      }
+      function place(p){
+        if (!p.el) return;
+        if (p.route !== routeNow()) { p.el.style.display = 'none'; return; }
+        var el = mainScroller(); var rect = el.getBoundingClientRect();
+        var x = rect.left - el.scrollLeft + p.fx * Math.max(1, el.scrollWidth);
+        var y = rect.top - el.scrollTop + p.fy * Math.max(1, el.scrollHeight);
+        if (x < -30 || y < -30 || x > innerWidth + 30 || y > innerHeight + 30) { p.el.style.display = 'none'; return; }
+        p.el.style.display = 'block';
+        p.el.style.left = x + 'px';
+        p.el.style.top = y + 'px';
+      }
+      function placeAll(){ for (var k in peers) place(peers[k]); }
+      function renderList(){
+        var box = document.getElementById('online-list'); if (!box) return;
+        var ks = Object.keys(peers);
+        if (!ks.length) { box.innerHTML = '<div style="padding:6px 12px;font-size:11px;color:var(--text-mute)">none</div>'; return; }
+        var h = '';
+        for (var i=0;i<ks.length;i++){
+          var p = peers[ks[i]];
+          h += '<div style="display:flex;align-items:center;gap:7px;padding:5px 12px;font-size:11.5px;color:var(--text)">' +
+               '<span style="width:8px;height:8px;border-radius:50%;background:' + p.color + ';flex:none"></span>' +
+               '<span style="font-weight:600">' + escName(p.name) + '</span>' +
+               '<span style="color:var(--text-mute);margin-left:auto">' + escName(p.route || '') + '</span></div>';
+        }
+        box.innerHTML = h;
+      }
+      function onMsg(payload){
+        if (!payload || !payload.id || payload.id === me) return;
+        var p = peers[payload.id];
+        if (!p) { p = peers[payload.id] = { name: payload.name || String(payload.id).split('@')[0], color: colorFor(payload.id) }; ensureArrow(p); renderList(); }
+        if (payload.name) p.name = payload.name;
+        if (typeof payload.fx === 'number') { p.fx = payload.fx; p.fy = payload.fy; }
+        var routeChanged = (p.route !== payload.route);
+        p.route = payload.route;
+        p.last = Date.now();
+        place(p);
+        if (routeChanged) renderList();
+      }
+      ch.on('broadcast', { event: 'cur' }, function(m){ onMsg(m.payload); });
+      ch.on('broadcast', { event: 'ping' }, function(m){ onMsg(m.payload); });
+      // rimuovi chi e' uscito (nessun segnale da 10s)
+      setInterval(function(){
+        var now = Date.now(), changed = false;
+        for (var k in peers) { if (now - (peers[k].last || 0) > 10000) { if (peers[k].el) peers[k].el.remove(); delete peers[k]; changed = true; } }
+        if (changed) renderList();
+      }, 3000);
+      // frecce ancorate al contenuto durante scroll/resize/cambio pagina
+      window.addEventListener('scroll', placeAll, { passive: true, capture: true });
+      window.addEventListener('resize', placeAll);
+      window.addEventListener('hashchange', function(){ setTimeout(function(){ placeAll(); renderList(); }, 300); });
+      setInterval(placeAll, 1000);
+    }
+    ch.subscribe(function(status){ if (status === 'SUBSCRIBED') subscribed = true; });
+  }
+  start();
+})();
 </script>
 <script>
 /* ===== P6 CALC: bunkers/last-P6 condivisi + colonne P6 EQUIV / P6 VALUE (ECSA List) ===== */
