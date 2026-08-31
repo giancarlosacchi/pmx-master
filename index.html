@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260831-cursors-fix -->
+<!-- build: 20260831-p6value-spore -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -10168,9 +10168,9 @@ setRoute();
     var age = sp.built ? (new Date().getFullYear() - (+sp.built)) : 0;
     return 145000 + (age >= 15 ? 40000 : 0);
   }
-  function voy(sp, md, D, mainPrice){
+  function voy(sp, md, D, mainPrice, L1, L2){
     var intake = intakeOf(sp); if (intake == null) return null;
-    var tb = D/md.bk/24*Mm, tl1 = 9015/md.lk/24*Mm, tl2 = 2494/md.lk/24*Mm;
+    var tb = D/md.bk/24*Mm, tl1 = (L1||9015)/md.lk/24*Mm, tl2 = (L2||2494)/md.lk/24*Mm;
     var wd = intake/8000, le = wd*1.3333, de = wd*1.5555;
     var tot = tb+tl1+tl2+le+0.75+0.25+de+0.75+1;
     var work = sp.port_work!=null ? +sp.port_work : 5;
@@ -10258,19 +10258,19 @@ setRoute();
     var modes = modesOf(sp);
     if (!modes.length) return { txt:'?', title:'Velocita/consumi mancanti' };
     var offer = P6.parseOffer(ideasText != null ? ideasText : v.ideas);
-    var o = originOf(v, offer, ideasText);
-    if (o.nm == null) return { txt:'?', title:'Distanza mancante: ' + (o.port||'?') };
+    // P6 VALUE: sempre come se la nave fosse aperta a Singapore (ballast 9009, laden 9009 + 2441)
+    var D = 9009;
     var ratemt = (P6.set.p6_last*0.95*STD.days + stdEx()) / STD.intake / 0.95;
     var price = P6.set.vlsfo;
     if (sp.scrubber && offer && offer.scrub === 'chtr') price = P6.set.hsfo;
     var best = null;
     for (var i=0;i<modes.length;i++){
-      var r = voy(sp, modes[i], o.nm, price); if (!r) continue;
+      var r = voy(sp, modes[i], D, price, 9009, 2441); if (!r) continue;
       var gtc = ((ratemt*0.95*r.intake) - r.bunk - fixedCost(sp)) / (0.95*r.tot);
       if (!best || gtc > best.gtc) best = { gtc: gtc, mode: modes[i].name };
     }
     if (!best) return { txt:'?', title:'Calcolo non riuscito' };
-    return { txt: fmtK(best.gtc), title: 'P6 ' + P6.set.p6_last + ' → ' + ratemt.toFixed(2) + ' $/mt → DOP ' + (o.port||'') + ' (' + best.mode + ')' };
+    return { txt: fmtK(best.gtc), title: 'P6 ' + P6.set.p6_last + ' → ' + ratemt.toFixed(2) + ' $/mt, aperta Spore (' + best.mode + ')' };
   };
   P6.cells = function(v, ideasText){
     var eq, va;
