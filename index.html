@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260831-copy-dedup -->
+<!-- build: 20260831-copy-image -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -3868,6 +3868,37 @@ function showCopyFallback(text) {
 }
 
 // ===== CLIPBOARD HELPER con fallback per iframe sandboxed =====
+async function copyTableImage(title, headers, rows) {
+  // Tabella stilizzata -> PNG negli appunti (stesso stile dello screenshot di selezione)
+  const head = headers.map(h => '<th style="padding:9px 14px;text-align:left;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#cbd5e1;font-weight:700;white-space:nowrap;background:#0f172a;">' + esc(h) + '</th>').join('');
+  let body = '';
+  rows.forEach((r, i) => {
+    const tds = r.map((v, ci) => {
+      const wide = headers[ci] === 'Ideas / Info' || headers[ci] === 'Notes / Rates';
+      const style = 'padding:7px 14px;border-bottom:1px solid #eef1f5;color:#1f2937;' + (ci === 0 ? 'font-weight:700;' : '') + (wide ? 'max-width:420px;white-space:normal;' : 'white-space:nowrap;');
+      return '<td style="' + style + '">' + esc(String(v == null ? '' : v)) + '</td>';
+    }).join('');
+    body += '<tr style="background:' + (i % 2 ? '#fbfcfe' : '#ffffff') + ';">' + tds + '</tr>';
+  });
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:absolute;left:-100000px;top:0;background:#ffffff;padding:24px;';
+  wrap.innerHTML = '<div style="font-family:Helvetica Neue,Helvetica,Arial,sans-serif;font-weight:700;font-size:14px;color:#0f172a;margin:0 0 10px 2px;">' + esc(title) + '</div>' +
+    '<table style="border-collapse:collapse;border-radius:12px;overflow:hidden;box-shadow:0 6px 24px rgba(15,23,42,.10);font-family:Helvetica Neue,Helvetica,Arial,sans-serif;font-size:12.5px;"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table>';
+  document.body.appendChild(wrap);
+  try {
+    if (!window.html2canvas) {
+      await new Promise(function(res, rej){ const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'; sc.onload = res; sc.onerror = rej; document.head.appendChild(sc); });
+    }
+    const canvas = await window.html2canvas(wrap, { scale: 2, backgroundColor: '#ffffff', logging: false });
+    const blob = await new Promise(function(r){ canvas.toBlob(r, 'image/png'); });
+    if (!blob) throw new Error('no blob');
+    let copied = false;
+    try { if (navigator.clipboard && window.ClipboardItem) { await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]); copied = true; } } catch(e) {}
+    if (!copied) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'list.png'; document.body.appendChild(a); a.click(); a.remove(); }
+    return true;
+  } catch(e) { return false; }
+  finally { wrap.remove(); }
+}
 async function copyRichText(text, html) {
   // Copia con formattazione (grassetto) + fallback testo semplice
   if (navigator.clipboard && window.ClipboardItem && window.isSecureContext) {
@@ -6506,6 +6537,31 @@ routes['vsl'] = function() {
     const area = lastVfArea || 'ALL AREAS';
     const dr = (lastVfFrom && lastVfTo) ? ` ${fmtShort(lastVfFrom)} → ${fmtShort(lastVfTo)}` : '';
     const copyRows = lastVfRows.filter(v => v.status !== 'on_subs' && !(v.subs && String(v.subs).trim()));
+    // Copy format Screenshot -> tabella stilizzata come immagine
+    if (window.getCopyFormat && window.getCopyFormat() === 'image') {
+      const cols = [];
+      if (!hiddenCols.has('vessel')) cols.push(['vessel', 'Vessel']);
+      if (!hiddenCols.has('dwt_blt')) cols.push(['dwt_blt', 'DWT']);
+      if (!hiddenCols.has('dates')) cols.push(['eta', ('ETA ' + (lastVfArea || '')).trim()]);
+      if (!hiddenCols.has('open_port')) cols.push(['open', 'Position']);
+      if (!hiddenCols.has('ideas')) cols.push(['ideas', 'Ideas / Info']);
+      if (!hiddenCols.has('ows_brkr')) cols.push(['ows', 'Owner']);
+      const data = copyRows.map(v => cols.map(c => {
+        if (c[0] === 'vessel') return titleCase(v.vessel || '');
+        if (c[0] === 'dwt_blt') return v.dwt_blt || '';
+        if (c[0] === 'eta') return fmtDateRange(v.eta_from, v.eta_to) || '';
+        if (c[0] === 'open') { const pd = fmtDateRange(v.open_from, v.open_to) || ''; return (titleCase(v.open_port || '') + (pd ? ' ' + pd : '')).trim(); }
+        if (c[0] === 'ideas') return v.ideas || '';
+        if (c[0] === 'ows') return v.ows_brkr || '';
+        return '';
+      }));
+      const b = $('#vf-copy'); const oldHtml = b.innerHTML;
+      copyTableImage(`TNG ${area}${dr} — ${copyRows.length} vsls`, cols.map(c => c[1]), data).then((ok) => {
+        b.innerHTML = ok ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>Copied!' : oldHtml;
+        setTimeout(() => b.innerHTML = oldHtml, 1800);
+      });
+      return;
+    }
     lines.push(`TNG ${area}${dr} — ${copyRows.length} vsls`);
     lines.push('');
     const MONS = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
@@ -6799,6 +6855,31 @@ routes['cgo'] = function() {
     const area = lastCfArea || 'ALL';
     const dr = (cfFrom && cfTo) ? ` ${fmtShort(cfFrom)} → ${fmtShort(cfTo)}` : '';
     const copyRows = lastCfRows.filter(c => c.status !== 'on_subs' && !(c.subs && String(c.subs).trim()));
+    // Copy format Screenshot -> tabella stilizzata come immagine
+    if (window.getCopyFormat && window.getCopyFormat() === 'image') {
+      const cols = [];
+      if (!hiddenCgoCols.has('chrtrs')) cols.push(['chrtrs', 'Charterer']);
+      if (!hiddenCgoCols.has('size')) cols.push(['size', 'Size']);
+      if (!hiddenCgoCols.has('load_port') || !hiddenCgoCols.has('disch_port')) cols.push(['route', 'Load / Disch']);
+      if (!hiddenCgoCols.has('dates')) cols.push(['dates', 'Laycan']);
+      if (!hiddenCgoCols.has('cgo')) cols.push(['cgo', 'Cargo']);
+      if (!hiddenCgoCols.has('notes')) cols.push(['notes', 'Notes / Rates']);
+      const data = copyRows.map(c => cols.map(cc => {
+        if (cc[0] === 'chrtrs') return titleCase(c.chrtrs || '');
+        if (cc[0] === 'size') return c.size || '';
+        if (cc[0] === 'route') { const l = !hiddenCgoCols.has('load_port') ? titleCase(c.load_port || '') : ''; const d = !hiddenCgoCols.has('disch_port') ? titleCase(c.disch_port || '') : ''; return (l && d) ? (l + ' / ' + d) : (l || d); }
+        if (cc[0] === 'dates') return fmtDateRange(c.laycan_from, c.laycan_to) || '';
+        if (cc[0] === 'cgo') return c.cgo || '';
+        if (cc[0] === 'notes') return c.notes || '';
+        return '';
+      }));
+      const b = $('#cf-copy'); const oldHtml = b.innerHTML;
+      copyTableImage(`CGO ${area}${dr} — ${copyRows.length} cgos`, cols.map(cc => cc[1]), data).then((ok) => {
+        b.innerHTML = ok ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>Copied!' : oldHtml;
+        setTimeout(() => b.innerHTML = oldHtml, 1800);
+      });
+      return;
+    }
     lines.push(`CGO ${area}${dr} — ${copyRows.length} cgos`);
     lines.push('');
     const hlines = [];
