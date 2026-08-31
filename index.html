@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260830-p6cols2 -->
+<!-- build: 20260831-finder-copy -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -1822,8 +1822,16 @@ tr.status-subs .status-menu .opt { text-decoration: none; }
   font-size: 13px; line-height: 1; cursor: pointer;
   opacity: 0; transition: opacity 100ms;
 }
+/* X nascondi-colonna: dentro il box di ricerca, a destra, sempre visibile */
+#vf-results th, #cf-results th { position: relative; }
+#vf-results .col-hide-btn, #cf-results .col-hide-btn {
+  position: absolute; right: 9px; top: 50%; transform: translateY(-50%);
+  opacity: .55; margin: 0; z-index: 2;
+}
+#vf-results th.th-filter input, #cf-results th.th-filter input { padding-right: 24px; }
 table.grid tr:hover .row-hide-btn,
 table.grid th:hover .col-hide-btn { opacity: .7; }
+#vf-results .col-hide-btn:hover, #cf-results .col-hide-btn:hover { opacity: 1; }
 .row-hide-btn:hover, .col-hide-btn:hover { opacity: 1 !important; color: var(--red); border-color: var(--red); }
 .hidden-banner {
   display: none;
@@ -3860,6 +3868,19 @@ function showCopyFallback(text) {
 }
 
 // ===== CLIPBOARD HELPER con fallback per iframe sandboxed =====
+async function copyRichText(text, html) {
+  // Copia con formattazione (grassetto) + fallback testo semplice
+  if (navigator.clipboard && window.ClipboardItem && window.isSecureContext) {
+    try {
+      await navigator.clipboard.write([new ClipboardItem({
+        'text/plain': new Blob([text], { type: 'text/plain' }),
+        'text/html': new Blob([html], { type: 'text/html' })
+      })]);
+      return true;
+    } catch(e) {}
+  }
+  return copyToClipboard(text);
+}
 async function copyToClipboard(text) {
   // 1. Prova navigator.clipboard (può fallire in iframe sandboxed)
   if (navigator.clipboard && window.isSecureContext) {
@@ -6254,7 +6275,8 @@ routes['vsl'] = function() {
 
   let lastVfRows = [], lastVfArea = '', lastVfFrom = '', lastVfTo = '';
   FINDER_STATE.vsl.hidden = FINDER_STATE.vsl.hidden || new Set(); const hiddenRows = FINDER_STATE.vsl.hidden;
-  FINDER_STATE.vsl.hiddenCols = FINDER_STATE.vsl.hiddenCols || new Set(); const hiddenCols = FINDER_STATE.vsl.hiddenCols;
+  FINDER_STATE.vsl.hiddenCols = FINDER_STATE.vsl.hiddenCols || new Set(JSON.parse(localStorage.getItem('pmx-vf-hidecols') || '[]')); const hiddenCols = FINDER_STATE.vsl.hiddenCols;
+  const saveVfCols = () => { try { localStorage.setItem('pmx-vf-hidecols', JSON.stringify([...hiddenCols])); } catch(e){} };
   FINDER_STATE.vsl.excl = FINDER_STATE.vsl.excl || new Set(); const excludedAreas = FINDER_STATE.vsl.excl;
   // Colonne nascondibili e loro label
   const VF_COLS = [
@@ -6444,11 +6466,12 @@ routes['vsl'] = function() {
     $$('#vf-results .col-hide-btn').forEach(b => b.onclick = (e) => {
       e.stopPropagation();
       hiddenCols.add(b.dataset.col);
+      saveVfCols();
       run();
     });
     // Show all
     const showAll = document.getElementById('vf-show-all');
-    if (showAll) showAll.onclick = () => { hiddenRows.clear(); hiddenCols.clear(); excludedAreas.clear(); run(); };
+    if (showAll) showAll.onclick = () => { hiddenRows.clear(); hiddenCols.clear(); excludedAreas.clear(); saveVfCols(); run(); };
     if (typeof hookVslFilters !== 'undefined') hookVslFilters();
   };
   $('#vf-cgoarea').onchange = () => { FINDER_STATE.vsl.area = $('#vf-cgoarea').value; hiddenRows.clear(); excludedAreas.clear(); run(); };
@@ -6482,7 +6505,7 @@ routes['vsl'] = function() {
     // Header
     const area = lastVfArea || 'ALL AREAS';
     const dr = (lastVfFrom && lastVfTo) ? ` ${fmtShort(lastVfFrom)} → ${fmtShort(lastVfTo)}` : '';
-    const copyRows = lastVfRows.filter(v => v.status !== 'on_subs');
+    const copyRows = lastVfRows.filter(v => v.status !== 'on_subs' && !(v.subs && String(v.subs).trim()));
     lines.push(`TNG ${area}${dr} — ${copyRows.length} vsls`);
     lines.push('');
     const MONS = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
@@ -6498,30 +6521,34 @@ routes['vsl'] = function() {
       const d = f || t;
       return `${d.getUTCDate()} ${MONS[d.getUTCMonth()]}`;
     }
+    const hlines = [];
     for (const v of copyRows) {
-      let line = '';
+      let line = '', h = '';
       // nome nave in grassetto
-      if (!hiddenCols.has('vessel')) line += `*Mv ${(v.vessel||'').toLowerCase()}*`;
+      if (!hiddenCols.has('vessel')) { const nm = `Mv ${(v.vessel||'').toLowerCase()}`; line += `*${nm}*`; h += `<b>${esc(nm)}</b>`; }
       // dwt fra parentesi
-      if (!hiddenCols.has('dwt_blt') && v.dwt_blt) line += ` (${v.dwt_blt})`;
+      if (!hiddenCols.has('dwt_blt') && v.dwt_blt) { line += ` (${v.dwt_blt})`; h += ` (${esc(String(v.dwt_blt))})`; }
       // eta al cargo area
       if (!hiddenCols.has('dates') && lastVfArea && v.eta_from && v.eta_to) {
-        line += ` eta ${lastVfArea.toLowerCase()} ${fmtDateLow(v.eta_from, v.eta_to)}`;
+        const s = ` eta ${lastVfArea.toLowerCase()} ${fmtDateLow(v.eta_from, v.eta_to)}`;
+        line += s; h += esc(s);
       }
       // porto + open dates
       if (!hiddenCols.has('open_port') && v.open_port) {
         const portDates = fmtDateLow(v.open_from, v.open_to);
         const portStr = portDates ? `${v.open_port.toLowerCase()} ${portDates}` : v.open_port.toLowerCase();
-        line += lastVfArea ? ` /  ${portStr}` : ` ${portStr}`;
+        const s = lastVfArea ? ` /  ${portStr}` : ` ${portStr}`;
+        line += s; h += esc(s);
       }
-      // ideas (se la colonna non è nascosta)
-      if (!hiddenCols.has('ideas') && v.ideas) line += ` / ${v.ideas.toLowerCase()}`;
+      // ideas in grassetto (se la colonna non è nascosta)
+      if (!hiddenCols.has('ideas') && v.ideas) { line += ` / *${v.ideas.toLowerCase()}*`; h += ` / <b>${esc(v.ideas.toLowerCase())}</b>`; }
       // owner
-      if (!hiddenCols.has('ows_brkr') && v.ows_brkr) line += ` - ${v.ows_brkr.toLowerCase()}`;
-      lines.push(line);
+      if (!hiddenCols.has('ows_brkr') && v.ows_brkr) { line += ` - ${v.ows_brkr.toLowerCase()}`; h += ` - ${esc(v.ows_brkr.toLowerCase())}`; }
+      lines.push(line); hlines.push(h);
     }
     const txt = lines.join('\n');
-    copyToClipboard(txt).then((ok) => {
+    const htmlOut = '<div>' + esc(lines[0]) + '<br><br>' + hlines.map(l => l || '&nbsp;').join('<br>') + '</div>';
+    copyRichText(txt, htmlOut).then((ok) => {
       const b = $('#vf-copy');
       const oldHtml = b.innerHTML;
       if (ok) {
@@ -6566,7 +6593,8 @@ routes['cgo'] = function() {
   $('#cf-daterange').appendChild(drCgo);
   FINDER_STATE.cgo.excl = FINDER_STATE.cgo.excl || new Set(); const excludedCgoAreas = FINDER_STATE.cgo.excl;
   FINDER_STATE.cgo.hidden = FINDER_STATE.cgo.hidden || new Set(); const hiddenCgoRows = FINDER_STATE.cgo.hidden;
-  FINDER_STATE.cgo.hiddenCols = FINDER_STATE.cgo.hiddenCols || new Set(); const hiddenCgoCols = FINDER_STATE.cgo.hiddenCols;
+  FINDER_STATE.cgo.hiddenCols = FINDER_STATE.cgo.hiddenCols || new Set(JSON.parse(localStorage.getItem('pmx-cf-hidecols') || '[]')); const hiddenCgoCols = FINDER_STATE.cgo.hiddenCols;
+  const saveCfCols = () => { try { localStorage.setItem('pmx-cf-hidecols', JSON.stringify([...hiddenCgoCols])); } catch(e){} };
   let lastCfRows = [], lastCfArea = '';
   const CF = getFilter('cgo');
 // daterange selezionato nello step 'date' della mappa
@@ -6718,13 +6746,14 @@ routes['cgo'] = function() {
     $$('#cf-results .col-hide-btn').forEach(b => b.onclick = (e) => {
       e.stopPropagation();
       hiddenCgoCols.add(b.dataset.col);
+      saveCfCols();
       run();
     });
     lastCfRows = rows;
     lastCfArea = vslArea;
     // Show all
     const showAllCf = document.getElementById('cf-show-all');
-    if (showAllCf) showAllCf.onclick = () => { hiddenCgoRows.clear(); hiddenCgoCols.clear(); run(); };
+    if (showAllCf) showAllCf.onclick = () => { hiddenCgoRows.clear(); hiddenCgoCols.clear(); saveCfCols(); run(); };
     // Hook filtri colonna
     $$('#cf-results thead th.th-filter input').forEach(inp => {
       if (inp.value) inp.classList.add('filter-active');
@@ -6766,17 +6795,18 @@ routes['cgo'] = function() {
     const lines = [];
     const area = lastCfArea || 'ALL';
     const dr = (cfFrom && cfTo) ? ` ${fmtShort(cfFrom)} → ${fmtShort(cfTo)}` : '';
-    const copyRows = lastCfRows.filter(c => c.status !== 'on_subs');
+    const copyRows = lastCfRows.filter(c => c.status !== 'on_subs' && !(c.subs && String(c.subs).trim()));
     lines.push(`CGO ${area}${dr} — ${copyRows.length} cgos`);
     lines.push('');
+    const hlines = [];
     for (const c of copyRows) {
-      let line = '';
-      if (!hiddenCgoCols.has('chrtrs')) line += `*A/C ${(c.chrtrs||'').toLowerCase()}*`;
-      if (!hiddenCgoCols.has('size') && c.size) line += ` ${c.size.toLowerCase()}`;
+      let line = '', h = '';
+      if (!hiddenCgoCols.has('chrtrs')) { const nm = `A/C ${(c.chrtrs||'').toLowerCase()}`; line += `*${nm}*`; h += `<b>${esc(nm)}</b>`; }
+      if (!hiddenCgoCols.has('size') && c.size) { line += ` ${c.size.toLowerCase()}`; h += ` ${esc(c.size.toLowerCase())}`; }
       // load / disch
       const loadStr = !hiddenCgoCols.has('load_port') && c.load_port ? c.load_port.toLowerCase() : '';
       const dischStr = !hiddenCgoCols.has('disch_port') && c.disch_port ? c.disch_port.toLowerCase() : '';
-      if (loadStr || dischStr) line += ` ${loadStr}${loadStr && dischStr ? ' / ' : ''}${dischStr}`;
+      if (loadStr || dischStr) { const s = ` ${loadStr}${loadStr && dischStr ? ' / ' : ''}${dischStr}`; line += s; h += esc(s); }
       // laycan
       if (!hiddenCgoCols.has('dates') && c.laycan_from && c.laycan_to) {
         const f = new Date(c.laycan_from), t = new Date(c.laycan_to);
@@ -6785,14 +6815,15 @@ routes['cgo'] = function() {
         if (f.getUTCDate() === t.getUTCDate() && f.getUTCMonth() === t.getUTCMonth()) d = `${f.getUTCDate()} ${mons[f.getUTCMonth()]}`;
         else if (f.getUTCMonth() === t.getUTCMonth()) d = `${f.getUTCDate()}-${t.getUTCDate()} ${mons[t.getUTCMonth()]}`;
         else d = `${f.getUTCDate()} ${mons[f.getUTCMonth()]} - ${t.getUTCDate()} ${mons[t.getUTCMonth()]}`;
-        line += ` ${d}`;
+        line += ` ${d}`; h += esc(` ${d}`);
       }
-      if (!hiddenCgoCols.has('cgo') && c.cgo) line += ` ${c.cgo.toLowerCase()}`;
-      if (!hiddenCgoCols.has('notes') && c.notes) line += ` / ${c.notes.toLowerCase()}`;
-      lines.push(line);
+      if (!hiddenCgoCols.has('cgo') && c.cgo) { line += ` ${c.cgo.toLowerCase()}`; h += ` ${esc(c.cgo.toLowerCase())}`; }
+      if (!hiddenCgoCols.has('notes') && c.notes) { line += ` / *${c.notes.toLowerCase()}*`; h += ` / <b>${esc(c.notes.toLowerCase())}</b>`; }
+      lines.push(line); hlines.push(h);
     }
     const txt = lines.join('\n');
-    copyToClipboard(txt).then((ok) => {
+    const htmlOut = '<div>' + esc(lines[0]) + '<br><br>' + hlines.map(l => l || '&nbsp;').join('<br>') + '</div>';
+    copyRichText(txt, htmlOut).then((ok) => {
       const b = $('#cf-copy');
       const oldHtml = b.innerHTML;
       if (ok) {
