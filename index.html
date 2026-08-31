@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260831-p6-format -->
+<!-- build: 20260831-p6-manual -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -10106,9 +10106,70 @@ setRoute();
     if (!need.length) return Promise.resolve();
     var chunks = []; for (var i=0;i<need.length;i+=100) chunks.push(need.slice(i,i+100));
     return chunks.reduce(function(pr, ch){
-      return pr.then(function(){ return sb.from('vessel_specs').select('*').in('vessel', ch).then(function(r){ (r.data||[]).forEach(function(x){ P6.specs[x.vessel] = x; }); }); });
+      return pr.then(function(){ return sb.from('vessel_specs').select('*').in('vessel', ch).then(function(r){ (r.data||[]).forEach(function(x){ P6.specs[x.vessel] = x; }); }); })
+        .then(function(){ return sb.from('vessel_specs_manual').select('*').in('vessel', ch).then(function(r){ (r.data||[]).forEach(function(x){ P6.applyManual(x); }); }); });
     }, Promise.resolve()).then(function(){ need.forEach(function(n){ if (!(n in P6.specs)) P6.specs[n] = null; }); });
   };
+  // dati inseriti a mano: riempiono i buchi / correggono la scheda base (e restano salvati per sempre)
+  P6.applyManual = function(x){
+    if (!x || !x.vessel) return;
+    var base = P6.specs[x.vessel] || {};
+    var out = {}, k;
+    for (k in base) out[k] = base[k];
+    for (k in x) { if (k === 'updated_at' || k === 'updated_by') continue; if (x[k] != null && x[k] !== '') out[k] = x[k]; }
+    out.vessel = x.vessel;
+    P6.specs[x.vessel] = out;
+  };
+  P6.editVessel = function(name){
+    name = String(name||'').toUpperCase().trim(); if (!name) return;
+    var old = document.getElementById('p6-edit-ovl'); if (old) old.remove();
+    var sp = P6.specs[name] || {};
+    var F = [
+      ['dwt','Dwt'],['built','Built'],['draft','Draft (m)'],['cubic','Cubic grain'],['tpc','TPC'],
+      ['full_bal_kts','Full bal kts'],['full_lad_kts','Full lad kts'],['full_bal_cons','Full bal cons'],['full_lad_cons','Full lad cons'],['full_mgo','Full MGO'],
+      ['eco_bal_kts','Eco bal kts'],['eco_lad_kts','Eco lad kts'],['eco_bal_cons','Eco bal cons'],['eco_lad_cons','Eco lad cons'],['eco_mgo','Eco MGO'],
+      ['port_idle','Port idle'],['port_work','Port working']
+    ];
+    var ovl = document.createElement('div');
+    ovl.id = 'p6-edit-ovl';
+    var rows = F.map(function(f){
+      var val = sp[f[0]] != null ? sp[f[0]] : '';
+      return '<label class="p6e-f"><span>' + f[1] + '</span><input data-k="' + f[0] + '" type="number" step="any" value="' + val + '"></label>';
+    }).join('');
+    ovl.innerHTML = '<div class="p6e-card">' +
+      '<div class="p6e-head">VESSEL DATA &mdash; ' + name + '</div>' +
+      '<div class="p6e-grid">' + rows +
+      '<label class="p6e-f"><span>Scrubber</span><select data-k="scrubber"><option value=""' + (sp.scrubber==null?' selected':'') + '>&mdash;</option><option value="1"' + (sp.scrubber===true?' selected':'') + '>Yes</option><option value="0"' + (sp.scrubber===false?' selected':'') + '>No</option></select></label>' +
+      '</div>' +
+      '<div class="p6e-btns"><button class="p6e-save">Save</button><button class="p6e-cancel">Cancel</button><span class="p6e-msg"></span></div></div>';
+    document.body.appendChild(ovl);
+    ovl.onclick = function(e){ if (e.target === ovl) ovl.remove(); };
+    ovl.querySelector('.p6e-cancel').onclick = function(){ ovl.remove(); };
+    ovl.querySelector('.p6e-save').onclick = function(){
+      var row = { vessel: name, updated_by: (window.CURRENT_USER && window.CURRENT_USER.email) || null, updated_at: new Date().toISOString() };
+      ovl.querySelectorAll('[data-k]').forEach(function(inp){
+        var k = inp.dataset.k, v = inp.value;
+        if (k === 'scrubber') row[k] = v === '' ? null : v === '1';
+        else row[k] = v === '' ? null : parseFloat(String(v).replace(',','.'));
+      });
+      var msg = ovl.querySelector('.p6e-msg');
+      msg.textContent = 'Saving...';
+      sb.from('vessel_specs_manual').upsert(row, { onConflict: 'vessel' }).then(function(r){
+        if (r.error) { msg.textContent = 'Errore: ' + r.error.message; return; }
+        P6.applyManual(row);
+        ovl.remove();
+        if (P6._refresh) P6._refresh();
+      });
+    };
+  };
+  // doppio click sul nome nave in ECSA List -> scheda dati nave
+  document.addEventListener('dblclick', function(e){
+    if ((location.hash||'').indexOf('ecsa-list') === -1) return;
+    var td = e.target && e.target.closest ? e.target.closest('td[data-field="vessel"]') : null;
+    if (!td) return;
+    e.preventDefault(); e.stopPropagation();
+    P6.editVessel(td.textContent.trim());
+  }, true);
   P6.after = function(names, cb){
     if (P6._pending) return;
     var missing = false;
@@ -10135,6 +10196,7 @@ setRoute();
     });
   };
   P6.wireInputs = function(refresh){
+    P6._refresh = refresh;
     var m = { 'p6-hsfo':'hsfo', 'p6-vlsfo':'vlsfo', 'p6-mgo':'lsmgo', 'p6-lastp6':'p6_last' };
     Object.keys(m).forEach(function(id){
       var el = document.getElementById(id);
@@ -10224,20 +10286,20 @@ setRoute();
     var sp = P6.specs[String(v.vessel||'').toUpperCase().trim()];
     var offer = P6.parseOffer(ideasText != null ? ideasText : v.ideas);
     if (!offer) return { txt:'', title:'Nessuna offerta rilevata' };
-    if (!sp) return { txt:'?', title:'Descrizione nave mancante (Vessel Data)' };
+    if (!sp) return { txt:'', title:'Descrizione nave mancante (Vessel Data)' };
     var modes = modesOf(sp);
-    if (!modes.length) return { txt:'?', title:'Velocita/consumi mancanti' };
+    if (!modes.length) return { txt:'', title:'Velocita/consumi mancanti' };
     var D, bb = offer.bb || 0;
     if (bb > 0) { D = 0; }
     else {
       var o = originOf(v, offer, ideasText);
-      if (o.nm == null) return { txt:'?', title:'Distanza mancante: ' + (o.port||'?') };
+      if (o.nm == null) return { txt:'', title:'Distanza mancante: ' + (o.port||'?') };
       D = o.nm;
     }
     var price = P6.set.vlsfo;
     if (sp.scrubber) {
       if (offer.scrub === 'chtr') price = P6.set.hsfo;
-      else if (offer.scrub !== 'owns') return { txt:'?', title:'Nave scrubber: offerta senza 4 OWNS / 4 CHTR' };
+      else if (offer.scrub !== 'owns') return { txt:'', title:'Nave scrubber: offerta senza 4 OWNS / 4 CHTR' };
     }
     var best = null;
     for (var i=0;i<modes.length;i++){
@@ -10246,16 +10308,16 @@ setRoute();
       var ratemt = cost / r.intake / 0.95;
       if (!best || ratemt < best.ratemt) best = { ratemt: ratemt, mode: modes[i].name };
     }
-    if (!best) return { txt:'?', title:'Calcolo non riuscito' };
+    if (!best) return { txt:'', title:'Calcolo non riuscito' };
     var p6 = ((best.ratemt*0.95*STD.intake) - stdEx()) / STD.days / 0.95;
     return { txt: fmtK(p6), title: 'Offerta ' + offer.rate + (bb ? ' + BB ' + bb : '') + ' → ' + best.ratemt.toFixed(2) + ' $/mt (' + best.mode + ')' };
   };
   P6.value = function(v, ideasText){
     if (P6.set.p6_last == null) return { txt:'', title:'Imposta LAST P6 in alto' };
     var sp = P6.specs[String(v.vessel||'').toUpperCase().trim()];
-    if (!sp) return { txt:'?', title:'Descrizione nave mancante (Vessel Data)' };
+    if (!sp) return { txt:'', title:'Descrizione nave mancante (Vessel Data)' };
     var modes = modesOf(sp);
-    if (!modes.length) return { txt:'?', title:'Velocita/consumi mancanti' };
+    if (!modes.length) return { txt:'', title:'Velocita/consumi mancanti' };
     var offer = P6.parseOffer(ideasText != null ? ideasText : v.ideas);
     // P6 VALUE: sempre come se la nave fosse aperta a Singapore (ballast 9009, laden 9009 + 2441)
     var D = 9009;
@@ -10268,13 +10330,13 @@ setRoute();
       var gtc = ((ratemt*0.95*r.intake) - r.bunk - fixedCost(sp)) / (0.95*r.tot);
       if (!best || gtc > best.gtc) best = { gtc: gtc, mode: modes[i].name };
     }
-    if (!best) return { txt:'?', title:'Calcolo non riuscito' };
+    if (!best) return { txt:'', title:'Calcolo non riuscito' };
     return { txt: fmtK(best.gtc), title: 'P6 ' + P6.set.p6_last + ' → ' + ratemt.toFixed(2) + ' $/mt, aperta Spore (' + best.mode + ')' };
   };
   P6.cells = function(v, ideasText){
     var eq, va;
-    try { eq = P6.equiv(v, ideasText); } catch(e){ eq = { txt:'?', title:'err: '+e.message }; }
-    try { va = P6.value(v, ideasText); } catch(e){ va = { txt:'?', title:'err: '+e.message }; }
+    try { eq = P6.equiv(v, ideasText); } catch(e){ eq = { txt:'', title:'err: '+e.message }; }
+    try { va = P6.value(v, ideasText); } catch(e){ va = { txt:'', title:'err: '+e.message }; }
     function td(c){ return '<td class="p6cell' + (c.txt==='?' ? ' p6warn' : '') + '" title="' + String(c.title||'').replace(/"/g,'&quot;') + '">' + c.txt + '</td>'; }
     return td(eq) + td(va);
   };
@@ -10287,7 +10349,19 @@ setRoute();
     '.p6-set label{font-size:9.5px;text-transform:uppercase;color:var(--text-mute);letter-spacing:.04em;font-weight:700}' +
     '.p6-set label.p6-last-lbl{color:var(--gold);}' +
     '.p6-set input{width:54px;background:var(--bg-3);border:1px solid var(--line);color:var(--text);border-radius:var(--radius-sm);padding:3px 6px;font:inherit;font-size:11.5px;height:26px;outline:none}' +
-    '.p6-set input#p6-lastp6{width:62px;border-color:var(--gold);font-weight:700}';
+    '.p6-set input#p6-lastp6{width:62px;border-color:var(--gold);font-weight:700}' +
+    '#p6-edit-ovl{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:10000;display:flex;align-items:center;justify-content:center}' +
+    '.p6e-card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 50px rgba(15,23,42,.25);padding:20px 22px;width:660px;max-width:92vw;max-height:88vh;overflow:auto}' +
+    '.p6e-head{font-weight:800;font-size:13px;letter-spacing:.05em;margin-bottom:14px;color:var(--text)}' +
+    '.p6e-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px 12px}' +
+    '.p6e-f{display:flex;flex-direction:column;gap:3px}' +
+    '.p6e-f span{font-size:8.5px;text-transform:uppercase;color:var(--text-mute);letter-spacing:.05em;font-weight:700;white-space:nowrap}' +
+    '.p6e-f input,.p6e-f select{background:var(--bg-3);border:1px solid var(--line);color:var(--text);border-radius:var(--radius-sm);padding:5px 7px;font:inherit;font-size:12px;outline:none;width:100%;box-sizing:border-box}' +
+    '.p6e-f input:focus,.p6e-f select:focus{border-color:var(--gold)}' +
+    '.p6e-btns{display:flex;align-items:center;gap:8px;margin-top:16px}' +
+    '.p6e-save{background:var(--gold);border:none;color:#fff;font:inherit;font-weight:700;font-size:12px;padding:7px 18px;border-radius:var(--radius-sm);cursor:pointer}' +
+    '.p6e-cancel{background:var(--bg-3);border:1px solid var(--line);color:var(--text);font:inherit;font-size:12px;padding:7px 14px;border-radius:var(--radius-sm);cursor:pointer}' +
+    '.p6e-msg{font-size:11px;color:#D93025}';
   document.head.appendChild(st);
 })();
 </script>
