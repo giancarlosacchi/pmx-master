@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260831-ideas-click -->
+<!-- build: 20260831-cols-air -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2078,6 +2078,13 @@ table.grid th.col-del, table.grid td.col-del { width: 30px; max-width: 30px; ove
 #vf-results .col-ideas .ideas-text, #cf-results .col-ideas .ideas-text { width: 100%; min-width: 0; max-width: 100%; }
 .personal-block .col-ideas { width: 100% !important; max-width: 0 !important; min-width: 0 !important; }
 .personal-block .col-ideas .ideas-text { width: 100%; min-width: 0; max-width: 100%; }
+/* Un po' d'aria in piu nelle colonne compatte */
+.panel-list #tbl table.grid th:not(.col-ideas), .panel-list #tbl table.grid td:not(.col-ideas),
+.ecsa-list-col #tbl table.grid th:not(.col-ideas), .ecsa-list-col #tbl table.grid td:not([data-col="ideas"]),
+#ca-tbl th:not(.col-ideas), #ca-tbl td:not(.col-ideas),
+#vf-results table.grid th:not(.col-ideas), #vf-results table.grid td:not(.col-ideas),
+#cf-results table.grid th:not(.col-ideas), #cf-results table.grid td:not(.col-ideas),
+.personal-block table.grid th:not(.col-ideas), .personal-block table.grid td:not(.col-ideas) { padding-left: 13px; padding-right: 13px; }
 /* Ideas nascosta -> tabella e scheda si stringono sul contenuto (niente spazi vuoti) */
 .ecsa-list-col #tbl table.grid:has(th[data-col="ideas"][style*="none"]) { width: auto !important; }
 .ecsa-list-col:has(th[data-col="ideas"][style*="none"]) .panel { width: fit-content; max-width: 100%; min-width: 0; }
