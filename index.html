@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260831-p6-manual2 -->
+<!-- build: 20260831-nobold -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -647,6 +647,8 @@ tr.status-fresh td, tr.status-fresh td b, tr.status-fresh td .ideas-text { font-
 tr.row-new td, tr.row-new td b, tr.row-new td .ideas-text { font-weight: 700; }
 /* Cella Ideas/Info bold quando inizia per OFFERS (oggi). YDAY/LAST OFFERS → no bold. */
 td.cell-offers, td.cell-offers .ideas-text, td.cell-offers > div { font-weight: 700 !important; }
+/* Nomi navi/charterer NON in grassetto: bold solo dove tutta la riga e' bold (fresh / inserite oggi) */
+table.grid tbody td b { font-weight: inherit; }
 tr.status-off td { background: var(--off-bg) !important; color: var(--off-text); }
 tr.status-off td:first-child { border-left: 2px solid var(--amber); }
 .cb-cell { text-align: center; }
