@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260831-laden-std -->
+<!-- build: 20260831-vsl-descr -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -193,6 +193,8 @@ body { -webkit-font-smoothing: antialiased; font-feature-settings: "tnum" 1; }
 
 /* Admin-only elements: visible only when body has .is-admin (set after login if role='admin') */
 body.is-admin .admin-only { display: flex !important; }
+/* Vsl Descr: per ora visibile solo a Giancarlo */
+body:not(.is-gsc) [data-route="vsl-descr"] { display: none !important; }
 
 /* Admin page styles */
 .admin-panel { padding: 18px; }
@@ -2462,6 +2464,7 @@ body:not(.logged-in) .app { visibility: hidden; }
       <a data-route="ecsa-list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18"/></svg><span class="nav-label">ECSA List</span></a>
       <a data-route="calc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h2M14 11h2M8 15h2M14 15h2"/></svg><span class="nav-label">Calc DOP/APS</span></a>
       <a data-route="distances"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg><span class="nav-label">Distances</span></a>
+      <a data-route="vsl-descr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span class="nav-label">Vsl Descr</span></a>
       <a data-route="personal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M5 21v-1a7 7 0 0 1 14 0v1"/></svg><span class="nav-label">Personal</span></a>
       <a data-route="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4m0 14v4M4.2 4.2l2.8 2.8m10 10 2.8 2.8M1 12h4m14 0h4M4.2 19.8l2.8-2.8m10-10 2.8-2.8"/></svg><span class="nav-label">Settings</span></a>
     </nav>
@@ -2551,6 +2554,7 @@ async function bootAppAfterAuth(user, allowedRow) {
   }
   document.body.classList.add('logged-in');
   if (CURRENT_USER_ROLE === 'admin') document.body.classList.add('is-admin');
+  if (String((user && user.email) || '').toLowerCase() === 'gsc@lightshipchartering.com') document.body.classList.add('is-gsc');
   renderUserChip(user);
   // 1) Load latest data from cloud (with auto-migration if cloud empty)
   await loadDataFromCloud();
@@ -4850,6 +4854,7 @@ const PAGES = {
   'atl-tng':   ['ATL TNG', 'Atlantic Master List — panamax position'],
   'pac-tng':   ['PAC TNG', 'Pacific Master List — panamax position'],
   'ecsa-list': ['ECSA List', ''],
+  'vsl-descr': ['Vsl Descr', ''],
   'atl-cgo':   ['ATL CGO', 'Atlantic Cargoes'],
   'pac-cgo':   ['PAC CGO', 'Pacific Cargoes'],
   'vsl':       ['Vsl Finder', 'Find vessels by load area + laycan'],
@@ -8700,6 +8705,59 @@ async function restoreSnapshot(id) {
 // ============== ADMIN PAGE ==============
 // Visible only to users with role='admin' in allowed_users (CSS .admin-only).
 // Allows admin to add/remove/deactivate colleagues from the allowlist.
+// ===== VSL DESCR: archivio descrizioni navi (per ora solo Giancarlo) =====
+routes['vsl-descr'] = function() {
+  $('#topbar-actions').innerHTML = `<div class="global-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="vd-q" placeholder="Search…"/></div>`;
+  if (!document.body.classList.contains('is-gsc')) { $('#content').innerHTML = ''; return; }
+  $('#content').innerHTML = `
+    <div class="panel" style="display:flex;flex-direction:column;min-height:0;flex:1">
+      <div class="filters">
+        <div class="group"><label>New vessel</label><input id="vd-new-name" placeholder="Vessel name" style="background:var(--bg-3);border:1px solid var(--line);color:var(--text);border-radius:var(--radius-sm);padding:4px 8px;font:inherit;font-size:12px;outline:none;width:160px"></div>
+        <button class="primary" id="vd-add" title="Add vessel description">+ Add</button>
+        <span class="count-pill" id="vd-cnt">—</span>
+      </div>
+      <div class="tbl-wrap" id="vd-tbl" style="flex:1;overflow:auto"></div>
+    </div>`;
+  const refresh = async () => {
+    const res = await sb.from('vessel_specs_manual').select('*').order('vessel');
+    if (res.error) { $('#vd-tbl').innerHTML = '<div style="padding:16px;color:var(--red)">' + esc(res.error.message) + '</div>'; return; }
+    let rows = res.data || [];
+    if (window.P6) rows.forEach(r => window.P6.applyManual(r));
+    const q = (($('#vd-q') && $('#vd-q').value) || '').toLowerCase();
+    if (q) rows = rows.filter(r => (r.vessel || '').toLowerCase().includes(q));
+    const cnt = $('#vd-cnt'); if (cnt) cnt.textContent = rows.length + ' vessels';
+    const F = x => x == null ? '' : x;
+    const pair = (a, b) => a == null && b == null ? '' : `${F(a)} / ${F(b)}`;
+    const html = [`<table class="grid"><thead class="area-blue tint-fixed"><tr>
+      <th>Vessel</th><th>Dwt</th><th>Built</th><th>Draft</th><th>Cubic</th><th>TPC</th><th>Scrub</th>
+      <th>Full kts B/L</th><th>Full cons B/L</th><th>Eco kts B/L</th><th>Eco cons B/L</th><th>MGO F/E</th><th>Port I/W</th><th>Updated</th>
+    </tr></thead><tbody>`];
+    for (const r of rows) {
+      html.push(`<tr>
+        <td class="vd-name" data-vsl="${attr(r.vessel)}" title="Double-click to edit" style="cursor:pointer"><b>${esc(r.vessel)}</b></td>
+        <td>${F(r.dwt)}</td><td>${F(r.built)}</td><td>${F(r.draft)}</td><td>${F(r.cubic)}</td><td>${F(r.tpc)}</td>
+        <td>${r.scrubber === true ? 'Y' : r.scrubber === false ? 'N' : ''}</td>
+        <td>${pair(r.full_bal_kts, r.full_lad_kts)}</td>
+        <td>${pair(r.full_bal_cons, r.full_lad_cons)}</td>
+        <td>${pair(r.eco_bal_kts, r.eco_lad_kts)}</td>
+        <td>${pair(r.eco_bal_cons, r.eco_lad_cons)}</td>
+        <td>${pair(r.full_mgo, r.eco_mgo)}</td>
+        <td>${pair(r.port_idle, r.port_work)}</td>
+        <td class="dim">${(r.updated_at || '').slice(0, 10)}${r.updated_by ? ' · ' + esc(String(r.updated_by).split('@')[0]) : ''}</td>
+      </tr>`);
+    }
+    html.push('</tbody></table>');
+    $('#vd-tbl').innerHTML = html.join('');
+    $$('#vd-tbl .vd-name').forEach(td => td.ondblclick = (e) => { e.preventDefault(); if (window.P6) { window.P6._refresh = refresh; window.P6.editVessel(td.dataset.vsl); } });
+  };
+  $('#vd-add').onclick = () => {
+    const n = ($('#vd-new-name').value || '').trim().toUpperCase();
+    if (!n) return;
+    if (window.P6) { window.P6._refresh = refresh; window.P6.editVessel(n); }
+  };
+  $('#vd-q').oninput = () => { clearTimeout(window.__vdT); window.__vdT = setTimeout(refresh, 250); };
+  refresh();
+};
 routes['admin'] = function() {
   // Defense in depth: even if a non-admin types #/admin in URL, redirect away
   if (CURRENT_USER_ROLE !== 'admin') {
