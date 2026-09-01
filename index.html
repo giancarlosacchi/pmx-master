@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260831-ecsa-ui -->
+<!-- build: 20260831-ecsa-ui2 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -1829,6 +1829,16 @@ tr.status-subs .status-menu .opt { text-decoration: none; }
   opacity: .55; margin: 0; z-index: 2;
 }
 #vf-results th.th-filter input, #cf-results th.th-filter input { padding-right: 24px; }
+/* ECSA List: X nascondi-colonna come nei finder */
+.ecsa-list-col th { position: relative; }
+.ecsa-list-col .col-hide-btn {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  opacity: .55; margin: 0; z-index: 2;
+}
+.ecsa-list-col th.th-filter input { padding-right: 22px; }
+.ecsa-list-col .col-hide-btn:hover { opacity: 1; }
+.ecsa-list-col thead.area-green .col-hide-btn { color: rgba(255,255,255,.8); }
+.ecsa-list-col thead.area-green .col-hide-btn:hover { color: #fff; border-color: #fff; }
 table.grid tr:hover .row-hide-btn,
 table.grid th:hover .col-hide-btn { opacity: .7; }
 #vf-results .col-hide-btn:hover, #cf-results .col-hide-btn:hover { opacity: 1; }
@@ -5619,17 +5629,17 @@ function renderEcsaRow(entry) {
     ideasDisplay = prefix + (ideasDisplay ? ' - ' + ideasDisplay : '');
   }
   return `<tr class="${cls}" data-sel-id="${v.id}" data-sel-kind="v" data-sel-from="${entry.adjFrom||''}" data-sel-to="${entry.adjTo||''}" data-sel-area="${esc(entry.area||'')}">
-    <td ${E('vessel')}><b>${esc(v.vessel)}</b></td>
-    <td ${E('dwt_blt')} class="editable dim">${esc(v.dwt_blt || '')}</td>
-    <td>${esc(entry.eta || '')}</td>
-    <td data-kind="v" data-id="${v.id}" data-field="open_from" class="editable" title="Double-click to edit (laycan from)">${fmtDateRange(entry.adjFrom, entry.adjTo)}</td>
-    <td ${E('ideas')} class="col-ideas editable"><div class="ideas-text">${fmtIdeas(ideasDisplay, v.update_date)}</div></td>
-    ${(window.P6 && window.P6.loaded) ? window.P6.cells(v, ideasDisplay) : '<td class="p6cell"></td><td class="p6cell"></td>'}
-    <td ${E('ows_brkr')} class="editable dim">${esc(v.ows_brkr || '')}</td>
-    <td ${E('bunker')} class="editable dim">${esc(v.bunker || '')}</td>
-    <td ${E('ls_brkr')} class="editable dim">${esc(v.ls_brkr || '')}</td>
-    <td ${E('update_date')} class="editable dim">${fmtUpdate(v.update_date)}</td>
-    <td><div class="status-wrap">
+    <td data-col="vessel" ${E('vessel')}><b>${esc(v.vessel)}</b></td>
+    <td data-col="dwt_blt" ${E('dwt_blt')} class="editable dim">${esc(v.dwt_blt || '')}</td>
+    <td data-col="eta">${esc(entry.eta || '')}</td>
+    <td data-col="dates" data-kind="v" data-id="${v.id}" data-field="open_from" class="editable" title="Double-click to edit (laycan from)">${fmtDateRange(entry.adjFrom, entry.adjTo)}</td>
+    <td data-col="ideas" ${E('ideas')} class="col-ideas editable"><div class="ideas-text">${fmtIdeas(ideasDisplay, v.update_date)}</div></td>
+    ${(window.P6 && window.P6.loaded) ? window.P6.cells(v, ideasDisplay) : '<td data-col="p6_equiv" class="p6cell"></td><td data-col="p6_value" class="p6cell"></td>'}
+    <td data-col="ows_brkr" ${E('ows_brkr')} class="editable dim">${esc(v.ows_brkr || '')}</td>
+    <td data-col="bunker" ${E('bunker')} class="editable dim">${esc(v.bunker || '')}</td>
+    <td data-col="ls_brkr" ${E('ls_brkr')} class="editable dim">${esc(v.ls_brkr || '')}</td>
+    <td data-col="update_date" ${E('update_date')} class="editable dim">${fmtUpdate(v.update_date)}</td>
+    <td data-col="status"><div class="status-wrap">
       <span class="status-chip ${statusCls}" data-id="${v.id}">${statusLabel}</span>
       <div class="status-menu">
         <div class="opt fresh ${v.status==='fresh'?'current':''}" data-id="${v.id}" data-status="fresh">Fresh</div>
@@ -5644,7 +5654,7 @@ function renderEcsaRow(entry) {
 routes['ecsa-list'] = function() {
   $('#topbar-actions').innerHTML = `<div class="global-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="f-q" placeholder="Search…"/></div>`;
   $('#content').innerHTML = `
-    <div class="ecsa-layout">
+    <div class="ecsa-layout rundown-hidden">
       <div class="ecsa-list-col">
         <div class="panel">
           <div class="filters">
@@ -5663,34 +5673,10 @@ routes['ecsa-list'] = function() {
           <div class="tbl-wrap" id="tbl"></div>
         </div>
       </div>
-      <div class="ecsa-rundown-col">
-        <div class="panel">
-          <div class="cp-header">
-            <span class="cp-header-title">ECSA Rundown</span>
-            <button class="cp-copy-btn" id="ecsa-rd-copy">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-              Copy
-            </button>
-          </div>
-          <pre class="rundown" id="ecsa-rd-text"></pre>
-        </div>
-      </div>
     </div>`;
-  // Rundown a destra: replica della pagina standalone ECSA Rundown (sezioni FIXTURES/TA/FH/1H/2H/PG-SEASIA/PPMX)
-  const rdText = (typeof generateEcsaRundown === 'function') ? generateEcsaRundown(null) : '';
-  $('#ecsa-rd-text').textContent = rdText || '— no qualified vessel —';
-  $('#ecsa-rd-copy').onclick = async () => {
-    const ok = await copyToClipboard(rdText || '');
-    const btn = $('#ecsa-rd-copy');
-    if (ok) {
-      btn.classList.add('ok');
-      const oldHtml = btn.innerHTML;
-      btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied`;
-      setTimeout(() => { btn.classList.remove('ok'); btn.innerHTML = oldHtml; }, 1600);
-    } else {
-      showCopyFallback(rdText || '');
-    }
-  };
+  // Colonne nascoste (persistenti)
+  const ecsaHiddenCols = new Set(JSON.parse(localStorage.getItem('pmx-ecsa-hidecols') || '[]'));
+  const saveEcsaCols = () => { try { localStorage.setItem('pmx-ecsa-hidecols', JSON.stringify([...ecsaHiddenCols])); } catch(e){} };
   // Lista a sinistra: tutte le navi che vanno a ECSA (ATL: ECSA/PG/RSEA/SAFR/WCI/ECI + PAC: SEASIA), date aggiustate
   const refresh = () => {
     const q = $('#f-q').value.toLowerCase();
@@ -5732,23 +5718,32 @@ routes['ecsa-list'] = function() {
         cntEl.removeAttribute('data-tooltip');
       }
     }
-    const html = [`<table class="grid"><thead class="area-green"><tr>
-      <th class="th-filter"><input data-col="vessel" placeholder="Vessel" value="${attr(F.vessel||'')}"></th>
-      <th class="th-filter"><input data-col="dwt_blt" placeholder="DWT" value="${attr(F.dwt_blt||'')}"></th>
-      <th class="th-filter"><input data-col="eta" placeholder="ETA" value="${attr(F.eta||'')}"></th>
-      <th class="th-filter"><input class="filter-date-range" type="text" readonly data-col="dates" placeholder="Dates" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.dates_from, F.dates_to))}"></th>
-      <th class="th-filter col-ideas"><input data-col="ideas" placeholder="Ideas / Info" value="${attr(F.ideas||'')}"></th>
-      <th class="p6-th">P6 EQUIV</th>
-      <th class="p6-th">P6 VALUE<br>BSS SPORE</th>
-      <th class="th-filter"><input data-col="ows_brkr" placeholder="Ows" value="${attr(F.ows_brkr||'')}"></th>
-      <th class="th-filter"><input data-col="bunker" placeholder="Bunker" value="${attr(F.bunker||'')}"></th>
-      <th class="th-filter"><input data-col="ls_brkr" placeholder="LS" value="${attr(F.ls_brkr||'')}"></th>
-      <th class="th-filter"><input class="filter-date-range" type="text" readonly data-col="update_date" placeholder="Update" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.update_from, F.update_to))}"></th>
-      <th class="th-filter"><input data-col="status" placeholder="Status" value="${attr(F.status||'')}"></th>
+    const ecsaColBtn = (k) => `<button class="col-hide-btn" data-col="${k}" title="Hide column">×</button>`;
+    const ecsaBanner = ecsaHiddenCols.size > 0
+      ? `<div class="hidden-banner show"><span>Hidden: <b>${ecsaHiddenCols.size}</b> columns</span><button id="ecsa-show-all">Show all</button></div>`
+      : '';
+    const html = [ecsaBanner + `<table class="grid"><thead class="area-green"><tr>
+      <th data-col="vessel" class="th-filter"><input data-col="vessel" placeholder="Vessel" value="${attr(F.vessel||'')}">${ecsaColBtn('vessel')}</th>
+      <th data-col="dwt_blt" class="th-filter"><input data-col="dwt_blt" placeholder="DWT" value="${attr(F.dwt_blt||'')}">${ecsaColBtn('dwt_blt')}</th>
+      <th data-col="eta" class="th-filter"><input data-col="eta" placeholder="ETA" value="${attr(F.eta||'')}">${ecsaColBtn('eta')}</th>
+      <th data-col="dates" class="th-filter"><input class="filter-date-range" type="text" readonly data-col="dates" placeholder="Dates" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.dates_from, F.dates_to))}">${ecsaColBtn('dates')}</th>
+      <th data-col="ideas" class="th-filter col-ideas"><input data-col="ideas" placeholder="Ideas / Info" value="${attr(F.ideas||'')}">${ecsaColBtn('ideas')}</th>
+      <th data-col="p6_equiv" class="p6-th">P6 EQUIV${ecsaColBtn('p6_equiv')}</th>
+      <th data-col="p6_value" class="p6-th">P6 VALUE<br>BSS SPORE${ecsaColBtn('p6_value')}</th>
+      <th data-col="ows_brkr" class="th-filter"><input data-col="ows_brkr" placeholder="Ows" value="${attr(F.ows_brkr||'')}">${ecsaColBtn('ows_brkr')}</th>
+      <th data-col="bunker" class="th-filter"><input data-col="bunker" placeholder="Bunker" value="${attr(F.bunker||'')}">${ecsaColBtn('bunker')}</th>
+      <th data-col="ls_brkr" class="th-filter"><input data-col="ls_brkr" placeholder="LS" value="${attr(F.ls_brkr||'')}">${ecsaColBtn('ls_brkr')}</th>
+      <th data-col="update_date" class="th-filter"><input class="filter-date-range" type="text" readonly data-col="update_date" placeholder="Update" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.update_from, F.update_to))}">${ecsaColBtn('update_date')}</th>
+      <th data-col="status" class="th-filter"><input data-col="status" placeholder="Status" value="${attr(F.status||'')}">${ecsaColBtn('status')}</th>
     </tr></thead><tbody>`];
     for (const e of entries) html.push(renderEcsaRow(e));
     html.push('</tbody></table>');
     $('#tbl').innerHTML = html.join('');
+    // Applica colonne nascoste + bottoni × + Show all
+    $$('#tbl [data-col]').forEach(el => { if (el.tagName !== 'INPUT') el.style.display = ecsaHiddenCols.has(el.dataset.col) ? 'none' : ''; });
+    $$('#tbl .col-hide-btn').forEach(b => b.onclick = (e) => { e.stopPropagation(); ecsaHiddenCols.add(b.dataset.col); saveEcsaCols(); refresh(); });
+    const ecsaShowAll = document.getElementById('ecsa-show-all');
+    if (ecsaShowAll) ecsaShowAll.onclick = () => { ecsaHiddenCols.clear(); saveEcsaCols(); refresh(); };
     if (window.P6) window.P6.after(entries.map(e => e.v.vessel), refresh);
     $$('#tbl .status-menu .opt').forEach(o => o.onclick = (e) => {
       e.stopPropagation();
@@ -10322,8 +10317,8 @@ setRoute();
     var eq, va;
     try { eq = P6.equiv(v, ideasText); } catch(e){ eq = { txt:'', title:'err: '+e.message }; }
     try { va = P6.value(v, ideasText); } catch(e){ va = { txt:'', title:'err: '+e.message }; }
-    function td(c){ return '<td class="p6cell' + (c.txt==='?' ? ' p6warn' : '') + '" title="' + String(c.title||'').replace(/"/g,'&quot;') + '">' + c.txt + '</td>'; }
-    return td(eq) + td(va);
+    function td(c, col){ return '<td data-col="' + col + '" class="p6cell' + (c.txt==='?' ? ' p6warn' : '') + '" title="' + String(c.title||'').replace(/"/g,'&quot;') + '">' + c.txt + '</td>'; }
+    return td(eq, 'p6_equiv') + td(va, 'p6_value');
   };
   // CSS
   var st = document.createElement('style');
