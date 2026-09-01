@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260831-p6e-sub -->
+<!-- build: 20260831-ideas-click -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -1628,8 +1628,9 @@ table.grid tbody td.col-ideas {
 }
 /* Evita scroll orizzontale sui main wrap, lascia che Ideas si stringa */
 .tbl-wrap { overflow-x: hidden; }
-/* Hover sul div .ideas-text: il testo va a capo, la riga cresce in altezza */
-.ideas-text:hover {
+/* Click sul div .ideas-text: il testo va a capo, la riga cresce in altezza (click di nuovo per chiudere) */
+.ideas-text { cursor: pointer; }
+.ideas-text.open {
   white-space: normal;
   overflow: visible;
   text-overflow: clip;
@@ -2067,7 +2068,7 @@ table.grid th.col-del, table.grid td.col-del { width: 30px; max-width: 30px; ove
 #ca-tbl .col-ideas { width: 100% !important; max-width: 0 !important; min-width: 0 !important; }
 #ca-tbl .col-ideas .ideas-text { width: 100%; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Hover: il testo va a capo e si vede per intero (override della regola sopra) */
-#ca-tbl .col-ideas .ideas-text:hover { white-space: normal; overflow: visible; text-overflow: clip; word-break: break-word; }
+#ca-tbl .col-ideas .ideas-text.open { white-space: normal; overflow: visible; text-overflow: clip; word-break: break-word; }
 /* ===== COLONNE COMPATTE OVUNQUE: larghe quanto il contenuto piu largo (tranne ideas/info/notes) ===== */
 .ecsa-list-col table.grid { table-layout: auto !important; }
 .ecsa-list-col #tbl table.grid th:not(.col-ideas), .ecsa-list-col #tbl table.grid td:not([data-col="ideas"]) { width: 1px !important; max-width: none !important; white-space: nowrap; }
@@ -2077,6 +2078,11 @@ table.grid th.col-del, table.grid td.col-del { width: 30px; max-width: 30px; ove
 #vf-results .col-ideas .ideas-text, #cf-results .col-ideas .ideas-text { width: 100%; min-width: 0; max-width: 100%; }
 .personal-block .col-ideas { width: 100% !important; max-width: 0 !important; min-width: 0 !important; }
 .personal-block .col-ideas .ideas-text { width: 100%; min-width: 0; max-width: 100%; }
+/* Ideas nascosta -> tabella e scheda si stringono sul contenuto (niente spazi vuoti) */
+.ecsa-list-col #tbl table.grid:has(th[data-col="ideas"][style*="none"]) { width: auto !important; }
+.ecsa-list-col:has(th[data-col="ideas"][style*="none"]) .panel { width: fit-content; max-width: 100%; min-width: 0; }
+#vf-results table.grid:has(th[data-col="ideas"][style*="none"]),
+#cf-results table.grid:has(th[data-col="notes"][style*="none"]) { width: auto !important; }
 .ecsa-list-col #tbl table.grid th.th-filter { min-width: 56px; }
 .ecsa-list-col #tbl table.grid th.th-filter input { min-width: 0; width: 100%; }
 #ca-tbl th:not(.col-ideas), #ca-tbl td:not(.col-ideas) { width: 1px !important; max-width: none !important; white-space: nowrap; }
@@ -2093,7 +2099,7 @@ table.grid th.col-del, table.grid td.col-del { width: 30px; max-width: 30px; ove
 #cf-results th:not(.col-ideas), #cf-results td:not(.col-ideas) { width: 1px !important; max-width: none !important; white-space: nowrap; }
 #vf-results .col-ideas, #cf-results .col-ideas { width: 100% !important; max-width: 0 !important; min-width: 0 !important; }
 #vf-results .col-ideas .ideas-text, #cf-results .col-ideas .ideas-text { width: 100%; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#vf-results .col-ideas .ideas-text:hover, #cf-results .col-ideas .ideas-text:hover { white-space: normal; overflow: visible; text-overflow: clip; word-break: break-word; }
+#vf-results .col-ideas .ideas-text.open, #cf-results .col-ideas .ideas-text.open { white-space: normal; overflow: visible; text-overflow: clip; word-break: break-word; }
 .personal-block { margin-bottom: 16px; }
 .personal-block .pers-h { padding: 10px 14px; font-weight: 700; font-size: 13px; color: var(--text); border-bottom: 1px solid var(--line-soft); }
 .personal-block table.grid { table-layout: auto; width: 100%; }
@@ -10410,6 +10416,14 @@ setRoute();
   if (document.body) mo.observe(document.body, { childList: true, subtree: true });
   else document.addEventListener('DOMContentLoaded', function(){ mo.observe(document.body, { childList: true, subtree: true }); });
 })();
+
+/* ===== IDEAS: click per aprire/chiudere il testo completo ===== */
+document.addEventListener('click', function(e){
+  var it = e.target && e.target.closest ? e.target.closest('.ideas-text') : null;
+  if (!it) return;
+  if (e.detail > 1) return; /* parte di un doppio click (edit) */
+  it.classList.toggle('open');
+});
 
 /* ===== APPEARANCE & COPY SETTINGS ===== */
 (function(){
