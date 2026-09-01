@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260831-cols-fit3 -->
+<!-- build: 20260831-p6e-sub -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -10129,15 +10129,18 @@ setRoute();
     var scMiss = !fullOk && !ecoOk;
     var shipRows = fld('dwt','Dwt',!has('dwt')) + fld('built','Built',!has('built')) + fld('draft','Draft (m)',!has('draft')) + fld('cubic','Cubic grain',!has('cubic')) + fld('tpc','TPC',!has('tpc')) +
       '<label class="p6e-f' + (sp.scrubber == null ? ' p6e-miss' : '') + '"><span>Scrubber</span><select data-k="scrubber"><option value=""' + (sp.scrubber==null?' selected':'') + '>&mdash;</option><option value="1"' + (sp.scrubber===true?' selected':'') + '>Yes</option><option value="0"' + (sp.scrubber===false?' selected':'') + '>No</option></select></label>';
-    var scRows = fld('full_bal_kts','Full bal kts', scMiss && !has('full_bal_kts')) + fld('full_lad_kts','Full lad kts', scMiss && !has('full_lad_kts')) + fld('full_bal_cons','Full bal cons', scMiss && !has('full_bal_cons')) + fld('full_lad_cons','Full lad cons', scMiss && !has('full_lad_cons')) + fld('full_mgo','Full MGO', false) +
-      fld('eco_bal_kts','Eco bal kts', scMiss && !has('eco_bal_kts')) + fld('eco_lad_kts','Eco lad kts', scMiss && !has('eco_lad_kts')) + fld('eco_bal_cons','Eco bal cons', scMiss && !has('eco_bal_cons')) + fld('eco_lad_cons','Eco lad cons', scMiss && !has('eco_lad_cons')) + fld('eco_mgo','Eco MGO', false) +
-      fld('port_idle','Port idle', !has('port_idle')) + fld('port_work','Port working', !has('port_work'));
+    var scRows = '<div class="p6e-sub"><div class="p6e-sub-t">Full speed</div><div class="p6e-grid">' +
+      fld('full_bal_kts','Bal kts', scMiss && !has('full_bal_kts')) + fld('full_lad_kts','Lad kts', scMiss && !has('full_lad_kts')) + fld('full_bal_cons','Bal cons', scMiss && !has('full_bal_cons')) + fld('full_lad_cons','Lad cons', scMiss && !has('full_lad_cons')) + fld('full_mgo','MGO', false) +
+      '</div></div><div class="p6e-sub"><div class="p6e-sub-t">Eco speed</div><div class="p6e-grid">' +
+      fld('eco_bal_kts','Bal kts', scMiss && !has('eco_bal_kts')) + fld('eco_lad_kts','Lad kts', scMiss && !has('eco_lad_kts')) + fld('eco_bal_cons','Bal cons', scMiss && !has('eco_bal_cons')) + fld('eco_lad_cons','Lad cons', scMiss && !has('eco_lad_cons')) + fld('eco_mgo','MGO', false) +
+      '</div></div><div class="p6e-sub"><div class="p6e-sub-t">Port</div><div class="p6e-grid">' +
+      fld('port_idle','Idle', !has('port_idle')) + fld('port_work','Working', !has('port_work')) + '</div></div>';
     var ovl = document.createElement('div');
     ovl.id = 'p6-edit-ovl';
     ovl.innerHTML = '<div class="p6e-card">' +
       '<div class="p6e-head">VESSEL DATA &mdash; ' + name + '</div>' +
       '<div class="p6e-sec p6e-sec-ship"><div class="p6e-sec-t">Caratteristiche nave</div><div class="p6e-grid p6e-grid6">' + shipRows + '</div></div>' +
-      '<div class="p6e-sec p6e-sec-sc"><div class="p6e-sec-t">Speed &amp; cons</div><div class="p6e-grid">' + scRows + '</div></div>' +
+      '<div class="p6e-sec p6e-sec-sc"><div class="p6e-sec-t">Speed &amp; cons</div>' + scRows + '</div>' +
       '<div class="p6e-btns"><button class="p6e-save">Save</button><button class="p6e-cancel">Cancel</button><span class="p6e-msg"></span></div></div>';
     document.body.appendChild(ovl);
     ovl.onclick = function(e){ if (e.target === ovl) ovl.remove(); };
@@ -10358,6 +10361,9 @@ setRoute();
     '.p6e-sec-t{font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;font-weight:800;margin-bottom:9px}' +
     '.p6e-sec-ship .p6e-sec-t{color:#2563EB}' +
     '.p6e-sec-sc .p6e-sec-t{color:#2D8A4F}' +
+    '.p6e-sub{margin-top:10px;padding-top:8px;border-top:1px dashed #CBE7D3}' +
+    '.p6e-sub:first-of-type{margin-top:0;padding-top:0;border-top:none}' +
+    '.p6e-sub-t{font-size:8px;text-transform:uppercase;letter-spacing:.06em;font-weight:800;color:#2D8A4F;opacity:.7;margin-bottom:5px}' +
     '.p6e-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px 12px}' +
     '.p6e-grid6{grid-template-columns:repeat(6,1fr)}' +
     '.p6e-f{display:flex;flex-direction:column;gap:3px}' +
