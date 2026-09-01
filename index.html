@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260831-p6-th2 -->
+<!-- build: 20260831-ecsa-ui -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -5658,8 +5658,7 @@ routes['ecsa-list'] = function() {
               <label>MGO</label><input id="p6-mgo" type="number" step="1"/>
               <label class="p6-last-lbl">LAST P6</label><input id="p6-lastp6" type="number" step="25"/>
             </span>
-        <span class="count-pill cnt-with-tooltip" id="cnt">—</span>${cpToggleBtn('ecsa-list')}
-            <span class="cp-switch" id="ecsa-rd-sw" title="Show/hide ECSA Rundown"><span class="cp-sw-label">Rundown</span><button class="cp-sw-track" type="button" id="ecsa-toggle-rd" data-rdtoggle="1"><span class="cp-sw-knob"></span></button></span>
+        <span class="count-pill cnt-with-tooltip" id="cnt">—</span>
           </div>
           <div class="tbl-wrap" id="tbl"></div>
         </div>
@@ -5692,23 +5691,6 @@ routes['ecsa-list'] = function() {
       showCopyFallback(rdText || '');
     }
   };
-  // Toggle ON/OFF per mostrare/nascondere l'ECSA Rundown (stato persistente)
-  (function(){
-    const KEY = 'pmxEcsaRundownHidden';
-    const layoutEl = document.querySelector('.ecsa-layout');
-    const sw = document.getElementById('ecsa-rd-sw');
-    const btn = document.getElementById('ecsa-toggle-rd');
-    function apply(hidden){
-      if (layoutEl) layoutEl.classList.toggle('rundown-hidden', !!hidden);
-      if (sw) sw.classList.toggle('on', !hidden);
-    }
-    apply(localStorage.getItem(KEY) === '1');
-    if (btn) btn.onclick = function(){
-      const nowHidden = !(layoutEl && layoutEl.classList.contains('rundown-hidden'));
-      localStorage.setItem(KEY, nowHidden ? '1' : '0');
-      apply(nowHidden);
-    };
-  })();
   // Lista a sinistra: tutte le navi che vanno a ECSA (ATL: ECSA/PG/RSEA/SAFR/WCI/ECI + PAC: SEASIA), date aggiustate
   const refresh = () => {
     const q = $('#f-q').value.toLowerCase();
@@ -5735,7 +5717,6 @@ routes['ecsa-list'] = function() {
       return true;
     });
     $('#cnt').textContent = `${entries.length} vessels`;
-    if (getCpView('ecsa-list')) { $('#tbl').innerHTML = renderVesselsCpView(entries.map(e => ({...e.v, open_from: e.adjFrom, open_to: e.adjTo, area: e.area})), null); return; }
     // Conteggio per bucket 1H/2H mese — visibile come tooltip on hover
     const bucketCounts = {};
     for (const e of entries) {
@@ -5751,7 +5732,7 @@ routes['ecsa-list'] = function() {
         cntEl.removeAttribute('data-tooltip');
       }
     }
-    const html = [`<table class="grid"><thead><tr>
+    const html = [`<table class="grid"><thead class="area-green"><tr>
       <th class="th-filter"><input data-col="vessel" placeholder="Vessel" value="${attr(F.vessel||'')}"></th>
       <th class="th-filter"><input data-col="dwt_blt" placeholder="DWT" value="${attr(F.dwt_blt||'')}"></th>
       <th class="th-filter"><input data-col="eta" placeholder="ETA" value="${attr(F.eta||'')}"></th>
@@ -10388,6 +10369,7 @@ setRoute();
   function tint(){
     document.querySelectorAll('#tbl table.grid, #ca-tbl table.grid').forEach(function(tb){
       var thead = tb.tHead; if (!thead) return;
+      if (!tb.querySelector('tr.section-area')) return; // tabelle senza sezioni area (es. ECSA List) hanno tinta fissa
       var hth = thead.querySelector('th');
       var hb = (hth || thead).getBoundingClientRect().bottom;
       var cur = null;
