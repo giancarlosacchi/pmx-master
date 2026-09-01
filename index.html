@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260831-eta-range -->
+<!-- build: 20260831-ecsa-buckets -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -5761,7 +5761,7 @@ routes['ecsa-list'] = function() {
     const ecsaBanner = ecsaHiddenCols.size > 0
       ? `<div class="hidden-banner show"><span>Hidden: <b>${ecsaHiddenCols.size}</b> columns</span><button id="ecsa-show-all">Show all</button></div>`
       : '';
-    const html = [ecsaBanner + `<table class="grid"><thead class="area-green"><tr>
+    const html = [ecsaBanner + `<table class="grid"><thead class="area-green tint-fixed"><tr>
       <th data-col="vessel" class="th-filter"><input data-col="vessel" placeholder="Vessel" value="${attr(F.vessel||'')}">${ecsaColBtn('vessel')}</th>
       <th data-col="dwt_blt" class="th-filter"><input data-col="dwt_blt" placeholder="DWT" value="${attr(F.dwt_blt||'')}">${ecsaColBtn('dwt_blt')}</th>
       <th data-col="eta" class="th-filter"><input data-col="eta" placeholder="ETA" value="${attr(F.eta||'')}">${ecsaColBtn('eta')}</th>
@@ -5775,7 +5775,15 @@ routes['ecsa-list'] = function() {
       <th data-col="update_date" class="th-filter"><input class="filter-date-range" type="text" readonly data-col="update_date" placeholder="Update" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.update_from, F.update_to))}">${ecsaColBtn('update_date')}</th>
       <th data-col="status" class="th-filter"><input data-col="status" placeholder="Status" value="${attr(F.status||'')}">${ecsaColBtn('status')}</th>
     </tr></thead><tbody>`];
-    for (const e of entries) html.push(renderEcsaRow(e));
+    let lastBucket = null;
+    for (const e of entries) {
+      const b = bucketFor(e.adjFrom);
+      if (b !== lastBucket) {
+        html.push(`<tr class="section-area area-green"><td colspan="12">${esc(b)}<span class="area-count">${bucketCounts[b] || 0}</span></td></tr>`);
+        lastBucket = b;
+      }
+      html.push(renderEcsaRow(e));
+    }
     html.push('</tbody></table>');
     $('#tbl').innerHTML = html.join('');
     // Applica colonne nascoste + bottoni × + Show all
@@ -10409,7 +10417,7 @@ setRoute();
   function tint(){
     document.querySelectorAll('#tbl table.grid, #ca-tbl table.grid').forEach(function(tb){
       var thead = tb.tHead; if (!thead) return;
-      if (!tb.querySelector('tr.section-area')) return; // tabelle senza sezioni area (es. ECSA List) hanno tinta fissa
+      if (thead.classList.contains('tint-fixed') || !tb.querySelector('tr.section-area')) return; // tinta fissa (es. ECSA List)
       var hth = thead.querySelector('th');
       var hb = (hth || thead).getBoundingClientRect().bottom;
       var cur = null;
