@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260831-p6-intake -->
+<!-- build: 20260831-p6-editcard -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -10124,23 +10124,25 @@ setRoute();
     name = String(name||'').toUpperCase().trim(); if (!name) return;
     var old = document.getElementById('p6-edit-ovl'); if (old) old.remove();
     var sp = P6.specs[name] || {};
-    var F = [
-      ['dwt','Dwt'],['built','Built'],['draft','Draft (m)'],['cubic','Cubic grain'],['tpc','TPC'],
-      ['full_bal_kts','Full bal kts'],['full_lad_kts','Full lad kts'],['full_bal_cons','Full bal cons'],['full_lad_cons','Full lad cons'],['full_mgo','Full MGO'],
-      ['eco_bal_kts','Eco bal kts'],['eco_lad_kts','Eco lad kts'],['eco_bal_cons','Eco bal cons'],['eco_lad_cons','Eco lad cons'],['eco_mgo','Eco MGO'],
-      ['port_idle','Port idle'],['port_work','Port working']
-    ];
+    function has(k){ return sp[k] != null && sp[k] !== ''; }
+    function fld(key, label, missing){
+      var val = sp[key] != null ? sp[key] : '';
+      return '<label class="p6e-f' + (missing ? ' p6e-miss' : '') + '"><span>' + label + '</span><input data-k="' + key + '" type="number" step="any" value="' + val + '"></label>';
+    }
+    var fullOk = has('full_bal_kts') && has('full_lad_kts') && has('full_bal_cons') && has('full_lad_cons');
+    var ecoOk = has('eco_bal_kts') && has('eco_lad_kts') && has('eco_bal_cons') && has('eco_lad_cons');
+    var scMiss = !fullOk && !ecoOk;
+    var shipRows = fld('dwt','Dwt',!has('dwt')) + fld('built','Built',!has('built')) + fld('draft','Draft (m)',!has('draft')) + fld('cubic','Cubic grain',!has('cubic')) + fld('tpc','TPC',!has('tpc')) +
+      '<label class="p6e-f' + (sp.scrubber == null ? ' p6e-miss' : '') + '"><span>Scrubber</span><select data-k="scrubber"><option value=""' + (sp.scrubber==null?' selected':'') + '>&mdash;</option><option value="1"' + (sp.scrubber===true?' selected':'') + '>Yes</option><option value="0"' + (sp.scrubber===false?' selected':'') + '>No</option></select></label>';
+    var scRows = fld('full_bal_kts','Full bal kts', scMiss && !has('full_bal_kts')) + fld('full_lad_kts','Full lad kts', scMiss && !has('full_lad_kts')) + fld('full_bal_cons','Full bal cons', scMiss && !has('full_bal_cons')) + fld('full_lad_cons','Full lad cons', scMiss && !has('full_lad_cons')) + fld('full_mgo','Full MGO', false) +
+      fld('eco_bal_kts','Eco bal kts', scMiss && !has('eco_bal_kts')) + fld('eco_lad_kts','Eco lad kts', scMiss && !has('eco_lad_kts')) + fld('eco_bal_cons','Eco bal cons', scMiss && !has('eco_bal_cons')) + fld('eco_lad_cons','Eco lad cons', scMiss && !has('eco_lad_cons')) + fld('eco_mgo','Eco MGO', false) +
+      fld('port_idle','Port idle', !has('port_idle')) + fld('port_work','Port working', !has('port_work'));
     var ovl = document.createElement('div');
     ovl.id = 'p6-edit-ovl';
-    var rows = F.map(function(f){
-      var val = sp[f[0]] != null ? sp[f[0]] : '';
-      return '<label class="p6e-f"><span>' + f[1] + '</span><input data-k="' + f[0] + '" type="number" step="any" value="' + val + '"></label>';
-    }).join('');
     ovl.innerHTML = '<div class="p6e-card">' +
       '<div class="p6e-head">VESSEL DATA &mdash; ' + name + '</div>' +
-      '<div class="p6e-grid">' + rows +
-      '<label class="p6e-f"><span>Scrubber</span><select data-k="scrubber"><option value=""' + (sp.scrubber==null?' selected':'') + '>&mdash;</option><option value="1"' + (sp.scrubber===true?' selected':'') + '>Yes</option><option value="0"' + (sp.scrubber===false?' selected':'') + '>No</option></select></label>' +
-      '</div>' +
+      '<div class="p6e-sec p6e-sec-ship"><div class="p6e-sec-t">Caratteristiche nave</div><div class="p6e-grid p6e-grid6">' + shipRows + '</div></div>' +
+      '<div class="p6e-sec p6e-sec-sc"><div class="p6e-sec-t">Speed &amp; cons</div><div class="p6e-grid">' + scRows + '</div></div>' +
       '<div class="p6e-btns"><button class="p6e-save">Save</button><button class="p6e-cancel">Cancel</button><span class="p6e-msg"></span></div></div>';
     document.body.appendChild(ovl);
     ovl.onclick = function(e){ if (e.target === ovl) ovl.remove(); };
@@ -10212,8 +10214,8 @@ setRoute();
   };
   function stdEx(){ return STD.vlsfo_t * P6.set.vlsfo + STD.mgo_t * P6.set.lsmgo + STD.fixed; }
   function intakeOf(sp){
-    var dwt = +sp.dwt||0, draft = +sp.draft||0, tpc = +sp.tpc||72, cubic = +sp.cubic||0;
-    if (!dwt || !draft) return null;
+    var dwt = +sp.dwt||0, draft = +sp.draft||0, tpc = +sp.tpc||0, cubic = +sp.cubic||0;
+    if (!dwt || !draft || !tpc) return null;
     var byDraft = dwt - Math.max(0,(draft-13))*100*tpc - 2000;
     var byCubic = cubic ? cubic*35.3147/49 : Infinity;
     return Math.min(byDraft, byCubic, 70400);
@@ -10308,7 +10310,7 @@ setRoute();
       var ratemt = cost / r.intake / 0.95;
       if (!best || ratemt < best.ratemt) best = { ratemt: ratemt, mode: modes[i].name };
     }
-    if (!best) return { txt:'', title:'Calcolo non riuscito' };
+    if (!best) return { txt:'', title:'Dati nave incompleti - doppio click sul nome per inserirli' };
     var p6 = ((best.ratemt*0.95*STD.intake) - stdEx()) / STD.days / 0.95;
     return { txt: fmtK(p6), title: 'Offerta ' + offer.rate + (bb ? ' + BB ' + bb : '') + ' → ' + best.ratemt.toFixed(2) + ' $/mt (' + best.mode + ')' };
   };
@@ -10330,7 +10332,7 @@ setRoute();
       var gtc = ((ratemt*0.95*r.intake) - r.bunk - fixedCost(sp)) / (0.95*r.tot);
       if (!best || gtc > best.gtc) best = { gtc: gtc, mode: modes[i].name };
     }
-    if (!best) return { txt:'', title:'Calcolo non riuscito' };
+    if (!best) return { txt:'', title:'Dati nave incompleti - doppio click sul nome per inserirli' };
     return { txt: fmtK(best.gtc), title: 'P6 ' + P6.set.p6_last + ' → ' + ratemt.toFixed(2) + ' $/mt, aperta Spore (' + best.mode + ')' };
   };
   P6.cells = function(v, ideasText){
@@ -10351,14 +10353,23 @@ setRoute();
     '.p6-set input{width:54px;background:var(--bg-3);border:1px solid var(--line);color:var(--text);border-radius:var(--radius-sm);padding:3px 6px;font:inherit;font-size:11.5px;height:26px;outline:none}' +
     '.p6-set input#p6-lastp6{width:62px;border-color:var(--gold);font-weight:700}' +
     '#p6-edit-ovl{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:10000;display:flex;align-items:center;justify-content:center}' +
-    '.p6e-card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 50px rgba(15,23,42,.25);padding:20px 22px;width:660px;max-width:92vw;max-height:88vh;overflow:auto}' +
+    '.p6e-card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 50px rgba(15,23,42,.25);padding:20px 22px;width:720px;max-width:94vw;max-height:88vh;overflow:auto}' +
     '.p6e-head{font-weight:800;font-size:13px;letter-spacing:.05em;margin-bottom:14px;color:var(--text)}' +
+    '.p6e-sec{border-radius:10px;padding:12px 14px;margin-bottom:10px;border:1px solid transparent}' +
+    '.p6e-sec-ship{background:#EEF4FF;border-color:#D8E5FB}' +
+    '.p6e-sec-sc{background:#F0FAF2;border-color:#D9EFDF}' +
+    '.p6e-sec-t{font-size:9.5px;text-transform:uppercase;letter-spacing:.07em;font-weight:800;margin-bottom:9px}' +
+    '.p6e-sec-ship .p6e-sec-t{color:#2563EB}' +
+    '.p6e-sec-sc .p6e-sec-t{color:#2D8A4F}' +
     '.p6e-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px 12px}' +
+    '.p6e-grid6{grid-template-columns:repeat(6,1fr)}' +
     '.p6e-f{display:flex;flex-direction:column;gap:3px}' +
     '.p6e-f span{font-size:8.5px;text-transform:uppercase;color:var(--text-mute);letter-spacing:.05em;font-weight:700;white-space:nowrap}' +
-    '.p6e-f input,.p6e-f select{background:var(--bg-3);border:1px solid var(--line);color:var(--text);border-radius:var(--radius-sm);padding:5px 7px;font:inherit;font-size:12px;outline:none;width:100%;box-sizing:border-box}' +
+    '.p6e-f input,.p6e-f select{background:#fff;border:1px solid var(--line);color:var(--text);border-radius:var(--radius-sm);padding:5px 7px;font:inherit;font-size:12px;outline:none;width:100%;box-sizing:border-box}' +
     '.p6e-f input:focus,.p6e-f select:focus{border-color:var(--gold)}' +
-    '.p6e-btns{display:flex;align-items:center;gap:8px;margin-top:16px}' +
+    '.p6e-miss span{color:#D93025}' +
+    '.p6e-miss input,.p6e-miss select{border-color:#D93025;background:#FDECEA}' +
+    '.p6e-btns{display:flex;align-items:center;gap:8px;margin-top:14px}' +
     '.p6e-save{background:var(--gold);border:none;color:#fff;font:inherit;font-weight:700;font-size:12px;padding:7px 18px;border-radius:var(--radius-sm);cursor:pointer}' +
     '.p6e-cancel{background:var(--bg-3);border:1px solid var(--line);color:var(--text);font:inherit;font-size:12px;padding:7px 14px;border-radius:var(--radius-sm);cursor:pointer}' +
     '.p6e-msg{font-size:11px;color:#D93025}';
