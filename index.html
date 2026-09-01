@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260831-ecsa-half -->
+<!-- build: 20260831-p6-guide -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -10271,14 +10271,14 @@ setRoute();
   }
   P6.parseOffer = function(text){
     var T = String(text||'').toUpperCase();
-    var m = T.match(/OFFERS?\s+(?:USD\s*)?([0-9]{2}(?:[.,][0-9]+)?\s*K(?![A-Z])|[0-9]{4,6})/);
+    var m = T.match(/(?:OFFERS?|GUIDE)\s+(?:USD\s*)?([0-9]{2}(?:[.,][0-9]+)?\s*K(?![A-Z])|[0-9]{4,6})/);
     if (!m) return null;
     var raw = m[1].replace(',', '.').trim();
     var rate = /K$/.test(raw) ? parseFloat(raw)*1000 : parseFloat(raw);
     if (!(rate > 3000 && rate < 200000)) return null;
     var rest = T.slice(m.index + m[0].length, m.index + m[0].length + 90);
     var forM = rest.match(/\b(?:FOR|FPR)\s+([A-Z0-9\/ \-]{2,32})/);
-    if (forM && !/ECSA/.test(forM[1])) return null;
+    if (forM && !/ECSA|SANTOS|S[-\s]?J\b|RECALADA|PLATE|BRAZIL|BRA\b/.test(forM[1])) return null;
     var bb = 0;
     var b = T.match(/\+\s*([0-9]+(?:[.,][0-9]+)?)\s*(MLN|MIL|M(?![A-Z])|K(?![A-Z]))?/);
     if (b) {
@@ -10332,7 +10332,7 @@ setRoute();
     var best = null;
     for (var i=0;i<modes.length;i++){
       var r = voy(sp, modes[i], D, price); if (!r) continue;
-      var cost = offer.rate*0.95*r.tot + bb + r.bunk + fixedCost(sp);
+      var cost = offer.rate*0.95*r.tot + bb*0.95 + r.bunk + fixedCost(sp);
       var ratemt = cost / r.intake / 0.95;
       if (!best || ratemt < best.ratemt) best = { ratemt: ratemt, mode: modes[i].name };
     }
