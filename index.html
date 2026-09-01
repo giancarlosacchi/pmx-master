@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260831-vd-head -->
+<!-- build: 20260831-vd-all -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -8719,10 +8719,18 @@ routes['vsl-descr'] = function() {
       <div class="tbl-wrap" id="vd-tbl" style="flex:1;overflow:auto"></div>
     </div>`;
   const refresh = async () => {
-    const res = await sb.from('vessel_specs_manual').select('*').order('vessel');
-    if (res.error) { $('#vd-tbl').innerHTML = '<div style="padding:16px;color:var(--red)">' + esc(res.error.message) + '</div>'; return; }
-    let rows = res.data || [];
-    if (window.P6) rows.forEach(r => window.P6.applyManual(r));
+    // Unione: tutte le navi del file Period (vessel_specs, sync Excel) + schede manuali (che vincono)
+    const [man, b1, b2] = await Promise.all([
+      sb.from('vessel_specs_manual').select('*'),
+      sb.from('vessel_specs').select('*').order('vessel').range(0, 999),
+      sb.from('vessel_specs').select('*').order('vessel').range(1000, 2499)
+    ]);
+    if (man.error) { $('#vd-tbl').innerHTML = '<div style="padding:16px;color:var(--red)">' + esc(man.error.message) + '</div>'; return; }
+    const by = {};
+    (b1.data || []).concat(b2.data || []).forEach(r => { by[r.vessel] = Object.assign({}, r, { _src: 'excel' }); });
+    (man.data || []).forEach(r => { by[r.vessel] = Object.assign({}, r, { _src: 'manual' }); if (window.P6) window.P6.applyManual(r); });
+    window.__vdRows = by;
+    let rows = Object.values(by).sort((a, b) => String(a.vessel).localeCompare(String(b.vessel)));
     const q = (($('#vd-q') && $('#vd-q').value) || '').toLowerCase();
     if (q) rows = rows.filter(r => (r.vessel || '').toLowerCase().includes(q));
     const cnt = $('#vd-cnt'); if (cnt) cnt.textContent = rows.length + ' vessels';
@@ -8743,12 +8751,19 @@ routes['vsl-descr'] = function() {
         <td>${pair(r.eco_bal_cons, r.eco_lad_cons)}</td>
         <td>${pair(r.full_mgo, r.eco_mgo)}</td>
         <td>${pair(r.port_idle, r.port_work)}</td>
-        <td class="dim">${(r.updated_at || '').slice(0, 10)}${r.updated_by ? ' · ' + esc(String(r.updated_by).split('@')[0]) : ''}</td>
+        <td class="dim">${(r.updated_at || '').slice(0, 10)} · ${r._src === 'manual' ? esc(String(r.updated_by || 'manual').split('@')[0]) : 'excel'}</td>
       </tr>`);
     }
     html.push('</tbody></table>');
     $('#vd-tbl').innerHTML = html.join('');
-    $$('#vd-tbl .vd-name').forEach(td => td.ondblclick = (e) => { e.preventDefault(); if (window.P6) { window.P6._refresh = refresh; window.P6.editVessel(td.dataset.vsl); } });
+    $$('#vd-tbl .vd-name').forEach(td => td.ondblclick = (e) => {
+      e.preventDefault();
+      if (!window.P6) return;
+      const nm = td.dataset.vsl;
+      if (!(nm in window.P6.specs) && window.__vdRows && window.__vdRows[nm]) window.P6.specs[nm] = window.__vdRows[nm];
+      window.P6._refresh = refresh;
+      window.P6.editVessel(nm);
+    });
   };
   $('#vd-add').onclick = () => {
     const n = ($('#vd-new-name').value || '').trim().toUpperCase();
