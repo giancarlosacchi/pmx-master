@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260831-p6equiv-laden -->
+<!-- build: 20260831-p6-intake -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -10215,7 +10215,7 @@ setRoute();
     var dwt = +sp.dwt||0, draft = +sp.draft||0, tpc = +sp.tpc||72, cubic = +sp.cubic||0;
     if (!dwt || !draft) return null;
     var byDraft = dwt - Math.max(0,(draft-13))*100*tpc - 2000;
-    var byCubic = cubic ? cubic*35.3147/49*1.01605 : Infinity;
+    var byCubic = cubic ? cubic*35.3147/49 : Infinity;
     return Math.min(byDraft, byCubic, 70400);
   }
   function modesOf(sp){
