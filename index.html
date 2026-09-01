@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260831-nobold -->
+<!-- build: 20260831-laden-std -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -10261,7 +10261,7 @@ setRoute();
   }
   function voy(sp, md, D, mainPrice, L1, L2){
     var intake = intakeOf(sp); if (intake == null) return null;
-    var tb = D/md.bk/24*Mm, tl1 = (L1||9009)/md.lk/24*Mm, tl2 = (L2||2441)/md.lk/24*Mm;
+    var tb = D/md.bk/24*Mm, tl1 = (L1||9015)/md.lk/24*Mm, tl2 = (L2||2494)/md.lk/24*Mm;
     var wd = intake/8000, le = wd*1.3333, de = wd*1.5555;
     var tot = tb+tl1+tl2+le+0.75+0.25+de+0.75+1;
     var work = sp.port_work!=null ? +sp.port_work : 5;
@@ -10348,14 +10348,14 @@ setRoute();
     var modes = modesOf(sp);
     if (!modes.length) return { txt:'', title:'Velocita/consumi mancanti' };
     var offer = P6.parseOffer(ideasText != null ? ideasText : v.ideas);
-    // P6 VALUE: sempre come se la nave fosse aperta a Singapore (ballast 9009, laden 9009 + 2441)
+    // P6 VALUE: sempre come se la nave fosse aperta a Singapore (ballast 9009, laden standard 9015 + 2494)
     var D = 9009;
     var ratemt = (P6.set.p6_last*0.95*STD.days + stdEx()) / STD.intake / 0.95;
     var price = P6.set.vlsfo;
     if (sp.scrubber && offer && offer.scrub === 'chtr') price = P6.set.hsfo;
     var best = null;
     for (var i=0;i<modes.length;i++){
-      var r = voy(sp, modes[i], D, price, 9009, 2441); if (!r) continue;
+      var r = voy(sp, modes[i], D, price); if (!r) continue;
       var gtc = ((ratemt*0.95*r.intake) - r.bunk - fixedCost(sp)) / (0.95*r.tot);
       if (!best || gtc > best.gtc) best = { gtc: gtc, mode: modes[i].name };
     }
