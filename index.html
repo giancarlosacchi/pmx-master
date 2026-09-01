@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260831-cols-fit2 -->
+<!-- build: 20260831-cols-fit3 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2070,9 +2070,9 @@ table.grid th.col-del, table.grid td.col-del { width: 30px; max-width: 30px; ove
 #ca-tbl .col-ideas .ideas-text:hover { white-space: normal; overflow: visible; text-overflow: clip; word-break: break-word; }
 /* ===== COLONNE COMPATTE OVUNQUE: larghe quanto il contenuto piu largo (tranne ideas/info/notes) ===== */
 .ecsa-list-col table.grid { table-layout: auto !important; }
-.ecsa-list-col #tbl table.grid th:not(.col-ideas), .ecsa-list-col #tbl table.grid td:not(.col-ideas) { width: 1px !important; max-width: none !important; white-space: nowrap; }
-.ecsa-list-col #tbl table.grid th.col-ideas, .ecsa-list-col #tbl table.grid td.col-ideas { width: 100% !important; max-width: 0 !important; min-width: 0 !important; }
-.ecsa-list-col #tbl .col-ideas .ideas-text { width: 100%; min-width: 0; max-width: 100%; }
+.ecsa-list-col #tbl table.grid th:not(.col-ideas), .ecsa-list-col #tbl table.grid td:not([data-col="ideas"]) { width: 1px !important; max-width: none !important; white-space: nowrap; }
+.ecsa-list-col #tbl table.grid th.col-ideas, .ecsa-list-col #tbl table.grid td[data-col="ideas"] { width: 100% !important; max-width: 0 !important; min-width: 0 !important; white-space: normal; }
+.ecsa-list-col #tbl td[data-col="ideas"] .ideas-text, .ecsa-list-col #tbl .col-ideas .ideas-text { width: 100%; min-width: 0; max-width: 100%; }
 #vf-results .col-ideas, #cf-results .col-ideas { width: 100% !important; max-width: 0 !important; min-width: 0 !important; }
 #vf-results .col-ideas .ideas-text, #cf-results .col-ideas .ideas-text { width: 100%; min-width: 0; max-width: 100%; }
 .personal-block .col-ideas { width: 100% !important; max-width: 0 !important; min-width: 0 !important; }
