@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260831-cols-air -->
+<!-- build: 20260831-eta-range -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -5566,6 +5566,13 @@ function buildEcsaEtaEntries() {
       adjTo:   _shiftIsoDate(v.open_to,   ECSA_PAC_OFFSET),
       eta: 'ECSA',
     });
+  }
+  // Mai un giorno secco (es. 7-7 Oct): allarga sempre a -1/+2 (es. 6-9 Oct)
+  for (const e of entries) {
+    if (e.adjFrom && e.adjTo && e.adjFrom === e.adjTo) {
+      e.adjFrom = _shiftIsoDate(e.adjFrom, -1);
+      e.adjTo = _shiftIsoDate(e.adjTo, 2);
+    }
   }
   entries.sort((a, b) => {
     const fA = a.adjFrom || '9999-12-31';
