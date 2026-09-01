@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260831-p6-pct -->
+<!-- build: 20260831-p6-th2 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -5758,7 +5758,7 @@ routes['ecsa-list'] = function() {
       <th class="th-filter"><input class="filter-date-range" type="text" readonly data-col="dates" placeholder="Dates" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.dates_from, F.dates_to))}"></th>
       <th class="th-filter col-ideas"><input data-col="ideas" placeholder="Ideas / Info" value="${attr(F.ideas||'')}"></th>
       <th class="p6-th">P6 EQUIV</th>
-      <th class="p6-th">P6 VALUE BSS SPORE</th>
+      <th class="p6-th">P6 VALUE<br>BSS SPORE</th>
       <th class="th-filter"><input data-col="ows_brkr" placeholder="Ows" value="${attr(F.ows_brkr||'')}"></th>
       <th class="th-filter"><input data-col="bunker" placeholder="Bunker" value="${attr(F.bunker||'')}"></th>
       <th class="th-filter"><input data-col="ls_brkr" placeholder="LS" value="${attr(F.ls_brkr||'')}"></th>
@@ -10348,7 +10348,7 @@ setRoute();
   var st = document.createElement('style');
   st.textContent = '.p6cell{font-weight:700;white-space:nowrap;text-align:center;cursor:default}' +
     '.p6cell.p6warn{color:#D93025;font-weight:800}' +
-    'th.p6-th{font-size:8.5px;white-space:nowrap;text-align:center !important}' +
+    'th.p6-th{font-size:8.5px;white-space:nowrap;text-align:center !important;line-height:1.35}' +
     '.p6-set{display:inline-flex;align-items:center;gap:4px;margin-left:6px}' +
     '.p6-set label{font-size:9.5px;text-transform:uppercase;color:var(--text-mute);letter-spacing:.04em;font-weight:700}' +
     '.p6-set label.p6-last-lbl{color:var(--gold);}' +
