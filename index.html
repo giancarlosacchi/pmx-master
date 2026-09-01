@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260831-ecsa-ui2 -->
+<!-- build: 20260831-cols-fit -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2068,6 +2068,20 @@ table.grid th.col-del, table.grid td.col-del { width: 30px; max-width: 30px; ove
 #ca-tbl .col-ideas .ideas-text { width: 100%; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* Hover: il testo va a capo e si vede per intero (override della regola sopra) */
 #ca-tbl .col-ideas .ideas-text:hover { white-space: normal; overflow: visible; text-overflow: clip; word-break: break-word; }
+/* ===== COLONNE COMPATTE OVUNQUE: larghe quanto il contenuto piu largo (tranne ideas/info/notes) ===== */
+.ecsa-list-col table.grid { table-layout: auto !important; }
+.ecsa-list-col #tbl table.grid th:not(.col-ideas), .ecsa-list-col #tbl table.grid td:not(.col-ideas) { width: 1px !important; max-width: none !important; white-space: nowrap; }
+.ecsa-list-col #tbl table.grid th.col-ideas, .ecsa-list-col #tbl table.grid td.col-ideas { width: auto !important; }
+.ecsa-list-col #tbl table.grid th.th-filter { min-width: 56px; }
+.ecsa-list-col #tbl table.grid th.th-filter input { min-width: 0; width: 100%; }
+#ca-tbl th:not(.col-ideas), #ca-tbl td:not(.col-ideas) { width: 1px !important; max-width: none !important; white-space: nowrap; }
+#ca-tbl table.grid th.th-filter { min-width: 56px; }
+#ca-tbl table.grid th.th-filter input { min-width: 0; width: 100%; }
+#vf-results table.grid th:not(.col-ideas), #vf-results table.grid td:not(.col-ideas),
+#cf-results table.grid th:not(.col-ideas), #cf-results table.grid td:not(.col-ideas) { width: 1px !important; max-width: none !important; white-space: nowrap; }
+#vf-results th.th-filter, #cf-results th.th-filter { min-width: 56px; }
+#vf-results th.th-filter input, #cf-results th.th-filter input { min-width: 0; width: 100%; }
+.personal-block table.grid th:not(.col-ideas), .personal-block table.grid td:not(.col-ideas) { width: 1px !important; max-width: none !important; white-space: nowrap; }
 /* Finder (Vsl/Cgo): colonne larghe quanto il contenuto, tranne Ideas/Notes che assorbe lo spazio */
 #vf-results table.grid, #cf-results table.grid { table-layout: auto; width: 100%; }
 #vf-results th:not(.col-ideas), #vf-results td:not(.col-ideas),
