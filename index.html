@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260831-ecsa-buckets -->
+<!-- build: 20260831-ecsa-half -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -5779,7 +5779,7 @@ routes['ecsa-list'] = function() {
     for (const e of entries) {
       const b = bucketFor(e.adjFrom);
       if (b !== lastBucket) {
-        html.push(`<tr class="section-area area-green"><td colspan="12">${esc(b)}<span class="area-count">${bucketCounts[b] || 0}</span></td></tr>`);
+        html.push(`<tr class="section-half area-green"><td colspan="12">${esc(b)}<span class="half-count">(&thinsp;${bucketCounts[b] || 0}&thinsp;)</span></td></tr>`);
         lastBucket = b;
       }
       html.push(renderEcsaRow(e));
