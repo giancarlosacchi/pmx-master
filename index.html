@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260831-p6-manual -->
+<!-- build: 20260831-p6equiv-laden -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -10232,7 +10232,7 @@ setRoute();
   }
   function voy(sp, md, D, mainPrice, L1, L2){
     var intake = intakeOf(sp); if (intake == null) return null;
-    var tb = D/md.bk/24*Mm, tl1 = (L1||9015)/md.lk/24*Mm, tl2 = (L2||2494)/md.lk/24*Mm;
+    var tb = D/md.bk/24*Mm, tl1 = (L1||9009)/md.lk/24*Mm, tl2 = (L2||2441)/md.lk/24*Mm;
     var wd = intake/8000, le = wd*1.3333, de = wd*1.5555;
     var tot = tb+tl1+tl2+le+0.75+0.25+de+0.75+1;
     var work = sp.port_work!=null ? +sp.port_work : 5;
