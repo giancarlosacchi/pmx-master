@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260831-p6-guide -->
+<!-- build: 20260831-p6-manual2 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -10133,13 +10133,12 @@ setRoute();
         .then(function(){ return sb.from('vessel_specs_manual').select('*').in('vessel', ch).then(function(r){ (r.data||[]).forEach(function(x){ P6.applyManual(x); }); }); });
     }, Promise.resolve()).then(function(){ need.forEach(function(n){ if (!(n in P6.specs)) P6.specs[n] = null; }); });
   };
-  // dati inseriti a mano: riempiono i buchi / correggono la scheda base (e restano salvati per sempre)
+  // dati inseriti a mano: la scheda manuale SOSTITUISCE per intero quella base
+  // (anche i campi svuotati contano: svuotare = cancellare il dato)
   P6.applyManual = function(x){
     if (!x || !x.vessel) return;
-    var base = P6.specs[x.vessel] || {};
     var out = {}, k;
-    for (k in base) out[k] = base[k];
-    for (k in x) { if (k === 'updated_at' || k === 'updated_by') continue; if (x[k] != null && x[k] !== '') out[k] = x[k]; }
+    for (k in x) { if (k === 'updated_at' || k === 'updated_by') continue; out[k] = x[k]; }
     out.vessel = x.vessel;
     P6.specs[x.vessel] = out;
   };
