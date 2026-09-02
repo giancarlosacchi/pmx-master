@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260902-inbox -->
+<!-- build: 20260902-inbox-live -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -8780,25 +8780,17 @@ routes['inbox'] = function() {
   $('#content').innerHTML = `
     <div class="panel" style="display:flex;flex-direction:column;min-height:0;flex:1">
       <div class="filters">
-        <div class="group"><label>Inbox</label><span style="font-size:11.5px;color:var(--text-mute)">Posizioni estratte automaticamente dalle chat Teams (ECSA). Controlla, correggi e approva.</span></div>
+        <div class="group"><label>Inbox</label><span style="font-size:11.5px;color:var(--text-mute)">Posizioni estratte in tempo reale dalle chat Teams (ECSA). Controlla, correggi e approva. <span id="ib-live" title="Aggiornamento automatico attivo" style="color:var(--green,#2a9d5c)">● live</span></span></div>
         <span class="count-pill" id="ib-cnt">—</span>
       </div>
       <div class="tbl-wrap" id="ib-tbl" style="flex:1;overflow:auto"></div>
     </div>`;
   const AREAS = ['ECSA','PG / RSEA','SAFR','WCI','ECI','SEASIA'];
-  const refresh = async () => {
-    const { data, error } = await sb.from('inbox_candidates').select('*').eq('status', 'pending').order('msg_time', { ascending: false });
-    if (error) { $('#ib-tbl').innerHTML = '<div style="padding:16px;color:var(--red)">' + esc(error.message) + '</div>'; return; }
-    const rows = data || [];
-    $('#ib-cnt').textContent = rows.length + ' candidati';
-    if (!rows.length) { $('#ib-tbl').innerHTML = '<div style="padding:24px;color:var(--text-mute);font-size:12.5px">Nessun candidato in attesa. Lancia <b>node parse-ecsa.mjs</b> per estrarre le posizioni nuove.</div>'; return; }
-    const inp = (id, k, v, w, ph) => `<input class="ib-in" data-id="${id}" data-k="${k}" value="${attr(v == null ? '' : v)}" placeholder="${ph||''}" style="width:${w};background:var(--bg-3);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:4px 6px;font-size:11.5px">`;
-    const html = [`<table class="grid"><thead class="area-green tint-fixed"><tr>
-      <th>Vessel</th><th>DWT/BLT</th><th>Open</th><th>From</th><th>To</th><th>Area</th><th class="col-ideas">Ideas / Info</th><th>Bunker</th><th>Ows</th><th>Msg</th><th></th>
-    </tr></thead><tbody>`];
-    for (const r of rows) {
-      const t = (r.msg_time || '').slice(5, 16).replace('T', ' ');
-      html.push(`<tr data-row="${r.id}">
+  const byId = {};
+  const inp = (id, k, v, w, ph) => `<input class="ib-in" data-id="${id}" data-k="${k}" value="${attr(v == null ? '' : v)}" placeholder="${ph||''}" style="width:${w};background:var(--bg-3);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:4px 6px;font-size:11.5px">`;
+  const rowHtml = (r) => {
+    const t = (r.msg_time || '').slice(5, 16).replace('T', ' ');
+    return `<tr data-row="${r.id}">
         <td>${inp(r.id, 'vessel', r.vessel, '130px')}</td>
         <td>${inp(r.id, 'dwt_blt', r.dwt_blt, '52px')}</td>
         <td>${inp(r.id, 'open_port', r.open_port, '95px')}</td>
@@ -8813,44 +8805,72 @@ routes['inbox'] = function() {
           <button class="primary ib-ok" data-id="${r.id}" title="Approva → inserisce/aggiorna in lista">✓</button>
           <button class="ib-no" data-id="${r.id}" title="Scarta" style="margin-left:4px">✕</button>
         </td>
-      </tr>`);
-    }
-    html.push('</tbody></table>');
-    $('#ib-tbl').innerHTML = html.join('');
-    const byId = {}; rows.forEach(r => byId[r.id] = r);
-    const rowVals = (id) => {
-      const o = {};
-      $$(`#ib-tbl .ib-in[data-id="${id}"]`).forEach(el => o[el.dataset.k] = (el.value || '').trim() || null);
-      return o;
-    };
-    $$('#ib-tbl .ib-ok').forEach(b => b.onclick = async () => {
-      const id = Number(b.dataset.id); const c = byId[id]; const v = rowVals(id);
-      if (!v.vessel) return;
+      </tr>`;
+  };
+  const setCount = () => { const n = $$('#ib-tbl tbody tr').length; const c = $('#ib-cnt'); if (c) c.textContent = n + ' candidati'; if (typeof updateInboxBadge === 'function') updateInboxBadge(n); };
+  const rowVals = (id) => { const o = {}; $$(`#ib-tbl .ib-in[data-id="${id}"]`).forEach(el => o[el.dataset.k] = (el.value || '').trim() || null); return o; };
+  const removeRow = (id) => { const tr = $(`#ib-tbl tr[data-row="${id}"]`); if (tr) tr.remove(); delete byId[id]; setCount(); if (!$$('#ib-tbl tbody tr').length) renderEmpty(); };
+  const bindRow = (tr) => {
+    const ok = tr.querySelector('.ib-ok'), no = tr.querySelector('.ib-no');
+    ok.onclick = async () => {
+      const id = Number(ok.dataset.id); const c = byId[id]; const v = rowVals(id);
+      if (!v.vessel || !c) return;
       v.vessel = v.vessel.toUpperCase();
-      const patch = {
-        vessel: v.vessel, dwt_blt: v.dwt_blt, open_port: v.open_port,
-        open_from: v.open_from, open_to: v.open_to, area: v.area || 'ECSA',
-        basin: 'atl', ideas: v.ideas, bunker: v.bunker, ows_brkr: v.ows_brkr,
-        update_date: (c.msg_time || '').slice(0, 10) || todayIso(),
-      };
+      const patch = { vessel: v.vessel, dwt_blt: v.dwt_blt, open_port: v.open_port, open_from: v.open_from, open_to: v.open_to,
+        area: v.area || 'ECSA', basin: 'atl', ideas: v.ideas, bunker: v.bunker, ows_brkr: v.ows_brkr,
+        update_date: (c.msg_time || '').slice(0, 10) || todayIso() };
       if (c.scrbr_ftd === true) patch.scrbr_ftd = true;
       const norm = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
       const ex = (DATA.vessels || []).find(x => norm(x.vessel) === norm(v.vessel));
       if (ex) updVessel(ex.id, patch); else addVessel({ ...patch, status: 'fresh' });
       await sb.from('inbox_candidates').update({ status: 'approved' }).eq('id', id);
-      const tr = $(`#ib-tbl tr[data-row="${id}"]`); if (tr) tr.remove();
-      const left = $$('#ib-tbl tbody tr').length; $('#ib-cnt').textContent = left + ' candidati';
-      if (typeof toast === 'function') toast((ex ? 'Aggiornata: ' : 'Inserita: ') + v.vessel);
-    });
-    $$('#ib-tbl .ib-no').forEach(b => b.onclick = async () => {
-      const id = Number(b.dataset.id);
-      await sb.from('inbox_candidates').update({ status: 'rejected' }).eq('id', id);
-      const tr = $(`#ib-tbl tr[data-row="${id}"]`); if (tr) tr.remove();
-      const left = $$('#ib-tbl tbody tr').length; $('#ib-cnt').textContent = left + ' candidati';
-    });
+      removeRow(id);
+    };
+    no.onclick = async () => { const id = Number(no.dataset.id); await sb.from('inbox_candidates').update({ status: 'rejected' }).eq('id', id); removeRow(id); };
   };
-  refresh();
+  const renderEmpty = () => { $('#ib-tbl').innerHTML = '<div id="ib-empty" style="padding:24px;color:var(--text-mute);font-size:12.5px">Nessuna posizione in attesa. Appena arriva un messaggio ECSA su Teams comparirà qui da sola.</div>'; };
+  const ensureTable = () => {
+    if ($('#ib-tbl table')) return $('#ib-tbl tbody');
+    $('#ib-tbl').innerHTML = `<table class="grid"><thead class="area-green tint-fixed"><tr>
+      <th>Vessel</th><th>DWT/BLT</th><th>Open</th><th>From</th><th>To</th><th>Area</th><th class="col-ideas">Ideas / Info</th><th>Bunker</th><th>Ows</th><th>Msg</th><th></th>
+    </tr></thead><tbody></tbody></table>`;
+    return $('#ib-tbl tbody');
+  };
+  // Sync incrementale: aggiunge SOLO le righe nuove (in cima) e toglie quelle
+  // approvate/scartate da altri — senza toccare le righe che stai modificando.
+  const sync = async () => {
+    const { data, error } = await sb.from('inbox_candidates').select('*').eq('status', 'pending').order('msg_time', { ascending: false });
+    const live = $('#ib-live'); if (live) live.style.color = error ? 'var(--red)' : 'var(--green,#2a9d5c)';
+    if (error) { if (!$('#ib-tbl table') && !$('#ib-empty')) $('#ib-tbl').innerHTML = '<div style="padding:16px;color:var(--red)">' + esc(error.message) + '</div>'; return; }
+    const rows = data || [];
+    const ids = new Set(rows.map(r => r.id));
+    // rimuovi righe non piu' pending
+    $$('#ib-tbl tbody tr').forEach(tr => { if (!ids.has(Number(tr.dataset.row))) { delete byId[Number(tr.dataset.row)]; tr.remove(); } });
+    const fresh = rows.filter(r => !byId[r.id]);
+    if (fresh.length) {
+      const tb = ensureTable();
+      // le nuove vanno in cima, mantenendo l'ordine per data
+      for (const r of fresh.slice().reverse()) { byId[r.id] = r; tb.insertAdjacentHTML('afterbegin', rowHtml(r)); bindRow(tb.firstElementChild); tb.firstElementChild.classList.add('row-new'); }
+    }
+    if (!rows.length) renderEmpty();
+    setCount();
+  };
+  sync();
+  if (window.__ibTimer) clearInterval(window.__ibTimer);
+  window.__ibTimer = setInterval(() => { if (location.hash.startsWith('#/inbox')) sync(); else { clearInterval(window.__ibTimer); window.__ibTimer = null; } }, 8000);
 };
+// Badge nella sidebar: quante posizioni in attesa (visibile da ogni pagina, refresh ogni 30s)
+function updateInboxBadge(n) {
+  const a = document.querySelector('a[data-route="inbox"]'); if (!a) return;
+  let b = a.querySelector('.nav-badge');
+  if (!b) { b = document.createElement('span'); b.className = 'nav-badge'; b.style.cssText = 'margin-left:auto;background:var(--green,#2a9d5c);color:#fff;border-radius:10px;padding:0 6px;font-size:10px;font-weight:600;line-height:16px;min-width:16px;text-align:center'; a.appendChild(b); }
+  b.textContent = n; b.style.display = n > 0 ? '' : 'none';
+}
+async function pollInboxBadge() {
+  try { const { count, error } = await sb.from('inbox_candidates').select('id', { count: 'exact', head: true }).eq('status', 'pending'); if (!error) updateInboxBadge(count || 0); } catch {}
+}
+setTimeout(pollInboxBadge, 4000);
+setInterval(pollInboxBadge, 30000);
 routes['admin'] = function() {
   // Defense in depth: even if a non-admin types #/admin in URL, redirect away
   if (CURRENT_USER_ROLE !== 'admin') {
