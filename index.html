@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260902-inbox-live -->
+<!-- build: 20260902-inbox-v3 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -8785,7 +8785,9 @@ routes['inbox'] = function() {
       </div>
       <div class="tbl-wrap" id="ib-tbl" style="flex:1;overflow:auto"></div>
     </div>`;
-  const AREAS = ['ECSA','PG / RSEA','SAFR','WCI','ECI','SEASIA'];
+  const AREAS = ['ECSA','PG','RSEA','SAFR','WCI','ECI','SEASIA','SCHINA','NCHINA','USG','UKC','WMED','EMED'];
+  const PAC_AREAS = new Set(['SEASIA','SCHINA','NCHINA']);
+  const STATI = ['', 'fresh', 'on_subs', 'off_mkt'];
   const byId = {};
   const inp = (id, k, v, w, ph) => `<input class="ib-in" data-id="${id}" data-k="${k}" value="${attr(v == null ? '' : v)}" placeholder="${ph||''}" style="width:${w};background:var(--bg-3);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:4px 6px;font-size:11.5px">`;
   const rowHtml = (r) => {
@@ -8800,6 +8802,8 @@ routes['inbox'] = function() {
         <td data-col="ideas">${inp(r.id, 'ideas', r.ideas, '100%')}</td>
         <td>${inp(r.id, 'bunker', r.bunker, '110px')}</td>
         <td>${inp(r.id, 'ows_brkr', r.ows_brkr, '95px')}</td>
+        <td>${inp(r.id, 'ls_brkr', r.ls_brkr, '42px')}</td>
+        <td><select class="ib-in" data-id="${r.id}" data-k="vsl_status" style="background:var(--bg-3);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:4px 6px;font-size:11.5px">${STATI.map(a => `<option value="${a}"${a === (r.vsl_status || '') ? ' selected' : ''}>${a || '—'}</option>`).join('')}</select></td>
         <td class="dim" style="font-size:10.5px;white-space:nowrap" title="${attr(r.raw || '')}">${esc(String(r.sender || '').split(' ')[0])}<br>${esc(t)}</td>
         <td style="white-space:nowrap">
           <button class="primary ib-ok" data-id="${r.id}" title="Approva → inserisce/aggiorna in lista">✓</button>
@@ -8816,13 +8820,16 @@ routes['inbox'] = function() {
       const id = Number(ok.dataset.id); const c = byId[id]; const v = rowVals(id);
       if (!v.vessel || !c) return;
       v.vessel = v.vessel.toUpperCase();
+      const area = (v.area || 'ECSA').toUpperCase();
       const patch = { vessel: v.vessel, dwt_blt: v.dwt_blt, open_port: v.open_port, open_from: v.open_from, open_to: v.open_to,
-        area: v.area || 'ECSA', basin: 'atl', ideas: v.ideas, bunker: v.bunker, ows_brkr: v.ows_brkr,
+        area, basin: PAC_AREAS.has(area) ? 'PAC' : 'ATL', ideas: v.ideas, bunker: v.bunker, ows_brkr: v.ows_brkr,
         update_date: (c.msg_time || '').slice(0, 10) || todayIso() };
+      if (v.ls_brkr) patch.ls_brkr = v.ls_brkr.toUpperCase();
+      if (v.vsl_status) patch.status = v.vsl_status;
       if (c.scrbr_ftd === true) patch.scrbr_ftd = true;
       const norm = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
       const ex = (DATA.vessels || []).find(x => norm(x.vessel) === norm(v.vessel));
-      if (ex) updVessel(ex.id, patch); else addVessel({ ...patch, status: 'fresh' });
+      if (ex) updVessel(ex.id, patch); else addVessel({ ...patch });
       await sb.from('inbox_candidates').update({ status: 'approved' }).eq('id', id);
       removeRow(id);
     };
@@ -8832,7 +8839,7 @@ routes['inbox'] = function() {
   const ensureTable = () => {
     if ($('#ib-tbl table')) return $('#ib-tbl tbody');
     $('#ib-tbl').innerHTML = `<table class="grid"><thead class="area-green tint-fixed"><tr>
-      <th>Vessel</th><th>DWT/BLT</th><th>Open</th><th>From</th><th>To</th><th>Area</th><th class="col-ideas">Ideas / Info</th><th>Bunker</th><th>Ows</th><th>Msg</th><th></th>
+      <th>Vessel</th><th>DWT/BLT</th><th>Open</th><th>From</th><th>To</th><th>Area</th><th class="col-ideas">Ideas / Info</th><th>Bunker</th><th>Ows</th><th>LS</th><th>Status</th><th>Msg</th><th></th>
     </tr></thead><tbody></tbody></table>`;
     return $('#ib-tbl tbody');
   };
