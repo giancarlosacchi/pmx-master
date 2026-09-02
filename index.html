@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260831-vd-all -->
+<!-- build: 20260902-inbox -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2462,6 +2462,7 @@ body:not(.logged-in) .app { visibility: hidden; }
     <div class="nav-section">Tools</div>
     <nav class="nav">
       <a data-route="ecsa-list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18"/></svg><span class="nav-label">ECSA List</span></a>
+      <a data-route="inbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg><span class="nav-label">Inbox</span></a>
       <a data-route="calc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h2M14 11h2M8 15h2M14 15h2"/></svg><span class="nav-label">Calc DOP/APS</span></a>
       <a data-route="distances"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg><span class="nav-label">Distances</span></a>
       <a data-route="vsl-descr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span class="nav-label">Vsl Descr</span></a>
@@ -4854,6 +4855,7 @@ const PAGES = {
   'atl-tng':   ['ATL TNG', 'Atlantic Master List — panamax position'],
   'pac-tng':   ['PAC TNG', 'Pacific Master List — panamax position'],
   'ecsa-list': ['ECSA List', ''],
+  'inbox':     ['Inbox', 'Posizioni estratte da Teams — approva o scarta'],
   'vsl-descr': ['Vsl Descr', ''],
   'atl-cgo':   ['ATL CGO', 'Atlantic Cargoes'],
   'pac-cgo':   ['PAC CGO', 'Pacific Cargoes'],
@@ -8771,6 +8773,82 @@ routes['vsl-descr'] = function() {
     if (window.P6) { window.P6._refresh = refresh; window.P6.editVessel(n); }
   };
   $('#vd-q').oninput = () => { clearTimeout(window.__vdT); window.__vdT = setTimeout(refresh, 250); };
+  refresh();
+};
+routes['inbox'] = function() {
+  $('#topbar-actions').innerHTML = '';
+  $('#content').innerHTML = `
+    <div class="panel" style="display:flex;flex-direction:column;min-height:0;flex:1">
+      <div class="filters">
+        <div class="group"><label>Inbox</label><span style="font-size:11.5px;color:var(--text-mute)">Posizioni estratte automaticamente dalle chat Teams (ECSA). Controlla, correggi e approva.</span></div>
+        <span class="count-pill" id="ib-cnt">—</span>
+      </div>
+      <div class="tbl-wrap" id="ib-tbl" style="flex:1;overflow:auto"></div>
+    </div>`;
+  const AREAS = ['ECSA','PG / RSEA','SAFR','WCI','ECI','SEASIA'];
+  const refresh = async () => {
+    const { data, error } = await sb.from('inbox_candidates').select('*').eq('status', 'pending').order('msg_time', { ascending: false });
+    if (error) { $('#ib-tbl').innerHTML = '<div style="padding:16px;color:var(--red)">' + esc(error.message) + '</div>'; return; }
+    const rows = data || [];
+    $('#ib-cnt').textContent = rows.length + ' candidati';
+    if (!rows.length) { $('#ib-tbl').innerHTML = '<div style="padding:24px;color:var(--text-mute);font-size:12.5px">Nessun candidato in attesa. Lancia <b>node parse-ecsa.mjs</b> per estrarre le posizioni nuove.</div>'; return; }
+    const inp = (id, k, v, w, ph) => `<input class="ib-in" data-id="${id}" data-k="${k}" value="${attr(v == null ? '' : v)}" placeholder="${ph||''}" style="width:${w};background:var(--bg-3);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:4px 6px;font-size:11.5px">`;
+    const html = [`<table class="grid"><thead class="area-green tint-fixed"><tr>
+      <th>Vessel</th><th>DWT/BLT</th><th>Open</th><th>From</th><th>To</th><th>Area</th><th class="col-ideas">Ideas / Info</th><th>Bunker</th><th>Ows</th><th>Msg</th><th></th>
+    </tr></thead><tbody>`];
+    for (const r of rows) {
+      const t = (r.msg_time || '').slice(5, 16).replace('T', ' ');
+      html.push(`<tr data-row="${r.id}">
+        <td>${inp(r.id, 'vessel', r.vessel, '130px')}</td>
+        <td>${inp(r.id, 'dwt_blt', r.dwt_blt, '52px')}</td>
+        <td>${inp(r.id, 'open_port', r.open_port, '95px')}</td>
+        <td>${inp(r.id, 'open_from', r.open_from, '95px', 'YYYY-MM-DD')}</td>
+        <td>${inp(r.id, 'open_to', r.open_to, '95px', 'YYYY-MM-DD')}</td>
+        <td><select class="ib-in" data-id="${r.id}" data-k="area" style="background:var(--bg-3);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:4px 6px;font-size:11.5px">${AREAS.map(a => `<option${a === (r.area || 'ECSA') ? ' selected' : ''}>${a}</option>`).join('')}</select></td>
+        <td data-col="ideas">${inp(r.id, 'ideas', r.ideas, '100%')}</td>
+        <td>${inp(r.id, 'bunker', r.bunker, '110px')}</td>
+        <td>${inp(r.id, 'ows_brkr', r.ows_brkr, '95px')}</td>
+        <td class="dim" style="font-size:10.5px;white-space:nowrap" title="${attr(r.raw || '')}">${esc(String(r.sender || '').split(' ')[0])}<br>${esc(t)}</td>
+        <td style="white-space:nowrap">
+          <button class="primary ib-ok" data-id="${r.id}" title="Approva → inserisce/aggiorna in lista">✓</button>
+          <button class="ib-no" data-id="${r.id}" title="Scarta" style="margin-left:4px">✕</button>
+        </td>
+      </tr>`);
+    }
+    html.push('</tbody></table>');
+    $('#ib-tbl').innerHTML = html.join('');
+    const byId = {}; rows.forEach(r => byId[r.id] = r);
+    const rowVals = (id) => {
+      const o = {};
+      $$(`#ib-tbl .ib-in[data-id="${id}"]`).forEach(el => o[el.dataset.k] = (el.value || '').trim() || null);
+      return o;
+    };
+    $$('#ib-tbl .ib-ok').forEach(b => b.onclick = async () => {
+      const id = Number(b.dataset.id); const c = byId[id]; const v = rowVals(id);
+      if (!v.vessel) return;
+      v.vessel = v.vessel.toUpperCase();
+      const patch = {
+        vessel: v.vessel, dwt_blt: v.dwt_blt, open_port: v.open_port,
+        open_from: v.open_from, open_to: v.open_to, area: v.area || 'ECSA',
+        basin: 'atl', ideas: v.ideas, bunker: v.bunker, ows_brkr: v.ows_brkr,
+        update_date: (c.msg_time || '').slice(0, 10) || todayIso(),
+      };
+      if (c.scrbr_ftd === true) patch.scrbr_ftd = true;
+      const norm = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      const ex = (DATA.vessels || []).find(x => norm(x.vessel) === norm(v.vessel));
+      if (ex) updVessel(ex.id, patch); else addVessel({ ...patch, status: 'fresh' });
+      await sb.from('inbox_candidates').update({ status: 'approved' }).eq('id', id);
+      const tr = $(`#ib-tbl tr[data-row="${id}"]`); if (tr) tr.remove();
+      const left = $$('#ib-tbl tbody tr').length; $('#ib-cnt').textContent = left + ' candidati';
+      if (typeof toast === 'function') toast((ex ? 'Aggiornata: ' : 'Inserita: ') + v.vessel);
+    });
+    $$('#ib-tbl .ib-no').forEach(b => b.onclick = async () => {
+      const id = Number(b.dataset.id);
+      await sb.from('inbox_candidates').update({ status: 'rejected' }).eq('id', id);
+      const tr = $(`#ib-tbl tr[data-row="${id}"]`); if (tr) tr.remove();
+      const left = $$('#ib-tbl tbody tr').length; $('#ib-cnt').textContent = left + ' candidati';
+    });
+  };
   refresh();
 };
 routes['admin'] = function() {
