@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v12 -->
+<!-- build: 20260903-inbox-v13 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -8828,7 +8828,7 @@ routes['inbox'] = function() {
     const ex = findV(r.vessel);
     const t = (r.msg_time || '').slice(5, 16).replace('T', ' ');
     const tip = ex ? `In list: ${plain(ex.area || '')} ${plain(ex.open_port || '')} ${plain(fmtDateRange(ex.open_from, ex.open_to))}` : 'NOT in list';
-    const pill = kind ? `<span class="ib-pill" style="background:${KIND_LBL[kind][1]}" title="${attr(ex ? 'In list' : 'NOT in list')}">${KIND_LBL[kind][0]}</span>` : '';
+    const pill = (kind && kind !== 'subs') ? `<span class="ib-pill" style="background:${KIND_LBL[kind][1]}" title="${attr(ex ? 'In list' : 'NOT in list')}">${KIND_LBL[kind][0]}</span>` : '';
     const flags = (r.scrbr_ftd ? `<span class="flags-label">SCRFTD</span>` : '') + pill;
     const E = (f, extra) => `class="editable ${extra || ''} ib-ed" data-f="${f}"`;
     return `<tr class="${cls} row-area ${areaClass(r.area)} ${kind ? 'ib-' + kind : ''} ${st === 'on_subs' ? 'ib-subs' : ''} ${r.area ? '' : 'ib-noarea'}" data-row="${r.id}">
