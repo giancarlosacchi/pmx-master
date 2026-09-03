@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v13 -->
+<!-- build: 20260903-inbox-v14 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -9053,7 +9053,12 @@ routes['inbox'] = function() {
     const ids = new Set(rows.map(r => r.id));
     let changed = false;
     for (const id of Object.keys(byId)) if (!ids.has(Number(id))) { delete byId[id]; changed = true; }
-    for (const r of rows) if (!byId[r.id]) { r.__ideas0 = r.ideas; byId[r.id] = r; changed = true; }
+    for (const r of rows) if (!byId[r.id]) {
+      r.__ideas0 = r.ideas;
+      // fixed / subs message without position data: show the vessel as it is in the list, in its own area
+      if (kindOf(r) && !r.open_port) { const ex = findV(r.vessel); if (ex) Object.assign(r, { dwt_blt: r.dwt_blt || ex.dwt_blt, open_port: ex.open_port, open_from: ex.open_from, open_to: ex.open_to, area: ex.area, basin: ex.basin, ows_brkr: r.ows_brkr || ex.ows_brkr, bunker: r.bunker || ex.bunker, ls_brkr: r.ls_brkr || ex.ls_brkr }); }
+      byId[r.id] = r; changed = true;
+    }
     if (changed || !$('#ib-tbl table')) render();
   };
   sync();
