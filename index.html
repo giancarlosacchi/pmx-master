@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v9 -->
+<!-- build: 20260903-inbox-v10 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -8792,6 +8792,13 @@ routes['inbox'] = function() {
       #ib-tbl td.editing input, #ib-tbl td.editing select { width: 100%; box-sizing: border-box; background: var(--bg-3); border: 1px solid var(--gold); color: var(--text); border-radius: 4px; padding: 2px 4px; font: inherit; font-size: 12px; }
       #ib-tbl td.editing .ib-vsl { display: flex; gap: 4px; } #ib-tbl td.editing .ib-vsl input { flex: 1; } #ib-tbl td.editing .ib-vsl select { width: 92px; }
       #ib-tbl .status-menu .opt.open { color: var(--green,#2a9d5c); }
+      #ib-tbl table.grid th.col-ows, #ib-tbl table.grid td.col-ows { border-right: none !important; }
+      #ib-tbl td.editing .ib-vsl { flex-direction: column; gap: 3px; } #ib-tbl td.editing .ib-vsl input, #ib-tbl td.editing .ib-vsl select { width: 100% !important; }
+      #ib-tbl table.grid td.col-vessel.editing { overflow: visible; white-space: normal; max-width: none; }
+      #ib-pop { position: fixed; z-index: 9999; max-width: 560px; min-width: 300px; background: var(--bg-2, #fff); color: var(--text); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 28px rgba(0,0,0,.18); padding: 8px 10px; font-size: 11.5px; line-height: 1.35; pointer-events: none; display: none; }
+      #ib-pop .ib-pop-h { display: flex; gap: 10px; flex-wrap: wrap; font-weight: 700; font-size: 10.5px; letter-spacing: .02em; color: var(--text-mute); border-bottom: 1px solid var(--line); padding-bottom: 5px; margin-bottom: 6px; text-transform: uppercase; }
+      #ib-pop .ib-pop-h b { color: var(--text); }
+      #ib-pop pre { margin: 0; white-space: pre-wrap; font: inherit; font-family: inherit; }
     </style>
     <div class="panel"><div class="tbl-wrap" id="ib-tbl"></div></div>`;
   const AREAS = ['ECSA','NCSA','PG','RSEA','WCI','ECI','SEASIA','SCHINA','NCHINA','UKC','WMED','EMED','USG','USEC / ECCA'];
@@ -8814,12 +8821,12 @@ routes['inbox'] = function() {
     const statusLabel = st === 'on_subs' ? 'on subs' : st === 'off_mkt' ? 'off mrkt' : st === 'fresh' ? 'fresh' : st === 'open' ? 'back open' : '—';
     const ex = findV(r.vessel);
     const t = (r.msg_time || '').slice(5, 16).replace('T', ' ');
-    const tip = `${r.sender || ''} · ${t}${ex ? `\nIN LISTA: ${plain(ex.area || '')} ${plain(ex.open_port || '')} ${plain(fmtDateRange(ex.open_from, ex.open_to))}` : '\nNON in lista'}\n\n${r.raw || ''}`;
+    const tip = ex ? `In lista: ${plain(ex.area || '')} ${plain(ex.open_port || '')} ${plain(fmtDateRange(ex.open_from, ex.open_to))}` : 'NON in lista';
     const pill = kind ? `<span class="ib-pill" style="background:${KIND_LBL[kind][1]}" title="${attr(ex ? 'In lista' : 'NON in lista')}">${KIND_LBL[kind][0]}</span>` : '';
     const flags = (r.scrbr_ftd ? `<span class="flags-label">SCRFTD</span>` : '') + pill;
-    const E = (f, extra) => `class="editable ${extra || ''} ib-ed" data-f="${f}" title="Double-click to edit"`;
+    const E = (f, extra) => `class="editable ${extra || ''} ib-ed" data-f="${f}"`;
     return `<tr class="${cls} row-area ${areaClass(r.area)} ${kind ? 'ib-' + kind : ''} ${r.area ? '' : 'ib-noarea'}" data-row="${r.id}">
-    <td ${E('vessel', 'col-vessel')} title="${attr(tip)}">${esc(r.vessel || '')}</td>
+    <td ${E('vessel', 'col-vessel')} data-tip="${attr(tip)}">${esc(r.vessel || '')}</td>
     <td ${E('dwt_blt', 'dim col-dwt')}>${esc(r.dwt_blt || '')}</td>
     <td ${E('open_port', 'col-open')}>${esc(r.open_port || '')}</td>
     <td ${E('open_from', 'col-dates')}>${fmtDateRange(r.open_from, r.open_to)}</td>
@@ -8844,6 +8851,7 @@ routes['inbox'] = function() {
   };
 
   const render = () => {
+    const wrap = $('#ib-tbl'); const sy = wrap ? wrap.scrollTop : 0;
     const rows = Object.values(byId);
     const cnt = $('#ib-cnt'); if (cnt) cnt.textContent = rows.length + ' in attesa';
     if (typeof updateInboxBadge === 'function') updateInboxBadge(rows.length);
@@ -8876,7 +8884,35 @@ routes['inbox'] = function() {
     $('#ib-tbl').innerHTML = html.join('');
     $$('#ib-tbl th.th-filter input[data-col]').forEach(inp => inp.oninput = () => { F[inp.dataset.col] = inp.value; applyFilter(); });
     applyFilter();
+    if (sy) $('#ib-tbl').scrollTop = sy;
   };
+  // ---- popup al passaggio del mouse: messaggio originale + chat, mittente, data/ora (Roma) ----
+  let pop = document.getElementById('ib-pop');
+  if (!pop) { pop = document.createElement('div'); pop.id = 'ib-pop'; document.body.appendChild(pop); }
+  let popT = null, popRow = null;
+  const hidePop = () => { clearTimeout(popT); popT = null; popRow = null; pop.style.display = 'none'; };
+  const showPop = (tr, x, y) => {
+    const r = byId[Number(tr.dataset.row)]; if (!r) return;
+    const when = r.msg_time ? new Date(r.msg_time).toLocaleString('it-IT', { timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+    const ex = findV(r.vessel);
+    pop.innerHTML = `<div class="ib-pop-h"><span>${esc(r.chat || 'ECSA PMAX LIGHTSHIP')}</span><span><b>${esc(r.sender || '')}</b></span><span>${esc(when)}</span><span style="margin-left:auto">${ex ? 'in lista' : 'NON in lista'}</span></div><pre>${esc(String(r.raw || '').replace(/\n{3,}/g, '\n\n').trim())}</pre>`;
+    pop.style.display = 'block';
+    const W = pop.offsetWidth, H = pop.offsetHeight;
+    let left = Math.min(x + 14, window.innerWidth - W - 8), top = y + 18;
+    if (top + H > window.innerHeight - 8) top = Math.max(8, y - H - 12);
+    pop.style.left = left + 'px'; pop.style.top = top + 'px';
+  };
+  $('#ib-tbl').addEventListener('mousemove', (e) => {
+    const tr = e.target.closest('tr[data-row]');
+    if (!tr || $('#ib-tbl td.editing')) { if (popRow) hidePop(); return; }
+    if (tr === popRow) { if (pop.style.display === 'block') { /* segue il mouse */ const W = pop.offsetWidth, H = pop.offsetHeight; let left = Math.min(e.clientX + 14, window.innerWidth - W - 8), top = e.clientY + 18; if (top + H > window.innerHeight - 8) top = Math.max(8, e.clientY - H - 12); pop.style.left = left + 'px'; pop.style.top = top + 'px'; } return; }
+    hidePop(); popRow = tr;
+    const x = e.clientX, y = e.clientY;
+    popT = setTimeout(() => showPop(tr, x, y), 450);
+  });
+  $('#ib-tbl').addEventListener('mouseleave', hidePop);
+  $('#ib-tbl').addEventListener('scroll', hidePop, { passive: true });
+  $('#ib-tbl').addEventListener('mousedown', hidePop, true);
   const applyFilter = () => {
     const act = Object.entries(F).filter(([, v]) => v && v.trim());
     $$('#ib-tbl tbody tr[data-row]').forEach(tr => {
