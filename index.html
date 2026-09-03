@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260902-inbox-v4 -->
+<!-- build: 20260902-inbox-v5 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -8891,7 +8891,12 @@ routes['inbox'] = function() {
     const { data, error } = await sb.from('inbox_candidates').select('*').eq('status', 'pending').order('msg_time', { ascending: false });
     const live = $('#ib-live'); if (live) live.style.color = error ? 'var(--red)' : 'var(--green,#2a9d5c)';
     if (error) { if (!$('#ib-tbl table') && !$('#ib-empty')) $('#ib-tbl').innerHTML = '<div style="padding:16px;color:var(--red)">' + esc(error.message) + '</div>'; return; }
-    const rows = data || [];
+    let rows = data || [];
+    // stessa nave + stesso tipo piu' volte: tieni solo il messaggio piu' recente, gli altri diventano 'superseded'
+    { const seen = new Set(), keep = [], old = [];
+      for (const r of rows) { const k = (r.kind || 'position') + '|' + String(r.vessel || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); if (seen.has(k)) old.push(r.id); else { seen.add(k); keep.push(r); } }
+      if (old.length) { sb.from('inbox_candidates').update({ status: 'superseded' }).in('id', old).then(() => {}); }
+      rows = keep; }
     const ids = new Set(rows.map(r => r.id));
     // rimuovi righe non piu' pending
     $$('#ib-tbl tbody tr').forEach(tr => { if (!ids.has(Number(tr.dataset.row))) { delete byId[Number(tr.dataset.row)]; tr.remove(); } });
