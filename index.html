@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v14 -->
+<!-- build: 20260903-inbox-v15 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -8814,7 +8814,8 @@ routes['inbox'] = function() {
   const byId = {};
   const F = {};
   const norm = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-  const findV = (name) => (DATA.vessels || []).find(x => norm(x.vessel) === norm(name));
+  const dwtK = d => { const m = String(d || '').match(/^\s*(\d{2,3})/); return m ? Number(m[1]) : null; };
+  const findV = (name, dwt) => (DATA.vessels || []).find(x => norm(x.vessel) === norm(name) && (dwt == null || dwtK(dwt) == null || dwtK(x.dwt_blt) == null || Math.abs(dwtK(x.dwt_blt) - dwtK(dwt)) <= 3));
   const plain = s => String(s || '').replace(/<[^>]+>/g, '');
   const kindOf = r => r.kind && r.kind !== 'position' ? r.kind : '';
   const stOf = r => r.vsl_status || (kindOf(r) === 'subs' ? 'on_subs' : kindOf(r) === 'unsubs' ? 'open' : '');
@@ -8825,10 +8826,10 @@ routes['inbox'] = function() {
     const cls = st === 'off_mkt' ? 'status-off' : st === 'fresh' ? 'status-fresh' : '';
     const statusCls = st === 'on_subs' ? 'subs' : st === 'off_mkt' ? 'off' : st === 'fresh' ? 'fresh' : st === 'open' ? 'open' : 'none';
     const statusLabel = st === 'on_subs' ? 'on subs' : st === 'off_mkt' ? 'off mrkt' : st === 'fresh' ? 'fresh' : st === 'open' ? 'back open' : '—';
-    const ex = findV(r.vessel);
+    const ex = findV(r.vessel, r.dwt_blt);
     const t = (r.msg_time || '').slice(5, 16).replace('T', ' ');
     const tip = ex ? `In list: ${plain(ex.area || '')} ${plain(ex.open_port || '')} ${plain(fmtDateRange(ex.open_from, ex.open_to))}` : 'NOT in list';
-    const pill = (kind && kind !== 'subs') ? `<span class="ib-pill" style="background:${KIND_LBL[kind][1]}" title="${attr(ex ? 'In list' : 'NOT in list')}">${KIND_LBL[kind][0]}</span>` : '';
+    const pill = (kind && kind !== 'subs') ? `<span class="ib-pill" style="background:${KIND_LBL[kind][1]}" title="${attr(ex ? 'In list' : 'NOT in list')}">${KIND_LBL[kind][0]}</span>` : '';   // FXD non serve: riga rosa + status "on subs"
     const flags = (r.scrbr_ftd ? `<span class="flags-label">SCRFTD</span>` : '') + pill;
     const E = (f, extra) => `class="editable ${extra || ''} ib-ed" data-f="${f}"`;
     return `<tr class="${cls} row-area ${areaClass(r.area)} ${kind ? 'ib-' + kind : ''} ${st === 'on_subs' ? 'ib-subs' : ''} ${r.area ? '' : 'ib-noarea'}" data-row="${r.id}">
@@ -8900,7 +8901,7 @@ routes['inbox'] = function() {
   const showPop = (tr, x, y) => {
     const r = byId[Number(tr.dataset.row)]; if (!r) return;
     const when = r.msg_time ? new Date(r.msg_time).toLocaleString('it-IT', { timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
-    const ex = findV(r.vessel);
+    const ex = findV(r.vessel, r.dwt_blt);
     pop.innerHTML = `<div class="ib-pop-h"><span>${esc(r.chat || 'ECSA PMAX LIGHTSHIP')}</span><span><b>${esc(r.sender || '')}</b></span><span>${esc(when)}</span><span style="margin-left:auto">${ex ? 'IN LIST' : 'NOT IN LIST'}</span></div><pre>${esc(String(r.raw || '').replace(/\n{3,}/g, '\n\n').trim())}</pre>`;
     pop.style.display = 'block';
     const W = pop.offsetWidth, H = pop.offsetHeight;
@@ -8998,7 +8999,7 @@ routes['inbox'] = function() {
     if (e.target.closest('.ib-ok')) {
       if (!r.vessel) return;
       const kind = kindOf(r), st = stOf(r);
-      const ex = findV(r.vessel);
+      const ex = findV(r.vessel, r.dwt_blt);
       const upd = (r.msg_time || '').slice(0, 10) || todayIso();
       const area = r.area || null;
       if (kind === 'remove') {
@@ -9046,7 +9047,13 @@ routes['inbox'] = function() {
     if (error) { if (!$('#ib-tbl table') && !$('#ib-empty')) $('#ib-tbl').innerHTML = '<div style="padding:16px;color:var(--red)">' + esc(error.message) + '</div>'; return; }
     let rows = data || [];
     { const seen = new Set(), keep = [], old = [];
-      for (const r of rows) { const k = (r.kind || 'position') + '|' + norm(r.vessel); if (seen.has(k)) old.push(r.id); else { seen.add(k); keep.push(r); } }
+      const score = r => (r.ideas ? 2 : 0) + (r.ows_brkr ? 1 : 0) + (r.bunker ? 1 : 0) + (r.area ? 1 : 0);
+      const byKey = new Map();
+      for (const r of rows) { const k = (r.kind || 'position') + '|' + norm(r.vessel); const cur = byKey.get(k);
+        if (!cur) { byKey.set(k, r); continue; }
+        const close = Math.abs(new Date(cur.msg_time) - new Date(r.msg_time)) < 12 * 3600e3;
+        if (close && score(r) > score(cur)) { old.push(cur.id); byKey.set(k, r); } else old.push(r.id); }
+      keep.push(...byKey.values());
       if (old.length) { sb.from('inbox_candidates').update({ status: 'superseded' }).in('id', old).then(() => {}); }
       rows = keep; }
     if ($('#ib-tbl td.editing')) return;            // non ridisegnare mentre stai modificando
@@ -9056,7 +9063,7 @@ routes['inbox'] = function() {
     for (const r of rows) if (!byId[r.id]) {
       r.__ideas0 = r.ideas;
       // fixed / subs message without position data: show the vessel as it is in the list, in its own area
-      if (kindOf(r) && !r.open_port) { const ex = findV(r.vessel); if (ex) Object.assign(r, { dwt_blt: r.dwt_blt || ex.dwt_blt, open_port: ex.open_port, open_from: ex.open_from, open_to: ex.open_to, area: ex.area, basin: ex.basin, ows_brkr: r.ows_brkr || ex.ows_brkr, bunker: r.bunker || ex.bunker, ls_brkr: r.ls_brkr || ex.ls_brkr }); }
+      if (kindOf(r) && !r.open_port) { const ex = findV(r.vessel, r.dwt_blt); if (ex) Object.assign(r, { dwt_blt: r.dwt_blt || ex.dwt_blt, open_port: ex.open_port, open_from: ex.open_from, open_to: ex.open_to, area: ex.area, basin: ex.basin, ows_brkr: r.ows_brkr || ex.ows_brkr, bunker: r.bunker || ex.bunker, ls_brkr: r.ls_brkr || ex.ls_brkr }); }
       byId[r.id] = r; changed = true;
     }
     if (changed || !$('#ib-tbl table')) render();
