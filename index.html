@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v7 -->
+<!-- build: 20260903-inbox-v8 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -8778,134 +8778,215 @@ routes['vsl-descr'] = function() {
 };
 routes['inbox'] = function() {
   if (CURRENT_USER_ROLE !== 'admin') { location.hash = '#/atl-tng'; return; }
-  $('#topbar-actions').innerHTML = '';
+  $('#topbar-actions').innerHTML = `<span id="ib-live" title="Aggiornamento automatico attivo" style="font-size:11.5px;color:var(--green,#2a9d5c);margin-right:8px">● live</span><span class="count-pill" id="ib-cnt">—</span>`;
   $('#content').innerHTML = `
     <style>
-      #ib-tbl table.grid td { padding: 1px 3px !important; height: 26px; vertical-align: middle; }
-      #ib-tbl table.grid th { padding: 4px 4px !important; }
-      #ib-tbl .ib-in { background: var(--bg-3); border: 1px solid var(--line); color: var(--text); border-radius: 4px; padding: 1px 4px; font-size: 11px; height: 21px; font-family: inherit; }
-      #ib-tbl .ib-in:focus { border-color: var(--gold); outline: none; }
-      #ib-tbl select.ib-in { padding: 0 2px; }
-      #ib-tbl .dr-btn { min-width: 74px; height: 21px; padding: 0 6px; font-size: 11px; text-transform: uppercase; border-radius: 4px; }
-      #ib-tbl .dr-wrap { display: inline-block; }
-      #ib-tbl button.ib-ok, #ib-tbl button.ib-no, #ib-tbl button.ib-del { padding: 0 6px; height: 21px; font-size: 11px; line-height: 19px; }
-      #ib-tbl tr.ib-subs td { background: rgba(236,72,153,.16) !important; }
-      #ib-tbl tr.ib-remove td { background: rgba(239,68,68,.16) !important; }
-      #ib-tbl tr.ib-unsubs td { background: rgba(59,130,246,.14) !important; }
-      #ib-tbl .ib-pill { display: inline-block; margin-left: 3px; padding: 0 5px; border-radius: 8px; font-size: 9.5px; font-weight: 700; color: #fff; vertical-align: middle; cursor: help; }
-      #ib-tbl td.ib-msg { font-size: 10px; line-height: 1.15; white-space: nowrap; cursor: help; }
+      #ib-tbl tr.ib-subs td { background: rgba(236,72,153,.13) !important; }
+      #ib-tbl tr.ib-remove td { background: rgba(239,68,68,.13) !important; }
+      #ib-tbl tr.ib-unsubs td { background: rgba(59,130,246,.12) !important; }
+      #ib-tbl tr.ib-noarea td.col-vessel { color: var(--red); }
+      #ib-tbl .ib-pill { display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 8px; font-size: 9.5px; font-weight: 700; color: #fff; vertical-align: middle; cursor: help; }
+      #ib-tbl td.col-del { white-space: nowrap; }
+      #ib-tbl .ib-ok { color: var(--green,#2a9d5c); font-weight: 700; }
+      #ib-tbl .ib-no { color: var(--red); font-weight: 700; margin-left: 2px; }
+      #ib-tbl td.editing input, #ib-tbl td.editing select { width: 100%; box-sizing: border-box; background: var(--bg-3); border: 1px solid var(--gold); color: var(--text); border-radius: 4px; padding: 2px 4px; font: inherit; font-size: 12px; }
+      #ib-tbl td.editing .ib-vsl { display: flex; gap: 4px; } #ib-tbl td.editing .ib-vsl input { flex: 1; } #ib-tbl td.editing .ib-vsl select { width: 92px; }
+      #ib-tbl .status-menu .opt.open { color: var(--green,#2a9d5c); }
     </style>
-    <div class="panel" style="display:flex;flex-direction:column;min-height:0;flex:1">
-      <div class="filters" style="padding:6px 10px">
-        <div class="group"><label>Inbox</label><span style="font-size:11.5px;color:var(--text-mute)">Posizioni estratte in tempo reale dalle chat Teams (ECSA). Controlla, correggi e approva. <span id="ib-live" title="Aggiornamento automatico attivo" style="color:var(--green,#2a9d5c)">● live</span></span></div>
-        <span class="count-pill" id="ib-cnt">—</span>
-      </div>
-      <div class="tbl-wrap" id="ib-tbl" style="flex:1;overflow:auto"></div>
-    </div>`;
+    <div class="panel"><div class="tbl-wrap" id="ib-tbl"></div></div>`;
   const AREAS = ['ECSA','NCSA','PG','RSEA','WCI','ECI','SEASIA','SCHINA','NCHINA','UKC','WMED','EMED','USG','USEC / ECCA'];
+  const AREA_ORDER = [...ATL_TNG_AREAS, ...PAC_TNG_AREAS.filter(a => !ATL_TNG_AREAS.includes(a))];
   const PAC_AREAS = new Set(['SEASIA','SCHINA','NCHINA']);
-  const STATI = [['', '—'], ['fresh', 'fresh'], ['on_subs', 'on subs'], ['off_mkt', 'off mkt'], ['open', 'back open']];
-  const byId = {};
-  const inp = (id, k, v, w, ph) => `<input class="ib-in" data-id="${id}" data-k="${k}" value="${attr(v == null ? '' : v)}" placeholder="${ph||''}" style="width:${w}">`;
   const KIND_LBL = { subs: ['FXD', 'var(--red,#dc2626)'], remove: ['DEL', 'var(--red,#dc2626)'], unsubs: ['F/F', 'var(--blue,#2563eb)'] };
+  const byId = {};
+  const F = {};
   const norm = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const findV = (name) => (DATA.vessels || []).find(x => norm(x.vessel) === norm(name));
   const plain = s => String(s || '').replace(/<[^>]+>/g, '');
-  const msgCell = (r) => { const t = (r.msg_time || '').slice(5, 16).replace('T', ' '); return `<td class="dim ib-msg" title="${attr(r.raw || '')}">${esc(String(r.sender || '').split(' ')[0])}<br>${esc(t)}</td>`; };
+  const kindOf = r => r.kind && r.kind !== 'position' ? r.kind : '';
+  const stOf = r => r.vsl_status || (kindOf(r) === 'subs' ? 'on_subs' : kindOf(r) === 'unsubs' ? 'open' : '');
+  const persist = (r, patch) => { Object.assign(r, patch); sb.from('inbox_candidates').update(patch).eq('id', r.id).then(() => {}); };
+
   const rowHtml = (r) => {
-    const kind = r.kind && r.kind !== 'position' ? r.kind : '';
-    const ex = kind ? findV(r.vessel) : null;
-    const where = kind ? (ex ? `In lista: ${plain(ex.area || '')} ${plain(ex.open_port || '')} ${plain(fmtDateRange(ex.open_from, ex.open_to))}` : 'NON in lista') : '';
-    const pill = kind ? `<span class="ib-pill" style="background:${KIND_LBL[kind][1]}" title="${attr(where)}">${KIND_LBL[kind][0]}</span>` : '';
-    const st = r.vsl_status || (kind === 'subs' ? 'on_subs' : kind === 'unsubs' ? 'open' : '');
-    return `<tr data-row="${r.id}"${kind ? ` class="ib-${kind}"` : ''}>
-        <td>${inp(r.id, 'vessel', r.vessel, '122px')}</td>
-        <td>${inp(r.id, 'dwt_blt', r.dwt_blt, '46px')}</td>
-        <td>${inp(r.id, 'open_port', r.open_port, '104px')}</td>
-        <td class="ib-dates" data-id="${r.id}" style="white-space:nowrap"><input type="hidden" class="ib-in" data-id="${r.id}" data-k="open_from" value="${attr(r.open_from||'')}"><input type="hidden" class="ib-in" data-id="${r.id}" data-k="open_to" value="${attr(r.open_to||'')}"></td>
-        <td><select class="ib-in" data-id="${r.id}" data-k="area"><option value=""${r.area ? '' : ' selected'}>—</option>${AREAS.map(a => `<option${a === r.area ? ' selected' : ''}>${a}</option>`).join('')}</select></td>
-        <td data-col="ideas">${inp(r.id, 'ideas', r.ideas, '100%')}</td>
-        <td>${inp(r.id, 'ows_brkr', r.ows_brkr, '104px')}</td>
-        <td>${inp(r.id, 'bunker', r.bunker, '86px')}</td>
-        <td>${inp(r.id, 'ls_brkr', r.ls_brkr, '38px')}</td>
-        <td class="dim" style="white-space:nowrap;font-size:11px">${fmtUpdate(r.update_date)}</td>
-        <td style="white-space:nowrap"><select class="ib-in" data-id="${r.id}" data-k="vsl_status">${STATI.map(([v, l]) => `<option value="${v}"${v === st ? ' selected' : ''}>${l}</option>`).join('')}</select>${pill}</td>
-        ${msgCell(r)}
-        <td style="white-space:nowrap">
-          <button class="primary ib-ok" data-id="${r.id}" title="${kind ? 'Applica alla nave in lista' : 'Approva → inserisce/aggiorna in lista'}">✓</button>
-          ${kind === 'subs' && ex ? `<button class="ib-del" data-id="${r.id}" title="Elimina la nave dalla lista (fissata e gia' quotata oggi)" style="margin-left:3px">🗑</button>` : ''}
-          <button class="ib-no" data-id="${r.id}" title="Scarta" style="margin-left:3px">✕</button>
-        </td>
-      </tr>`;
+    const kind = kindOf(r), st = stOf(r);
+    const cls = st === 'on_subs' ? 'status-subs' : st === 'off_mkt' ? 'status-off' : st === 'fresh' ? 'status-fresh' : '';
+    const statusCls = st === 'on_subs' ? 'subs' : st === 'off_mkt' ? 'off' : st === 'fresh' ? 'fresh' : st === 'open' ? 'open' : 'none';
+    const statusLabel = st === 'on_subs' ? 'on subs' : st === 'off_mkt' ? 'off mrkt' : st === 'fresh' ? 'fresh' : st === 'open' ? 'back open' : '—';
+    const ex = findV(r.vessel);
+    const t = (r.msg_time || '').slice(5, 16).replace('T', ' ');
+    const tip = `${r.sender || ''} · ${t}${ex ? `\nIN LISTA: ${plain(ex.area || '')} ${plain(ex.open_port || '')} ${plain(fmtDateRange(ex.open_from, ex.open_to))}` : '\nNON in lista'}\n\n${r.raw || ''}`;
+    const pill = kind ? `<span class="ib-pill" style="background:${KIND_LBL[kind][1]}" title="${attr(ex ? 'In lista' : 'NON in lista')}">${KIND_LBL[kind][0]}</span>` : '';
+    const flags = (r.scrbr_ftd ? `<span class="flags-label">SCRFTD</span>` : '') + pill;
+    const E = (f, extra) => `class="editable ${extra || ''} ib-ed" data-f="${f}" title="Double-click to edit"`;
+    return `<tr class="${cls} row-area ${areaClass(r.area)} ${kind ? 'ib-' + kind : ''} ${r.area ? '' : 'ib-noarea'}" data-row="${r.id}">
+    <td ${E('vessel', 'col-vessel')} title="${attr(tip)}">${esc(r.vessel || '')}</td>
+    <td ${E('dwt_blt', 'dim col-dwt')}>${esc(r.dwt_blt || '')}</td>
+    <td ${E('open_port', 'col-open')}>${esc(r.open_port || '')}</td>
+    <td ${E('open_from', 'col-dates')}>${fmtDateRange(r.open_from, r.open_to)}</td>
+    <td ${E('ideas', 'col-ideas' + (isIdeasOffers(r.ideas, r.update_date) ? ' cell-offers' : ''))}><div class="ideas-text">${fmtIdeas(r.ideas || '', r.update_date)}</div></td>
+    <td ${E('ows_brkr', 'dim col-ows')}>${esc(r.ows_brkr || '')}</td>
+    <td ${E('bunker', 'dim col-bunker')}>${esc(r.bunker || '')}</td>
+    <td ${E('ls_brkr', 'dim col-lsbrkr')}>${esc(r.ls_brkr || '')}</td>
+    <td class="dim col-update">${fmtUpdate(r.update_date)}</td>
+    <td class="col-flags"><div class="flags-cell has-label">${flags}</div></td>
+    <td class="col-stato"><div class="status-wrap">
+      <span class="status-chip ${statusCls}">${statusLabel}</span>
+      <div class="status-menu">
+        <div class="opt fresh ${st==='fresh'?'current':''}" data-status="fresh">Fresh</div>
+        <div class="opt off ${st==='off_mkt'?'current':''}" data-status="off_mkt">Off mrkt</div>
+        <div class="opt subs ${st==='on_subs'?'current':''}" data-status="on_subs">On subs</div>
+        <div class="opt open ${st==='open'?'current':''}" data-status="open">Back open</div>
+        <div class="opt none ${!st?'current':''}" data-status="">Empty</div>
+      </div>
+    </div></td>
+    <td class="col-del"><button class="icon-btn ib-ok" title="Inserisci / aggiorna in lista">✓</button><button class="icon-btn ib-no" title="Scarta">✕</button></td>
+  </tr>`;
   };
-  const mountDates = (tr) => {
-    const td = tr.querySelector('.ib-dates'); if (!td) return;
-    const id = td.dataset.id; const f = td.querySelector('[data-k="open_from"]'), t = td.querySelector('[data-k="open_to"]');
-    try {
-      const dr = createDateRangePicker({ from: f.value || '', to: t.value || '', placeholder: 'Dates', onChange: (a, b) => { f.value = a || ''; t.value = b || ''; } });
+
+  const render = () => {
+    const rows = Object.values(byId);
+    const cnt = $('#ib-cnt'); if (cnt) cnt.textContent = rows.length + ' in attesa';
+    if (typeof updateInboxBadge === 'function') updateInboxBadge(rows.length);
+    if (!rows.length) { $('#ib-tbl').innerHTML = '<div id="ib-empty" style="padding:24px;color:var(--text-mute);font-size:12.5px">Nessuna posizione in attesa. Appena arriva un messaggio ECSA su Teams comparirà qui da sola.</div>'; return; }
+    const byArea = {};
+    for (const r of rows) (byArea[r.area || '?'] ??= []).push(r);
+    const ordered = [...AREA_ORDER.filter(a => byArea[a]), ...Object.keys(byArea).filter(a => a !== '?' && !AREA_ORDER.includes(a)).sort(), ...(byArea['?'] ? ['?'] : [])];
+    const cmp = (a, b) => String(a.open_from || '9') < String(b.open_from || '9') ? -1 : String(a.open_from || '9') > String(b.open_from || '9') ? 1 : String(b.msg_time || '').localeCompare(String(a.msg_time || ''));
+    const html = [`<table class="grid"><thead><tr>
+    <th class="th-filter col-vessel"><input data-col="vessel" placeholder="Vessel" value="${attr(F.vessel||'')}"></th>
+    <th class="th-filter col-dwt"><input data-col="dwt_blt" placeholder="DWT" value="${attr(F.dwt_blt||'')}"></th>
+    <th class="th-filter col-open"><input data-col="open_port" placeholder="Open" value="${attr(F.open_port||'')}"></th>
+    <th class="th-filter col-dates"><input type="text" readonly placeholder="Dates"></th>
+    <th class="th-filter col-ideas"><input data-col="ideas" placeholder="Ideas / Info" value="${attr(F.ideas||'')}"></th>
+    <th class="th-filter col-ows"><input data-col="ows_brkr" placeholder="Ows" value="${attr(F.ows_brkr||'')}"></th>
+    <th class="th-filter col-bunker"><input data-col="bunker" placeholder="Bunker" value="${attr(F.bunker||'')}"></th>
+    <th class="th-filter col-lsbrkr"><input data-col="ls_brkr" placeholder="LS" value="${attr(F.ls_brkr||'')}"></th>
+    <th class="th-filter col-update"><input type="text" readonly placeholder="Update"></th>
+    <th class="th-filter col-flags"><input type="text" readonly placeholder="Flags"></th>
+    <th class="th-filter col-stato"><input type="text" readonly placeholder="Status"></th>
+    <th class="col-del"></th>
+  </tr></thead><tbody>`];
+    for (const area of ordered) {
+      const list = byArea[area].sort(cmp);
+      const label = area === '?' ? 'AREA DA SCEGLIERE (doppio click sul nome nave)' : area;
+      html.push(`<tr class="section-area ${area === '?' ? 'area-red' : areaClass(area)}"><td colspan="12">${esc(label)}<span class="area-count">${list.length}</span></td></tr>`);
+      for (const r of list) html.push(rowHtml(r));
+    }
+    html.push('</tbody></table>');
+    $('#ib-tbl').innerHTML = html.join('');
+    $$('#ib-tbl th.th-filter input[data-col]').forEach(inp => inp.oninput = () => { F[inp.dataset.col] = inp.value; applyFilter(); });
+    applyFilter();
+  };
+  const applyFilter = () => {
+    const act = Object.entries(F).filter(([, v]) => v && v.trim());
+    $$('#ib-tbl tbody tr[data-row]').forEach(tr => {
+      const r = byId[Number(tr.dataset.row)]; if (!r) return;
+      const show = act.every(([k, v]) => String(r[k] || '').toUpperCase().includes(v.trim().toUpperCase()));
+      tr.style.display = show ? '' : 'none';
+    });
+    $$('#ib-tbl tbody tr.section-area').forEach(sec => {
+      let n = 0, el = sec.nextElementSibling;
+      while (el && !el.classList.contains('section-area')) { if (el.style.display !== 'none') n++; el = el.nextElementSibling; }
+      sec.style.display = n ? '' : 'none';
+    });
+  };
+  const rerow = (r) => { const tr = $(`#ib-tbl tr[data-row="${r.id}"]`); if (!tr) return render(); tr.outerHTML = rowHtml(r); applyFilter(); };
+
+  // ---- inline edit (doppio click, come in lista) ----
+  const edit = (td, r, f) => {
+    if (td.classList.contains('editing')) return;
+    td.classList.add('editing');
+    const done = () => { rerow(r); };
+    if (f === 'open_from') {
+      td.innerHTML = '';
+      const o0 = r.open_from || '', t0 = r.open_to || '';
+      const dr = createDateRangePicker({ from: o0, to: t0, placeholder: 'Select dates', onChange: (a, b) => {
+        const A = a || null, B = b || null;
+        if ((A || '') !== o0 || (B || '') !== t0) persist(r, { open_from: A, open_to: B });
+        if (A && B) setTimeout(done, 80);
+      } });
       td.appendChild(dr);
-      // etichetta come in lista: "5-6 SEP" invece di "5 Sep → 6 Sep"
-      const btn = dr.querySelector('.dr-btn');
-      if (btn) {
-        const lab = () => { const s = (f.value || t.value) ? plain(fmtDateRange(f.value || null, t.value || null)) : 'Dates'; if (btn.textContent !== s) btn.textContent = s; };
-        new MutationObserver(lab).observe(btn, { childList: true, characterData: true, subtree: true });
-        lab();
-      }
-    } catch (e) { td.insertAdjacentHTML('beforeend', inp(id, 'open_from_txt', f.value, '90px', 'YYYY-MM-DD')); }
+      const btn = dr.querySelector('.dr-btn'); if (btn) btn.click();
+      const off = (e) => { if (!td.contains(e.target) && !e.target.closest('.dr-popup')) { document.removeEventListener('mousedown', off, true); done(); } };
+      setTimeout(() => document.addEventListener('mousedown', off, true), 50);
+      return;
+    }
+    if (f === 'vessel') {
+      td.innerHTML = `<div class="ib-vsl"><input value="${attr(r.vessel || '')}"><select><option value="">— area —</option>${AREAS.map(a => `<option${a === r.area ? ' selected' : ''}>${a}</option>`).join('')}</select></div>`;
+      const inp = td.querySelector('input'), sel = td.querySelector('select');
+      let closed = false;
+      const save = () => {
+        if (closed) return; closed = true;
+        const nv = inp.value.trim().toUpperCase() || r.vessel, na = sel.value || null;
+        const p = {}; if (nv !== r.vessel) p.vessel = nv;
+        if (na !== (r.area || null)) { p.area = na; p.basin = na ? (PAC_AREAS.has(na) ? 'PAC' : 'ATL') : null; }
+        if (Object.keys(p).length) persist(r, p);
+        if ('area' in p) render(); else done();
+      };
+      inp.focus(); inp.select();
+      inp.onkeydown = e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') { closed = true; done(); } };
+      sel.onkeydown = inp.onkeydown;
+      sel.onchange = () => { if (!sel.matches(':focus')) return; };
+      const off = (e) => { if (!td.contains(e.target)) { document.removeEventListener('mousedown', off, true); save(); } };
+      setTimeout(() => document.addEventListener('mousedown', off, true), 50);
+      return;
+    }
+    const cur = r[f] || '';
+    td.innerHTML = `<input value="${attr(cur)}">`;
+    const inp = td.querySelector('input'); inp.focus(); inp.select();
+    let closed = false;
+    const save = () => { if (closed) return; closed = true; let nv = inp.value.trim() || null; if (nv && f !== 'ideas' && f !== 'bunker') nv = nv.toUpperCase(); if (f === 'ls_brkr' && nv) nv = nv.toUpperCase(); if (nv !== (cur || null)) persist(r, { [f]: nv }); done(); };
+    inp.onkeydown = e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') { closed = true; done(); } };
+    inp.onblur = save;
   };
-  const setCount = () => { const n = $$('#ib-tbl tbody tr').length; const c = $('#ib-cnt'); if (c) c.textContent = n + ' candidati'; if (typeof updateInboxBadge === 'function') updateInboxBadge(n); };
-  const rowVals = (id) => { const o = {}; $$(`#ib-tbl .ib-in[data-id="${id}"]`).forEach(el => o[el.dataset.k] = (el.value || '').trim() || null); return o; };
-  const removeRow = (id) => { const tr = $(`#ib-tbl tr[data-row="${id}"]`); if (tr) tr.remove(); delete byId[id]; setCount(); if (!$$('#ib-tbl tbody tr').length) renderEmpty(); };
-  const bindRow = (tr) => {
-    const ok = tr.querySelector('.ib-ok'), no = tr.querySelector('.ib-no'), del = tr.querySelector('.ib-del');
-    if (del) del.onclick = async () => {
-      const id = Number(del.dataset.id); const c = byId[id]; const v = rowVals(id);
-      const ex = findV(v.vessel || c.vessel); if (ex) delVessel(ex.id);
-      await sb.from('inbox_candidates').update({ status: 'approved' }).eq('id', id); removeRow(id);
-    };
-    ok.onclick = async () => {
-      const id = Number(ok.dataset.id); const c = byId[id]; const v = rowVals(id);
-      if (!v.vessel || !c) return;
-      v.vessel = v.vessel.toUpperCase();
-      const area = (v.area || '').toUpperCase() || null;
-      const kind = c.kind && c.kind !== 'position' ? c.kind : '';
-      const ex = findV(v.vessel);
-      const upd = (c.msg_time || '').slice(0, 10) || todayIso();
+  $('#ib-tbl').addEventListener('dblclick', (e) => {
+    const td = e.target.closest('td.ib-ed'); if (!td) return;
+    const tr = td.closest('tr[data-row]'); const r = byId[Number(tr.dataset.row)]; if (!r) return;
+    e.preventDefault(); e.stopPropagation();
+    edit(td, r, td.dataset.f);
+  }, true);
+
+  // ---- click: stato, approva, scarta ----
+  $('#ib-tbl').addEventListener('click', async (e) => {
+    const tr = e.target.closest('tr[data-row]'); if (!tr) return;
+    const r = byId[Number(tr.dataset.row)]; if (!r) return;
+    const opt = e.target.closest('.status-menu .opt');
+    if (opt) { e.stopPropagation(); persist(r, { vsl_status: opt.dataset.status || null }); rerow(r); return; }
+    if (e.target.closest('.ib-no')) { delete byId[r.id]; render(); await sb.from('inbox_candidates').update({ status: 'rejected' }).eq('id', r.id); return; }
+    if (e.target.closest('.ib-ok')) {
+      if (!r.vessel) return;
+      const kind = kindOf(r), st = stOf(r);
+      const ex = findV(r.vessel);
+      const upd = (r.msg_time || '').slice(0, 10) || todayIso();
+      const area = r.area || null;
       if (kind === 'remove') {
         if (ex) delVessel(ex.id);
       } else if (kind) {
-        // fissato / tolti soggetti: cambia lo stato; gli altri campi solo se compilati (le ideas solo se le hai modificate tu)
+        // fissato / tolti soggetti: cambia lo stato; gli altri campi solo se presenti (ideas solo se le hai modificate tu)
         const p = { update_date: upd };
-        for (const k of ['dwt_blt', 'open_port', 'open_from', 'open_to', 'bunker', 'ows_brkr']) if (v[k]) p[k] = v[k];
+        for (const k of ['dwt_blt', 'open_port', 'open_from', 'open_to', 'bunker', 'ows_brkr']) if (r[k]) p[k] = r[k];
         if (area) { p.area = area; p.basin = PAC_AREAS.has(area) ? 'PAC' : 'ATL'; }
-        if (v.ls_brkr) p.ls_brkr = v.ls_brkr.toUpperCase();
-        if (v.ideas && v.ideas !== (c.ideas || null)) p.ideas = v.ideas;
-        const st = v.vsl_status || (kind === 'subs' ? 'on_subs' : 'open');
-        if (st === 'open') { p.status = null; p.subs = null; } else { p.status = st; p.subs = st === 'on_subs' ? 'S' : null; }
+        if (r.ls_brkr) p.ls_brkr = r.ls_brkr.toUpperCase();
+        if (r.ideas && r.ideas !== (r.__ideas0 || null)) p.ideas = r.ideas;
+        if (st === 'open' || !st) { p.status = null; p.subs = null; } else { p.status = st; p.subs = st === 'on_subs' ? 'S' : null; }
         if (ex) updVessel(ex.id, p);
-        else if (p.open_port || p.area) addVessel({ vessel: v.vessel, ...p });
+        else if (p.open_port || p.area) addVessel({ vessel: r.vessel, ...p });
       } else {
-        const patch = { vessel: v.vessel, dwt_blt: v.dwt_blt, open_port: v.open_port, open_from: v.open_from, open_to: v.open_to,
-          area, basin: PAC_AREAS.has(area) ? 'PAC' : 'ATL', bunker: v.bunker, ows_brkr: v.ows_brkr, update_date: upd };
-        if (v.ideas) patch.ideas = v.ideas;                       // se il messaggio non aveva offerte, le ideas esistenti restano
-        if (v.ls_brkr) patch.ls_brkr = v.ls_brkr.toUpperCase();
-        if (v.vsl_status === 'open') { patch.status = null; patch.subs = null; }
-        else if (v.vsl_status) { patch.status = v.vsl_status; if (v.vsl_status === 'on_subs') patch.subs = 'S'; }
-        if (c.scrbr_ftd === true) patch.scrbr_ftd = true;
+        if (!area) { alert('Scegli prima l\'area (doppio click sul nome nave).'); return; }
+        const patch = { vessel: r.vessel, dwt_blt: r.dwt_blt, open_port: r.open_port, open_from: r.open_from, open_to: r.open_to,
+          area, basin: PAC_AREAS.has(area) ? 'PAC' : 'ATL', bunker: r.bunker, ows_brkr: r.ows_brkr, update_date: upd };
+        if (r.ideas) patch.ideas = r.ideas;                       // se il messaggio non aveva offerte, le ideas esistenti restano
+        if (r.ls_brkr) patch.ls_brkr = r.ls_brkr.toUpperCase();
+        if (st === 'open') { patch.status = null; patch.subs = null; }
+        else if (st) { patch.status = st; if (st === 'on_subs') patch.subs = 'S'; }
+        if (r.scrbr_ftd === true) patch.scrbr_ftd = true;
         if (ex) updVessel(ex.id, patch); else addVessel({ ...patch });
       }
-      await sb.from('inbox_candidates').update({ status: 'approved' }).eq('id', id); removeRow(id);
-    };
-    no.onclick = async () => { const id = Number(no.dataset.id); await sb.from('inbox_candidates').update({ status: 'rejected' }).eq('id', id); removeRow(id); };
-  };
-  const renderEmpty = () => { $('#ib-tbl').innerHTML = '<div id="ib-empty" style="padding:24px;color:var(--text-mute);font-size:12.5px">Nessuna posizione in attesa. Appena arriva un messaggio ECSA su Teams comparirà qui da sola.</div>'; };
-  const ensureTable = () => {
-    if ($('#ib-tbl table')) return $('#ib-tbl tbody');
-    $('#ib-tbl').innerHTML = `<table class="grid"><thead class="area-green tint-fixed"><tr>
-      <th>Vessel</th><th>DWT/BLT</th><th>Open</th><th>Dates</th><th>Area</th><th class="col-ideas">Ideas / Info</th><th>Ows / Brkr</th><th>Bunker</th><th>LS</th><th>Update</th><th>Status</th><th>Msg</th><th></th>
-    </tr></thead><tbody></tbody></table>`;
-    return $('#ib-tbl tbody');
-  };
+      delete byId[r.id]; render();
+      await sb.from('inbox_candidates').update({ status: 'approved' }).eq('id', r.id);
+    }
+  });
+
   const sync = async () => {
     const { data, error } = await sb.from('inbox_candidates').select('*').eq('status', 'pending').order('msg_time', { ascending: false });
     const live = $('#ib-live'); if (live) live.style.color = error ? 'var(--red)' : 'var(--green,#2a9d5c)';
@@ -8915,15 +8996,12 @@ routes['inbox'] = function() {
       for (const r of rows) { const k = (r.kind || 'position') + '|' + norm(r.vessel); if (seen.has(k)) old.push(r.id); else { seen.add(k); keep.push(r); } }
       if (old.length) { sb.from('inbox_candidates').update({ status: 'superseded' }).in('id', old).then(() => {}); }
       rows = keep; }
+    if ($('#ib-tbl td.editing')) return;            // non ridisegnare mentre stai modificando
     const ids = new Set(rows.map(r => r.id));
-    $$('#ib-tbl tbody tr').forEach(tr => { if (!ids.has(Number(tr.dataset.row))) { delete byId[Number(tr.dataset.row)]; tr.remove(); } });
-    const fresh = rows.filter(r => !byId[r.id]);
-    if (fresh.length) {
-      const tb = ensureTable();
-      for (const r of fresh.slice().reverse()) { byId[r.id] = r; tb.insertAdjacentHTML('afterbegin', rowHtml(r)); bindRow(tb.firstElementChild); mountDates(tb.firstElementChild); tb.firstElementChild.classList.add('row-new'); }
-    }
-    if (!rows.length) renderEmpty();
-    setCount();
+    let changed = false;
+    for (const id of Object.keys(byId)) if (!ids.has(Number(id))) { delete byId[id]; changed = true; }
+    for (const r of rows) if (!byId[r.id]) { r.__ideas0 = r.ideas; byId[r.id] = r; changed = true; }
+    if (changed || !$('#ib-tbl table')) render();
   };
   sync();
   if (window.__ibTimer) clearInterval(window.__ibTimer);
