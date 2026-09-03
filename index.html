@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v11 -->
+<!-- build: 20260903-inbox-v12 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -9042,7 +9042,7 @@ routes['inbox'] = function() {
   };
   const sync = async () => {
     checkLive();
-    const { data, error } = await sb.from('inbox_candidates').select('*').eq('status', 'pending').order('msg_time', { ascending: false });
+    const { data, error } = await sb.from('inbox_candidates').select('*').eq('status', 'pending').order('msg_time', { ascending: false }).order('id', { ascending: false });
     if (error) { if (!$('#ib-tbl table') && !$('#ib-empty')) $('#ib-tbl').innerHTML = '<div style="padding:16px;color:var(--red)">' + esc(error.message) + '</div>'; return; }
     let rows = data || [];
     { const seen = new Set(), keep = [], old = [];
