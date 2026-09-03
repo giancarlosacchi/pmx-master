@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v6 -->
+<!-- build: 20260903-inbox-v7 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -8780,8 +8780,23 @@ routes['inbox'] = function() {
   if (CURRENT_USER_ROLE !== 'admin') { location.hash = '#/atl-tng'; return; }
   $('#topbar-actions').innerHTML = '';
   $('#content').innerHTML = `
+    <style>
+      #ib-tbl table.grid td { padding: 1px 3px !important; height: 26px; vertical-align: middle; }
+      #ib-tbl table.grid th { padding: 4px 4px !important; }
+      #ib-tbl .ib-in { background: var(--bg-3); border: 1px solid var(--line); color: var(--text); border-radius: 4px; padding: 1px 4px; font-size: 11px; height: 21px; font-family: inherit; }
+      #ib-tbl .ib-in:focus { border-color: var(--gold); outline: none; }
+      #ib-tbl select.ib-in { padding: 0 2px; }
+      #ib-tbl .dr-btn { min-width: 74px; height: 21px; padding: 0 6px; font-size: 11px; text-transform: uppercase; border-radius: 4px; }
+      #ib-tbl .dr-wrap { display: inline-block; }
+      #ib-tbl button.ib-ok, #ib-tbl button.ib-no, #ib-tbl button.ib-del { padding: 0 6px; height: 21px; font-size: 11px; line-height: 19px; }
+      #ib-tbl tr.ib-subs td { background: rgba(236,72,153,.16) !important; }
+      #ib-tbl tr.ib-remove td { background: rgba(239,68,68,.16) !important; }
+      #ib-tbl tr.ib-unsubs td { background: rgba(59,130,246,.14) !important; }
+      #ib-tbl .ib-pill { display: inline-block; margin-left: 3px; padding: 0 5px; border-radius: 8px; font-size: 9.5px; font-weight: 700; color: #fff; vertical-align: middle; cursor: help; }
+      #ib-tbl td.ib-msg { font-size: 10px; line-height: 1.15; white-space: nowrap; cursor: help; }
+    </style>
     <div class="panel" style="display:flex;flex-direction:column;min-height:0;flex:1">
-      <div class="filters">
+      <div class="filters" style="padding:6px 10px">
         <div class="group"><label>Inbox</label><span style="font-size:11.5px;color:var(--text-mute)">Posizioni estratte in tempo reale dalle chat Teams (ECSA). Controlla, correggi e approva. <span id="ib-live" title="Aggiornamento automatico attivo" style="color:var(--green,#2a9d5c)">● live</span></span></div>
         <span class="count-pill" id="ib-cnt">—</span>
       </div>
@@ -8791,49 +8806,35 @@ routes['inbox'] = function() {
   const PAC_AREAS = new Set(['SEASIA','SCHINA','NCHINA']);
   const STATI = [['', '—'], ['fresh', 'fresh'], ['on_subs', 'on subs'], ['off_mkt', 'off mkt'], ['open', 'back open']];
   const byId = {};
-  const IN = 'background:var(--bg-3);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:4px 6px;font-size:11.5px';
-  const inp = (id, k, v, w, ph) => `<input class="ib-in" data-id="${id}" data-k="${k}" value="${attr(v == null ? '' : v)}" placeholder="${ph||''}" style="width:${w};${IN}">`;
-  const KIND_LBL = { subs: ['A SOGGETTI', 'var(--amber,#b7791f)'], remove: ['ELIMINA', 'var(--red)'], unsubs: ['TOGLI SOGGETTI', 'var(--blue,#2563eb)'] };
+  const inp = (id, k, v, w, ph) => `<input class="ib-in" data-id="${id}" data-k="${k}" value="${attr(v == null ? '' : v)}" placeholder="${ph||''}" style="width:${w}">`;
+  const KIND_LBL = { subs: ['FXD', 'var(--red,#dc2626)'], remove: ['DEL', 'var(--red,#dc2626)'], unsubs: ['F/F', 'var(--blue,#2563eb)'] };
   const norm = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const findV = (name) => (DATA.vessels || []).find(x => norm(x.vessel) === norm(name));
-  const msgCell = (r) => { const t = (r.msg_time || '').slice(5, 16).replace('T', ' '); return `<td class="dim" style="font-size:10.5px;white-space:nowrap" title="${attr(r.raw || '')}">${esc(String(r.sender || '').split(' ')[0])}<br>${esc(t)}</td>`; };
+  const plain = s => String(s || '').replace(/<[^>]+>/g, '');
+  const msgCell = (r) => { const t = (r.msg_time || '').slice(5, 16).replace('T', ' '); return `<td class="dim ib-msg" title="${attr(r.raw || '')}">${esc(String(r.sender || '').split(' ')[0])}<br>${esc(t)}</td>`; };
   const rowHtml = (r) => {
-    if (r.kind && r.kind !== 'position') {
-      const [lbl, col] = KIND_LBL[r.kind] || [r.kind.toUpperCase(), 'var(--text-mute)'];
-      const ex = findV(r.vessel);
-      const where = ex ? `in lista: ${esc(ex.area || '')} ${esc(ex.open_port || '')} ${fmtDateRange(ex.open_from, ex.open_to)}` : 'NON in lista';
-      return `<tr data-row="${r.id}" class="ib-kind">
-        <td>${inp(r.id, 'vessel', r.vessel, '130px')}</td>
-        <td>${inp(r.id, 'dwt_blt', r.dwt_blt, '52px')}</td>
-        <td colspan="3"><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:700;color:#fff;background:${col}">${lbl}</span> <span class="dim" style="font-size:10.5px;margin-left:6px">${where}</span></td>
-        <td data-col="ideas" colspan="3"><span style="font-size:11px">${esc(r.ideas || '')}</span></td>
-        <td>${inp(r.id, 'ls_brkr', r.ls_brkr, '42px')}</td>
-        <td class="dim">${fmtUpdate(r.update_date)}</td>
-        <td></td>
-        ${msgCell(r)}
-        <td style="white-space:nowrap">
-          <button class="primary ib-ok" data-id="${r.id}" title="Applica alla nave in lista"${ex ? '' : ' disabled'}>✓</button>
-          ${r.kind === 'subs' && ex ? `<button class="ib-del" data-id="${r.id}" title="Elimina la nave dalla lista (fissata e gia' quotata oggi)" style="margin-left:4px">🗑</button>` : ''}
-          <button class="ib-no" data-id="${r.id}" title="Scarta" style="margin-left:4px">✕</button>
-        </td>
-      </tr>`;
-    }
-    return `<tr data-row="${r.id}">
-        <td>${inp(r.id, 'vessel', r.vessel, '130px')}</td>
-        <td>${inp(r.id, 'dwt_blt', r.dwt_blt, '52px')}</td>
-        <td>${inp(r.id, 'open_port', r.open_port, '110px')}</td>
+    const kind = r.kind && r.kind !== 'position' ? r.kind : '';
+    const ex = kind ? findV(r.vessel) : null;
+    const where = kind ? (ex ? `In lista: ${plain(ex.area || '')} ${plain(ex.open_port || '')} ${plain(fmtDateRange(ex.open_from, ex.open_to))}` : 'NON in lista') : '';
+    const pill = kind ? `<span class="ib-pill" style="background:${KIND_LBL[kind][1]}" title="${attr(where)}">${KIND_LBL[kind][0]}</span>` : '';
+    const st = r.vsl_status || (kind === 'subs' ? 'on_subs' : kind === 'unsubs' ? 'open' : '');
+    return `<tr data-row="${r.id}"${kind ? ` class="ib-${kind}"` : ''}>
+        <td>${inp(r.id, 'vessel', r.vessel, '122px')}</td>
+        <td>${inp(r.id, 'dwt_blt', r.dwt_blt, '46px')}</td>
+        <td>${inp(r.id, 'open_port', r.open_port, '104px')}</td>
         <td class="ib-dates" data-id="${r.id}" style="white-space:nowrap"><input type="hidden" class="ib-in" data-id="${r.id}" data-k="open_from" value="${attr(r.open_from||'')}"><input type="hidden" class="ib-in" data-id="${r.id}" data-k="open_to" value="${attr(r.open_to||'')}"></td>
-        <td><select class="ib-in" data-id="${r.id}" data-k="area" style="${IN}"><option value=""${r.area ? '' : ' selected'}>—</option>${AREAS.map(a => `<option${a === r.area ? ' selected' : ''}>${a}</option>`).join('')}</select></td>
+        <td><select class="ib-in" data-id="${r.id}" data-k="area"><option value=""${r.area ? '' : ' selected'}>—</option>${AREAS.map(a => `<option${a === r.area ? ' selected' : ''}>${a}</option>`).join('')}</select></td>
         <td data-col="ideas">${inp(r.id, 'ideas', r.ideas, '100%')}</td>
-        <td>${inp(r.id, 'ows_brkr', r.ows_brkr, '110px')}</td>
-        <td>${inp(r.id, 'bunker', r.bunker, '100px')}</td>
-        <td>${inp(r.id, 'ls_brkr', r.ls_brkr, '42px')}</td>
-        <td class="dim" style="white-space:nowrap">${fmtUpdate(r.update_date)}</td>
-        <td><select class="ib-in" data-id="${r.id}" data-k="vsl_status" style="${IN}">${STATI.map(([v, l]) => `<option value="${v}"${v === (r.vsl_status || '') ? ' selected' : ''}>${l}</option>`).join('')}</select></td>
+        <td>${inp(r.id, 'ows_brkr', r.ows_brkr, '104px')}</td>
+        <td>${inp(r.id, 'bunker', r.bunker, '86px')}</td>
+        <td>${inp(r.id, 'ls_brkr', r.ls_brkr, '38px')}</td>
+        <td class="dim" style="white-space:nowrap;font-size:11px">${fmtUpdate(r.update_date)}</td>
+        <td style="white-space:nowrap"><select class="ib-in" data-id="${r.id}" data-k="vsl_status">${STATI.map(([v, l]) => `<option value="${v}"${v === st ? ' selected' : ''}>${l}</option>`).join('')}</select>${pill}</td>
         ${msgCell(r)}
         <td style="white-space:nowrap">
-          <button class="primary ib-ok" data-id="${r.id}" title="Approva → inserisce/aggiorna in lista">✓</button>
-          <button class="ib-no" data-id="${r.id}" title="Scarta" style="margin-left:4px">✕</button>
+          <button class="primary ib-ok" data-id="${r.id}" title="${kind ? 'Applica alla nave in lista' : 'Approva → inserisce/aggiorna in lista'}">✓</button>
+          ${kind === 'subs' && ex ? `<button class="ib-del" data-id="${r.id}" title="Elimina la nave dalla lista (fissata e gia' quotata oggi)" style="margin-left:3px">🗑</button>` : ''}
+          <button class="ib-no" data-id="${r.id}" title="Scarta" style="margin-left:3px">✕</button>
         </td>
       </tr>`;
   };
@@ -8843,6 +8844,13 @@ routes['inbox'] = function() {
     try {
       const dr = createDateRangePicker({ from: f.value || '', to: t.value || '', placeholder: 'Dates', onChange: (a, b) => { f.value = a || ''; t.value = b || ''; } });
       td.appendChild(dr);
+      // etichetta come in lista: "5-6 SEP" invece di "5 Sep → 6 Sep"
+      const btn = dr.querySelector('.dr-btn');
+      if (btn) {
+        const lab = () => { const s = (f.value || t.value) ? plain(fmtDateRange(f.value || null, t.value || null)) : 'Dates'; if (btn.textContent !== s) btn.textContent = s; };
+        new MutationObserver(lab).observe(btn, { childList: true, characterData: true, subtree: true });
+        lab();
+      }
     } catch (e) { td.insertAdjacentHTML('beforeend', inp(id, 'open_from_txt', f.value, '90px', 'YYYY-MM-DD')); }
   };
   const setCount = () => { const n = $$('#ib-tbl tbody tr').length; const c = $('#ib-cnt'); if (c) c.textContent = n + ' candidati'; if (typeof updateInboxBadge === 'function') updateInboxBadge(n); };
@@ -8858,27 +8866,34 @@ routes['inbox'] = function() {
     ok.onclick = async () => {
       const id = Number(ok.dataset.id); const c = byId[id]; const v = rowVals(id);
       if (!v.vessel || !c) return;
-      if (c.kind && c.kind !== 'position') {
-        const ex = findV(v.vessel);
-        if (ex) {
-          if (c.kind === 'remove') delVessel(ex.id);
-          else if (c.kind === 'subs') updVessel(ex.id, { status: 'on_subs', subs: 'S', update_date: todayIso() });
-          else if (c.kind === 'unsubs') updVessel(ex.id, { status: null, subs: null, update_date: todayIso() });
-        }
-        await sb.from('inbox_candidates').update({ status: 'approved' }).eq('id', id); removeRow(id); return;
-      }
       v.vessel = v.vessel.toUpperCase();
       const area = (v.area || '').toUpperCase() || null;
-      const patch = { vessel: v.vessel, dwt_blt: v.dwt_blt, open_port: v.open_port, open_from: v.open_from, open_to: v.open_to,
-        area, basin: PAC_AREAS.has(area) ? 'PAC' : 'ATL', bunker: v.bunker, ows_brkr: v.ows_brkr,
-        update_date: (c.msg_time || '').slice(0, 10) || todayIso() };
-      if (v.ideas) patch.ideas = v.ideas;                       // se il messaggio non aveva offerte, le ideas esistenti restano
-      if (v.ls_brkr) patch.ls_brkr = v.ls_brkr.toUpperCase();
-      if (v.vsl_status === 'open') { patch.status = null; patch.subs = null; }
-      else if (v.vsl_status) { patch.status = v.vsl_status; if (v.vsl_status === 'on_subs') patch.subs = 'S'; }
-      if (c.scrbr_ftd === true) patch.scrbr_ftd = true;
+      const kind = c.kind && c.kind !== 'position' ? c.kind : '';
       const ex = findV(v.vessel);
-      if (ex) updVessel(ex.id, patch); else addVessel({ ...patch });
+      const upd = (c.msg_time || '').slice(0, 10) || todayIso();
+      if (kind === 'remove') {
+        if (ex) delVessel(ex.id);
+      } else if (kind) {
+        // fissato / tolti soggetti: cambia lo stato; gli altri campi solo se compilati (le ideas solo se le hai modificate tu)
+        const p = { update_date: upd };
+        for (const k of ['dwt_blt', 'open_port', 'open_from', 'open_to', 'bunker', 'ows_brkr']) if (v[k]) p[k] = v[k];
+        if (area) { p.area = area; p.basin = PAC_AREAS.has(area) ? 'PAC' : 'ATL'; }
+        if (v.ls_brkr) p.ls_brkr = v.ls_brkr.toUpperCase();
+        if (v.ideas && v.ideas !== (c.ideas || null)) p.ideas = v.ideas;
+        const st = v.vsl_status || (kind === 'subs' ? 'on_subs' : 'open');
+        if (st === 'open') { p.status = null; p.subs = null; } else { p.status = st; p.subs = st === 'on_subs' ? 'S' : null; }
+        if (ex) updVessel(ex.id, p);
+        else if (p.open_port || p.area) addVessel({ vessel: v.vessel, ...p });
+      } else {
+        const patch = { vessel: v.vessel, dwt_blt: v.dwt_blt, open_port: v.open_port, open_from: v.open_from, open_to: v.open_to,
+          area, basin: PAC_AREAS.has(area) ? 'PAC' : 'ATL', bunker: v.bunker, ows_brkr: v.ows_brkr, update_date: upd };
+        if (v.ideas) patch.ideas = v.ideas;                       // se il messaggio non aveva offerte, le ideas esistenti restano
+        if (v.ls_brkr) patch.ls_brkr = v.ls_brkr.toUpperCase();
+        if (v.vsl_status === 'open') { patch.status = null; patch.subs = null; }
+        else if (v.vsl_status) { patch.status = v.vsl_status; if (v.vsl_status === 'on_subs') patch.subs = 'S'; }
+        if (c.scrbr_ftd === true) patch.scrbr_ftd = true;
+        if (ex) updVessel(ex.id, patch); else addVessel({ ...patch });
+      }
       await sb.from('inbox_candidates').update({ status: 'approved' }).eq('id', id); removeRow(id);
     };
     no.onclick = async () => { const id = Number(no.dataset.id); await sb.from('inbox_candidates').update({ status: 'rejected' }).eq('id', id); removeRow(id); };
