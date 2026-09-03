@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v10 -->
+<!-- build: 20260903-inbox-v11 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -3016,6 +3016,7 @@ function _doRtRender() {
   // Rerender solo se l'update riguarda la pagina aperta
   try {
     const _cur = (location.hash.replace(/^#\//, '') || 'atl-tng').split('?')[0];
+    if (_cur === 'inbox') { _rtDirtyTables.clear(); return; }   // Inbox si aggiorna da sola, niente rerender (perderebbe lo scroll)
     let _relevant = false;
     for (const t of _rtDirtyTables) {
       if (t === '*' || !_RT_ROUTES[t] || _RT_ROUTES[t].includes(_cur)) { _relevant = true; break; }
@@ -4883,9 +4884,9 @@ function setRoute() {
   const _scrollEls = [];
   if (sameRoute) {
     _scrollY = window.scrollY || document.documentElement.scrollTop || 0;
-    document.querySelectorAll('.tbl-wrap, .content, .main, pre.rundown').forEach(el => {
+    document.querySelectorAll('.tbl-wrap, .content, .main, pre.rundown').forEach((el, i) => {
       if (el.scrollTop > 0 || el.scrollLeft > 0) {
-        _scrollEls.push({ sel: el.className, top: el.scrollTop, left: el.scrollLeft });
+        _scrollEls.push({ sel: el.className, idx: i, top: el.scrollTop, left: el.scrollLeft });
       }
     });
   }
@@ -4909,12 +4910,17 @@ function setRoute() {
   if (sameRoute) {
     window.scrollTo(0, _scrollY);
     // Ripristina scroll del primo .tbl-wrap (il principale della pagina)
-    const tw = document.querySelector('.tbl-wrap');
-    const saved = _scrollEls.find(s => s.sel.includes('tbl-wrap'));
-    if (tw && saved) { tw.scrollTop = saved.top; tw.scrollLeft = saved.left; }
-    const rd = document.querySelector('pre.rundown');
-    const savedRd = _scrollEls.find(s => s.sel.includes('rundown'));
-    if (rd && savedRd) { rd.scrollTop = savedRd.top; }
+    const _restore = () => {
+      const els = document.querySelectorAll('.tbl-wrap, .content, .main, pre.rundown');
+      for (const sv of _scrollEls) {
+        const el = els[sv.idx] || [...els].find(e => e.className === sv.sel);
+        if (el) { el.scrollTop = sv.top; el.scrollLeft = sv.left; }
+      }
+      window.scrollTo(0, _scrollY);
+    };
+    _restore();
+    requestAnimationFrame(_restore);          // dopo il primo paint (render asincroni / altezze definitive)
+    setTimeout(_restore, 60);
   }
 }
 window.addEventListener('hashchange', setRoute);
@@ -8778,7 +8784,7 @@ routes['vsl-descr'] = function() {
 };
 routes['inbox'] = function() {
   if (CURRENT_USER_ROLE !== 'admin') { location.hash = '#/atl-tng'; return; }
-  $('#topbar-actions').innerHTML = `<span id="ib-live" title="Aggiornamento automatico attivo" style="font-size:11.5px;color:var(--green,#2a9d5c);margin-right:8px">● live</span><span class="count-pill" id="ib-cnt">—</span>`;
+  $('#topbar-actions').innerHTML = `<span id="ib-live" title="Reader status" style="font-size:11.5px;color:var(--text-mute);margin-right:8px">● checking…</span><span class="count-pill" id="ib-cnt">—</span>`;
   $('#content').innerHTML = `
     <style>
       #ib-tbl tr.ib-subs td { background: rgba(236,72,153,.13) !important; }
@@ -8816,16 +8822,16 @@ routes['inbox'] = function() {
 
   const rowHtml = (r) => {
     const kind = kindOf(r), st = stOf(r);
-    const cls = st === 'on_subs' ? 'status-subs' : st === 'off_mkt' ? 'status-off' : st === 'fresh' ? 'status-fresh' : '';
+    const cls = st === 'off_mkt' ? 'status-off' : st === 'fresh' ? 'status-fresh' : '';
     const statusCls = st === 'on_subs' ? 'subs' : st === 'off_mkt' ? 'off' : st === 'fresh' ? 'fresh' : st === 'open' ? 'open' : 'none';
     const statusLabel = st === 'on_subs' ? 'on subs' : st === 'off_mkt' ? 'off mrkt' : st === 'fresh' ? 'fresh' : st === 'open' ? 'back open' : '—';
     const ex = findV(r.vessel);
     const t = (r.msg_time || '').slice(5, 16).replace('T', ' ');
-    const tip = ex ? `In lista: ${plain(ex.area || '')} ${plain(ex.open_port || '')} ${plain(fmtDateRange(ex.open_from, ex.open_to))}` : 'NON in lista';
-    const pill = kind ? `<span class="ib-pill" style="background:${KIND_LBL[kind][1]}" title="${attr(ex ? 'In lista' : 'NON in lista')}">${KIND_LBL[kind][0]}</span>` : '';
+    const tip = ex ? `In list: ${plain(ex.area || '')} ${plain(ex.open_port || '')} ${plain(fmtDateRange(ex.open_from, ex.open_to))}` : 'NOT in list';
+    const pill = kind ? `<span class="ib-pill" style="background:${KIND_LBL[kind][1]}" title="${attr(ex ? 'In list' : 'NOT in list')}">${KIND_LBL[kind][0]}</span>` : '';
     const flags = (r.scrbr_ftd ? `<span class="flags-label">SCRFTD</span>` : '') + pill;
     const E = (f, extra) => `class="editable ${extra || ''} ib-ed" data-f="${f}"`;
-    return `<tr class="${cls} row-area ${areaClass(r.area)} ${kind ? 'ib-' + kind : ''} ${r.area ? '' : 'ib-noarea'}" data-row="${r.id}">
+    return `<tr class="${cls} row-area ${areaClass(r.area)} ${kind ? 'ib-' + kind : ''} ${st === 'on_subs' ? 'ib-subs' : ''} ${r.area ? '' : 'ib-noarea'}" data-row="${r.id}">
     <td ${E('vessel', 'col-vessel')} data-tip="${attr(tip)}">${esc(r.vessel || '')}</td>
     <td ${E('dwt_blt', 'dim col-dwt')}>${esc(r.dwt_blt || '')}</td>
     <td ${E('open_port', 'col-open')}>${esc(r.open_port || '')}</td>
@@ -8846,16 +8852,16 @@ routes['inbox'] = function() {
         <div class="opt none ${!st?'current':''}" data-status="">Empty</div>
       </div>
     </div></td>
-    <td class="col-del"><button class="icon-btn ib-ok" title="Inserisci / aggiorna in lista">✓</button><button class="icon-btn ib-no" title="Scarta">✕</button></td>
+    <td class="col-del"><button class="icon-btn ib-ok" title="Approve → add / update in list">✓</button><button class="icon-btn ib-no" title="Discard">✕</button></td>
   </tr>`;
   };
 
   const render = () => {
     const wrap = $('#ib-tbl'); const sy = wrap ? wrap.scrollTop : 0;
     const rows = Object.values(byId);
-    const cnt = $('#ib-cnt'); if (cnt) cnt.textContent = rows.length + ' in attesa';
+    const cnt = $('#ib-cnt'); if (cnt) cnt.textContent = rows.length + ' pending';
     if (typeof updateInboxBadge === 'function') updateInboxBadge(rows.length);
-    if (!rows.length) { $('#ib-tbl').innerHTML = '<div id="ib-empty" style="padding:24px;color:var(--text-mute);font-size:12.5px">Nessuna posizione in attesa. Appena arriva un messaggio ECSA su Teams comparirà qui da sola.</div>'; return; }
+    if (!rows.length) { $('#ib-tbl').innerHTML = '<div id="ib-empty" style="padding:24px;color:var(--text-mute);font-size:12.5px">No pending positions. New ECSA messages from Teams will show up here automatically.</div>'; return; }
     const byArea = {};
     for (const r of rows) (byArea[r.area || '?'] ??= []).push(r);
     const ordered = [...AREA_ORDER.filter(a => byArea[a]), ...Object.keys(byArea).filter(a => a !== '?' && !AREA_ORDER.includes(a)).sort(), ...(byArea['?'] ? ['?'] : [])];
@@ -8876,7 +8882,7 @@ routes['inbox'] = function() {
   </tr></thead><tbody>`];
     for (const area of ordered) {
       const list = byArea[area].sort(cmp);
-      const label = area === '?' ? 'AREA DA SCEGLIERE (doppio click sul nome nave)' : area;
+      const label = area === '?' ? 'AREA TO BE CHOSEN (double-click the vessel name)' : area;
       html.push(`<tr class="section-area ${area === '?' ? 'area-red' : areaClass(area)}"><td colspan="12">${esc(label)}<span class="area-count">${list.length}</span></td></tr>`);
       for (const r of list) html.push(rowHtml(r));
     }
@@ -8895,7 +8901,7 @@ routes['inbox'] = function() {
     const r = byId[Number(tr.dataset.row)]; if (!r) return;
     const when = r.msg_time ? new Date(r.msg_time).toLocaleString('it-IT', { timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
     const ex = findV(r.vessel);
-    pop.innerHTML = `<div class="ib-pop-h"><span>${esc(r.chat || 'ECSA PMAX LIGHTSHIP')}</span><span><b>${esc(r.sender || '')}</b></span><span>${esc(when)}</span><span style="margin-left:auto">${ex ? 'in lista' : 'NON in lista'}</span></div><pre>${esc(String(r.raw || '').replace(/\n{3,}/g, '\n\n').trim())}</pre>`;
+    pop.innerHTML = `<div class="ib-pop-h"><span>${esc(r.chat || 'ECSA PMAX LIGHTSHIP')}</span><span><b>${esc(r.sender || '')}</b></span><span>${esc(when)}</span><span style="margin-left:auto">${ex ? 'IN LIST' : 'NOT IN LIST'}</span></div><pre>${esc(String(r.raw || '').replace(/\n{3,}/g, '\n\n').trim())}</pre>`;
     pop.style.display = 'block';
     const W = pop.offsetWidth, H = pop.offsetHeight;
     let left = Math.min(x + 14, window.innerWidth - W - 8), top = y + 18;
@@ -9008,7 +9014,7 @@ routes['inbox'] = function() {
         if (ex) updVessel(ex.id, p);
         else if (p.open_port || p.area) addVessel({ vessel: r.vessel, ...p });
       } else {
-        if (!area) { alert('Scegli prima l\'area (doppio click sul nome nave).'); return; }
+        if (!area) { alert('Choose the area first (double-click the vessel name).'); return; }
         const patch = { vessel: r.vessel, dwt_blt: r.dwt_blt, open_port: r.open_port, open_from: r.open_from, open_to: r.open_to,
           area, basin: PAC_AREAS.has(area) ? 'PAC' : 'ATL', bunker: r.bunker, ows_brkr: r.ows_brkr, update_date: upd };
         if (r.ideas) patch.ideas = r.ideas;                       // se il messaggio non aveva offerte, le ideas esistenti restano
@@ -9023,9 +9029,20 @@ routes['inbox'] = function() {
     }
   });
 
+  const checkLive = async () => {
+    const live = $('#ib-live'); if (!live) return;
+    try {
+      const { data, error } = await sb.from('scraper_heartbeat').select('id,at,info').eq('id', 'teams').maybeSingle();
+      if (error) throw error;
+      const at = data && data.at ? new Date(data.at) : null;
+      const age = at ? (Date.now() - at.getTime()) / 1000 : Infinity;
+      if (age < 120) { live.textContent = '● live'; live.style.color = 'var(--green,#2a9d5c)'; live.title = 'Teams reader running (last beat ' + Math.round(age) + 's ago)'; }
+      else { const seen = at ? at.toLocaleString('en-GB', { timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'never'; live.textContent = '● offline'; live.style.color = 'var(--red)'; live.title = 'Teams reader not running — last seen ' + seen; }
+    } catch (e) { live.textContent = '● unknown'; live.style.color = 'var(--text-mute)'; live.title = String(e.message || e); }
+  };
   const sync = async () => {
+    checkLive();
     const { data, error } = await sb.from('inbox_candidates').select('*').eq('status', 'pending').order('msg_time', { ascending: false });
-    const live = $('#ib-live'); if (live) live.style.color = error ? 'var(--red)' : 'var(--green,#2a9d5c)';
     if (error) { if (!$('#ib-tbl table') && !$('#ib-empty')) $('#ib-tbl').innerHTML = '<div style="padding:16px;color:var(--red)">' + esc(error.message) + '</div>'; return; }
     let rows = data || [];
     { const seen = new Set(), keep = [], old = [];
