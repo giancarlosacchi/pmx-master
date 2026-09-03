@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260902-inbox-v5 -->
+<!-- build: 20260903-inbox-v6 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -195,6 +195,7 @@ body { -webkit-font-smoothing: antialiased; font-feature-settings: "tnum" 1; }
 body.is-admin .admin-only { display: flex !important; }
 /* Vsl Descr: per ora visibile solo a Giancarlo */
 body:not(.is-gsc) [data-route="vsl-descr"] { display: none !important; }
+body:not(.is-admin) [data-route="inbox"] { display: none !important; }
 
 /* Admin page styles */
 .admin-panel { padding: 18px; }
@@ -8776,6 +8777,7 @@ routes['vsl-descr'] = function() {
   refresh();
 };
 routes['inbox'] = function() {
+  if (CURRENT_USER_ROLE !== 'admin') { location.hash = '#/atl-tng'; return; }
   $('#topbar-actions').innerHTML = '';
   $('#content').innerHTML = `
     <div class="panel" style="display:flex;flex-direction:column;min-height:0;flex:1">
@@ -8785,27 +8787,30 @@ routes['inbox'] = function() {
       </div>
       <div class="tbl-wrap" id="ib-tbl" style="flex:1;overflow:auto"></div>
     </div>`;
-  const AREAS = ['ECSA','PG','RSEA','SAFR','WCI','ECI','SEASIA','SCHINA','NCHINA','USG','UKC','WMED','EMED'];
+  const AREAS = ['ECSA','NCSA','PG','RSEA','WCI','ECI','SEASIA','SCHINA','NCHINA','UKC','WMED','EMED','USG','USEC / ECCA'];
   const PAC_AREAS = new Set(['SEASIA','SCHINA','NCHINA']);
-  const STATI = ['', 'fresh', 'on_subs', 'off_mkt'];
+  const STATI = [['', '—'], ['fresh', 'fresh'], ['on_subs', 'on subs'], ['off_mkt', 'off mkt'], ['open', 'back open']];
   const byId = {};
-  const inp = (id, k, v, w, ph) => `<input class="ib-in" data-id="${id}" data-k="${k}" value="${attr(v == null ? '' : v)}" placeholder="${ph||''}" style="width:${w};background:var(--bg-3);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:4px 6px;font-size:11.5px">`;
+  const IN = 'background:var(--bg-3);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:4px 6px;font-size:11.5px';
+  const inp = (id, k, v, w, ph) => `<input class="ib-in" data-id="${id}" data-k="${k}" value="${attr(v == null ? '' : v)}" placeholder="${ph||''}" style="width:${w};${IN}">`;
   const KIND_LBL = { subs: ['A SOGGETTI', 'var(--amber,#b7791f)'], remove: ['ELIMINA', 'var(--red)'], unsubs: ['TOGLI SOGGETTI', 'var(--blue,#2563eb)'] };
+  const norm = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const findV = (name) => (DATA.vessels || []).find(x => norm(x.vessel) === norm(name));
+  const msgCell = (r) => { const t = (r.msg_time || '').slice(5, 16).replace('T', ' '); return `<td class="dim" style="font-size:10.5px;white-space:nowrap" title="${attr(r.raw || '')}">${esc(String(r.sender || '').split(' ')[0])}<br>${esc(t)}</td>`; };
   const rowHtml = (r) => {
-    const t = (r.msg_time || '').slice(5, 16).replace('T', ' ');
     if (r.kind && r.kind !== 'position') {
       const [lbl, col] = KIND_LBL[r.kind] || [r.kind.toUpperCase(), 'var(--text-mute)'];
-      const norm = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-      const ex = (DATA.vessels || []).find(x => norm(x.vessel) === norm(r.vessel));
-      const where = ex ? `in lista: ${esc(ex.area || '')} ${esc(ex.open_port || '')} ${esc(ex.open_from || '')}` : 'NON in lista';
+      const ex = findV(r.vessel);
+      const where = ex ? `in lista: ${esc(ex.area || '')} ${esc(ex.open_port || '')} ${fmtDateRange(ex.open_from, ex.open_to)}` : 'NON in lista';
       return `<tr data-row="${r.id}" class="ib-kind">
         <td>${inp(r.id, 'vessel', r.vessel, '130px')}</td>
         <td>${inp(r.id, 'dwt_blt', r.dwt_blt, '52px')}</td>
-        <td colspan="4"><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:700;color:#fff;background:${col}">${lbl}</span> <span class="dim" style="font-size:10.5px;margin-left:6px">${where}</span></td>
+        <td colspan="3"><span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:700;color:#fff;background:${col}">${lbl}</span> <span class="dim" style="font-size:10.5px;margin-left:6px">${where}</span></td>
         <td data-col="ideas" colspan="3"><span style="font-size:11px">${esc(r.ideas || '')}</span></td>
         <td>${inp(r.id, 'ls_brkr', r.ls_brkr, '42px')}</td>
+        <td class="dim">${fmtUpdate(r.update_date)}</td>
         <td></td>
-        <td class="dim" style="font-size:10.5px;white-space:nowrap" title="${attr(r.raw || '')}">${esc(String(r.sender || '').split(' ')[0])}<br>${esc(t)}</td>
+        ${msgCell(r)}
         <td style="white-space:nowrap">
           <button class="primary ib-ok" data-id="${r.id}" title="Applica alla nave in lista"${ex ? '' : ' disabled'}>✓</button>
           ${r.kind === 'subs' && ex ? `<button class="ib-del" data-id="${r.id}" title="Elimina la nave dalla lista (fissata e gia' quotata oggi)" style="margin-left:4px">🗑</button>` : ''}
@@ -8816,64 +8821,65 @@ routes['inbox'] = function() {
     return `<tr data-row="${r.id}">
         <td>${inp(r.id, 'vessel', r.vessel, '130px')}</td>
         <td>${inp(r.id, 'dwt_blt', r.dwt_blt, '52px')}</td>
-        <td>${inp(r.id, 'open_port', r.open_port, '95px')}</td>
-        <td>${inp(r.id, 'open_from', r.open_from, '95px', 'YYYY-MM-DD')}</td>
-        <td>${inp(r.id, 'open_to', r.open_to, '95px', 'YYYY-MM-DD')}</td>
-        <td><select class="ib-in" data-id="${r.id}" data-k="area" style="background:var(--bg-3);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:4px 6px;font-size:11.5px">${AREAS.map(a => `<option${a === (r.area || 'ECSA') ? ' selected' : ''}>${a}</option>`).join('')}</select></td>
+        <td>${inp(r.id, 'open_port', r.open_port, '110px')}</td>
+        <td class="ib-dates" data-id="${r.id}" style="white-space:nowrap"><input type="hidden" class="ib-in" data-id="${r.id}" data-k="open_from" value="${attr(r.open_from||'')}"><input type="hidden" class="ib-in" data-id="${r.id}" data-k="open_to" value="${attr(r.open_to||'')}"></td>
+        <td><select class="ib-in" data-id="${r.id}" data-k="area" style="${IN}"><option value=""${r.area ? '' : ' selected'}>—</option>${AREAS.map(a => `<option${a === r.area ? ' selected' : ''}>${a}</option>`).join('')}</select></td>
         <td data-col="ideas">${inp(r.id, 'ideas', r.ideas, '100%')}</td>
-        <td>${inp(r.id, 'bunker', r.bunker, '110px')}</td>
-        <td>${inp(r.id, 'ows_brkr', r.ows_brkr, '95px')}</td>
+        <td>${inp(r.id, 'ows_brkr', r.ows_brkr, '110px')}</td>
+        <td>${inp(r.id, 'bunker', r.bunker, '100px')}</td>
         <td>${inp(r.id, 'ls_brkr', r.ls_brkr, '42px')}</td>
-        <td><select class="ib-in" data-id="${r.id}" data-k="vsl_status" style="background:var(--bg-3);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:4px 6px;font-size:11.5px">${STATI.map(a => `<option value="${a}"${a === (r.vsl_status || '') ? ' selected' : ''}>${a || '—'}</option>`).join('')}</select></td>
-        <td class="dim" style="font-size:10.5px;white-space:nowrap" title="${attr(r.raw || '')}">${esc(String(r.sender || '').split(' ')[0])}<br>${esc(t)}</td>
+        <td class="dim" style="white-space:nowrap">${fmtUpdate(r.update_date)}</td>
+        <td><select class="ib-in" data-id="${r.id}" data-k="vsl_status" style="${IN}">${STATI.map(([v, l]) => `<option value="${v}"${v === (r.vsl_status || '') ? ' selected' : ''}>${l}</option>`).join('')}</select></td>
+        ${msgCell(r)}
         <td style="white-space:nowrap">
           <button class="primary ib-ok" data-id="${r.id}" title="Approva → inserisce/aggiorna in lista">✓</button>
           <button class="ib-no" data-id="${r.id}" title="Scarta" style="margin-left:4px">✕</button>
         </td>
       </tr>`;
   };
+  const mountDates = (tr) => {
+    const td = tr.querySelector('.ib-dates'); if (!td) return;
+    const id = td.dataset.id; const f = td.querySelector('[data-k="open_from"]'), t = td.querySelector('[data-k="open_to"]');
+    try {
+      const dr = createDateRangePicker({ from: f.value || '', to: t.value || '', placeholder: 'Dates', onChange: (a, b) => { f.value = a || ''; t.value = b || ''; } });
+      td.appendChild(dr);
+    } catch (e) { td.insertAdjacentHTML('beforeend', inp(id, 'open_from_txt', f.value, '90px', 'YYYY-MM-DD')); }
+  };
   const setCount = () => { const n = $$('#ib-tbl tbody tr').length; const c = $('#ib-cnt'); if (c) c.textContent = n + ' candidati'; if (typeof updateInboxBadge === 'function') updateInboxBadge(n); };
   const rowVals = (id) => { const o = {}; $$(`#ib-tbl .ib-in[data-id="${id}"]`).forEach(el => o[el.dataset.k] = (el.value || '').trim() || null); return o; };
   const removeRow = (id) => { const tr = $(`#ib-tbl tr[data-row="${id}"]`); if (tr) tr.remove(); delete byId[id]; setCount(); if (!$$('#ib-tbl tbody tr').length) renderEmpty(); };
   const bindRow = (tr) => {
-    const ok = tr.querySelector('.ib-ok'), no = tr.querySelector('.ib-no');
-    const del = tr.querySelector('.ib-del');
+    const ok = tr.querySelector('.ib-ok'), no = tr.querySelector('.ib-no'), del = tr.querySelector('.ib-del');
     if (del) del.onclick = async () => {
       const id = Number(del.dataset.id); const c = byId[id]; const v = rowVals(id);
-      const norm = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-      const ex = (DATA.vessels || []).find(x => norm(x.vessel) === norm(v.vessel || c.vessel));
-      if (ex) delVessel(ex.id);
-      await sb.from('inbox_candidates').update({ status: 'approved' }).eq('id', id);
-      removeRow(id);
+      const ex = findV(v.vessel || c.vessel); if (ex) delVessel(ex.id);
+      await sb.from('inbox_candidates').update({ status: 'approved' }).eq('id', id); removeRow(id);
     };
     ok.onclick = async () => {
       const id = Number(ok.dataset.id); const c = byId[id]; const v = rowVals(id);
       if (!v.vessel || !c) return;
       if (c.kind && c.kind !== 'position') {
-        const norm = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-        const ex = (DATA.vessels || []).find(x => norm(x.vessel) === norm(v.vessel));
+        const ex = findV(v.vessel);
         if (ex) {
           if (c.kind === 'remove') delVessel(ex.id);
           else if (c.kind === 'subs') updVessel(ex.id, { status: 'on_subs', subs: 'S', update_date: todayIso() });
           else if (c.kind === 'unsubs') updVessel(ex.id, { status: null, subs: null, update_date: todayIso() });
         }
-        await sb.from('inbox_candidates').update({ status: 'approved' }).eq('id', id);
-        removeRow(id);
-        return;
+        await sb.from('inbox_candidates').update({ status: 'approved' }).eq('id', id); removeRow(id); return;
       }
       v.vessel = v.vessel.toUpperCase();
-      const area = (v.area || 'ECSA').toUpperCase();
+      const area = (v.area || '').toUpperCase() || null;
       const patch = { vessel: v.vessel, dwt_blt: v.dwt_blt, open_port: v.open_port, open_from: v.open_from, open_to: v.open_to,
-        area, basin: PAC_AREAS.has(area) ? 'PAC' : 'ATL', ideas: v.ideas, bunker: v.bunker, ows_brkr: v.ows_brkr,
+        area, basin: PAC_AREAS.has(area) ? 'PAC' : 'ATL', bunker: v.bunker, ows_brkr: v.ows_brkr,
         update_date: (c.msg_time || '').slice(0, 10) || todayIso() };
+      if (v.ideas) patch.ideas = v.ideas;                       // se il messaggio non aveva offerte, le ideas esistenti restano
       if (v.ls_brkr) patch.ls_brkr = v.ls_brkr.toUpperCase();
-      if (v.vsl_status) patch.status = v.vsl_status;
+      if (v.vsl_status === 'open') { patch.status = null; patch.subs = null; }
+      else if (v.vsl_status) { patch.status = v.vsl_status; if (v.vsl_status === 'on_subs') patch.subs = 'S'; }
       if (c.scrbr_ftd === true) patch.scrbr_ftd = true;
-      const norm = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-      const ex = (DATA.vessels || []).find(x => norm(x.vessel) === norm(v.vessel));
+      const ex = findV(v.vessel);
       if (ex) updVessel(ex.id, patch); else addVessel({ ...patch });
-      await sb.from('inbox_candidates').update({ status: 'approved' }).eq('id', id);
-      removeRow(id);
+      await sb.from('inbox_candidates').update({ status: 'approved' }).eq('id', id); removeRow(id);
     };
     no.onclick = async () => { const id = Number(no.dataset.id); await sb.from('inbox_candidates').update({ status: 'rejected' }).eq('id', id); removeRow(id); };
   };
@@ -8881,30 +8887,25 @@ routes['inbox'] = function() {
   const ensureTable = () => {
     if ($('#ib-tbl table')) return $('#ib-tbl tbody');
     $('#ib-tbl').innerHTML = `<table class="grid"><thead class="area-green tint-fixed"><tr>
-      <th>Vessel</th><th>DWT/BLT</th><th>Open</th><th>From</th><th>To</th><th>Area</th><th class="col-ideas">Ideas / Info</th><th>Bunker</th><th>Ows</th><th>LS</th><th>Status</th><th>Msg</th><th></th>
+      <th>Vessel</th><th>DWT/BLT</th><th>Open</th><th>Dates</th><th>Area</th><th class="col-ideas">Ideas / Info</th><th>Ows / Brkr</th><th>Bunker</th><th>LS</th><th>Update</th><th>Status</th><th>Msg</th><th></th>
     </tr></thead><tbody></tbody></table>`;
     return $('#ib-tbl tbody');
   };
-  // Sync incrementale: aggiunge SOLO le righe nuove (in cima) e toglie quelle
-  // approvate/scartate da altri — senza toccare le righe che stai modificando.
   const sync = async () => {
     const { data, error } = await sb.from('inbox_candidates').select('*').eq('status', 'pending').order('msg_time', { ascending: false });
     const live = $('#ib-live'); if (live) live.style.color = error ? 'var(--red)' : 'var(--green,#2a9d5c)';
     if (error) { if (!$('#ib-tbl table') && !$('#ib-empty')) $('#ib-tbl').innerHTML = '<div style="padding:16px;color:var(--red)">' + esc(error.message) + '</div>'; return; }
     let rows = data || [];
-    // stessa nave + stesso tipo piu' volte: tieni solo il messaggio piu' recente, gli altri diventano 'superseded'
     { const seen = new Set(), keep = [], old = [];
-      for (const r of rows) { const k = (r.kind || 'position') + '|' + String(r.vessel || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); if (seen.has(k)) old.push(r.id); else { seen.add(k); keep.push(r); } }
+      for (const r of rows) { const k = (r.kind || 'position') + '|' + norm(r.vessel); if (seen.has(k)) old.push(r.id); else { seen.add(k); keep.push(r); } }
       if (old.length) { sb.from('inbox_candidates').update({ status: 'superseded' }).in('id', old).then(() => {}); }
       rows = keep; }
     const ids = new Set(rows.map(r => r.id));
-    // rimuovi righe non piu' pending
     $$('#ib-tbl tbody tr').forEach(tr => { if (!ids.has(Number(tr.dataset.row))) { delete byId[Number(tr.dataset.row)]; tr.remove(); } });
     const fresh = rows.filter(r => !byId[r.id]);
     if (fresh.length) {
       const tb = ensureTable();
-      // le nuove vanno in cima, mantenendo l'ordine per data
-      for (const r of fresh.slice().reverse()) { byId[r.id] = r; tb.insertAdjacentHTML('afterbegin', rowHtml(r)); bindRow(tb.firstElementChild); tb.firstElementChild.classList.add('row-new'); }
+      for (const r of fresh.slice().reverse()) { byId[r.id] = r; tb.insertAdjacentHTML('afterbegin', rowHtml(r)); bindRow(tb.firstElementChild); mountDates(tb.firstElementChild); tb.firstElementChild.classList.add('row-new'); }
     }
     if (!rows.length) renderEmpty();
     setCount();
@@ -8921,6 +8922,7 @@ function updateInboxBadge(n) {
   b.textContent = n; b.style.display = n > 0 ? '' : 'none';
 }
 async function pollInboxBadge() {
+  if (typeof CURRENT_USER_ROLE === 'undefined' || CURRENT_USER_ROLE !== 'admin') return;
   try { const { count, error } = await sb.from('inbox_candidates').select('id', { count: 'exact', head: true }).eq('status', 'pending'); if (!error) updateInboxBadge(count || 0); } catch {}
 }
 setTimeout(pollInboxBadge, 4000);
