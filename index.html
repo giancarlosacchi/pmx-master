@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v29 -->
+<!-- build: 20260903-inbox-v30 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -8867,9 +8867,304 @@ routes['vsl-descr'] = function() {
   $('#vd-q').oninput = () => { clearTimeout(window.__vdT); window.__vdT = setTimeout(refresh, 250); };
   refresh();
 };
+// ============== INBOX — CARICHI (CGO) ==============
+// Stessa logica dell'Inbox navi: candidati da inbox_cargoes (bot Teams), un carico per riga,
+// ✓ aggiunge/aggiorna in ATL CGO / PAC CGO, ✕ scarta. Doppioni: stesso chrtrs + load + disch con laycan
+// sovrapposto → vale solo l'ultimo messaggio.
+window.__ibMode = window.__ibMode || 'vsl';
+function inboxModeBar() {
+  const m = window.__ibMode;
+  return `<span class="ib-mode" style="display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-right:10px;font-size:11.5px;font-weight:700">
+    <button type="button" data-mode="vsl" style="padding:3px 10px;border:0;cursor:pointer;background:${m === 'vsl' ? 'var(--gold,#c9a227)' : 'transparent'};color:${m === 'vsl' ? '#fff' : 'var(--text-dim)'}">VSL</button>
+    <button type="button" data-mode="cgo" style="padding:3px 10px;border:0;cursor:pointer;background:${m === 'cgo' ? 'var(--gold,#c9a227)' : 'transparent'};color:${m === 'cgo' ? '#fff' : 'var(--text-dim)'}">CGO</button></span>`;
+}
+function bindInboxModeBar() {
+  $$('#topbar-actions .ib-mode button').forEach(b => b.onclick = () => { if (window.__ibMode === b.dataset.mode) return; window.__ibMode = b.dataset.mode; routes['inbox'](); });
+}
+function renderInboxCargo() {
+  $('#topbar-actions').innerHTML = inboxModeBar() + `<span id="ib-live" title="Reader status" style="font-size:11.5px;color:var(--text-mute);margin-right:8px">● checking…</span><span class="count-pill" id="ib-cnt">—</span>`;
+  bindInboxModeBar();
+  $('#content').innerHTML = `
+    <style>
+      #ib-tbl tr.ib-subs td { background: rgba(236,72,153,.13) !important; }
+      #ib-tbl tr.ib-unsubs td { background: rgba(59,130,246,.12) !important; }
+      #ib-tbl tr.ib-nosec td.col-c-chrtrs { color: var(--red); }
+      #ib-tbl table.grid th.col-del, #ib-tbl table.grid td.col-del { width: 46px; max-width: 46px; min-width: 46px; overflow: visible; white-space: nowrap; padding-left: 2px !important; padding-right: 2px !important; }
+      #ib-tbl .ib-ok { color: var(--green,#2a9d5c); font-weight: 700; }
+      #ib-tbl .ib-no { color: var(--red); font-weight: 700; margin-left: 2px; }
+      #ib-tbl .ib-inherit { opacity: .55; font-style: italic; }
+      #ib-tbl td.editing input, #ib-tbl td.editing select { width: 100%; box-sizing: border-box; background: var(--bg-3); border: 1px solid var(--gold); color: var(--text); border-radius: 4px; padding: 2px 4px; font: inherit; font-size: 12px; }
+      #ib-tbl td.editing .ib-vsl { display: flex; flex-direction: column; gap: 3px; } #ib-tbl td.editing .ib-vsl input, #ib-tbl td.editing .ib-vsl select { width: 100% !important; }
+      #ib-tbl table.grid td.col-c-chrtrs.editing { overflow: visible; white-space: normal; max-width: none; }
+      #ib-pop { position: fixed; z-index: 9999; max-width: 560px; min-width: 300px; background: var(--bg-2, #fff); color: var(--text); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 8px 28px rgba(0,0,0,.18); padding: 8px 10px; font-size: 11.5px; line-height: 1.35; pointer-events: none; display: none; }
+      #ib-pop .ib-pop-h { display: flex; gap: 10px; flex-wrap: wrap; font-weight: 700; font-size: 10.5px; letter-spacing: .02em; color: var(--text-mute); border-bottom: 1px solid var(--line); padding-bottom: 5px; margin-bottom: 6px; text-transform: uppercase; }
+      #ib-pop .ib-pop-h b { color: var(--text); }
+      #ib-pop pre { margin: 0; white-space: pre-wrap; font: inherit; font-family: inherit; }
+    </style>
+    <div class="panel"><div class="tbl-wrap" id="ib-tbl"></div></div>`;
+  const SECTIONS = [...ATL_CGO_SECTIONS, ...PAC_CGO_SECTIONS];
+  const basinOf = sec => PAC_CGO_SECTIONS.includes(sec) ? 'PAC' : ATL_CGO_SECTIONS.includes(sec) ? 'ATL' : null;
+  const byId = {};
+  const F = {};
+  const norm = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const w1 = s => norm(String(s || '').split(/[\s\/,+(-]/)[0]);
+  const overlap = (a1, a2, b1, b2) => { if (!a1 || !b1) return true; const A2 = a2 || a1, B2 = b2 || b1; return a1 <= B2 && b1 <= A2; };
+  const msgDay = r => (r.msg_time || '').slice(0, 10);
+  const kindOf = r => r.kind && r.kind !== 'cargo' ? r.kind : '';
+  const stOf = r => { const s = r.cgo_status || (kindOf(r) === 'subs' ? 'on_subs' : kindOf(r) === 'unsubs' ? 'open' : ''); return (s === 'fresh' && msgDay(r) !== todayIso()) ? '' : s; };
+  const findC = r => (DATA.cargoes || []).find(c => norm(c.chrtrs) === norm(r.chrtrs) && w1(c.load_port) === w1(r.load_port) && (!r.disch_port || !c.disch_port || w1(c.disch_port) === w1(r.disch_port)) && overlap(c.laycan_from, c.laycan_to, r.laycan_from, r.laycan_to));
+  const persist = (r, patch) => { Object.assign(r, patch); sb.from('inbox_cargoes').update(patch).eq('id', r.id).then(() => {}); };
+  const plain = s => String(s || '').replace(/<[^>]+>/g, '');
+
+  const rowHtml = (r) => {
+    const kind = kindOf(r), st = stOf(r);
+    const cls = st === 'off_mkt' ? 'status-off' : st === 'fresh' ? 'status-fresh' : '';
+    const statusCls = st === 'on_subs' ? 'subs' : st === 'off_mkt' ? 'off' : st === 'fresh' ? 'fresh' : st === 'open' ? 'open' : 'none';
+    const statusLabel = st === 'on_subs' ? 'on subs' : st === 'off_mkt' ? 'off mrkt' : st === 'fresh' ? 'fresh' : st === 'open' ? 'back open' : '—';
+    const ex = findC(r);
+    const tip = ex ? `In list: ${plain(ex.section || '')} ${plain(ex.load_port || '')}/${plain(ex.disch_port || '')} ${plain(fmtDateRange(ex.laycan_from, ex.laycan_to))}` : 'NOT in list';
+    const E = (f, extra) => `class="editable ${extra || ''} ib-ed" data-f="${f}"`;
+    const inh = (f) => r[f] ? esc(r[f]) : (ex && ex[f] ? `<span class="ib-inherit" title="From the list">${esc(ex[f])}</span>` : '');
+    const d = msgDay(r) || r.update_date;
+    return `<tr class="${cls} row-area ${areaClass(r.section || r.area)} ${kind ? 'ib-' + kind : ''} ${st === 'on_subs' ? 'ib-subs' : ''} ${r.section ? '' : 'ib-nosec'}" data-row="${r.id}">
+    <td ${E('chrtrs', 'col-c-chrtrs')} data-tip="${attr(tip)}">${esc(r.chrtrs || '')}</td>
+    <td ${E('laycan_from', 'col-c-dates')}>${fmtDateRange(r.laycan_from, r.laycan_to)}</td>
+    <td ${E('load_port', 'col-c-port')}>${esc(r.load_port || '')}</td>
+    <td ${E('disch_port', 'col-c-port')}>${esc(r.disch_port || '')}</td>
+    <td ${E('cgo', 'col-c-cgo')}>${inh('cgo')}</td>
+    <td ${E('size', 'dim col-c-size')}>${inh('size')}</td>
+    <td ${E('notes', 'col-ideas' + (isIdeasOffers(r.notes, d) ? ' cell-offers' : ''))}><div class="ideas-text">${fmtIdeas(r.notes || '', d)}</div></td>
+    <td ${E('ls_brkr', 'dim col-lsbrkr')}>${esc(r.ls_brkr || '')}</td>
+    <td class="dim col-c-update">${fmtUpdate(r.update_date)}</td>
+    <td class="col-c-stato"><div class="status-wrap">
+      <span class="status-chip ${statusCls}">${statusLabel}</span>
+      <div class="status-menu">
+        <div class="opt fresh ${st==='fresh'?'current':''}" data-status="fresh">Fresh</div>
+        <div class="opt off ${st==='off_mkt'?'current':''}" data-status="off_mkt">Off mrkt</div>
+        <div class="opt subs ${st==='on_subs'?'current':''}" data-status="on_subs">On subs</div>
+        <div class="opt open ${st==='open'?'current':''}" data-status="open">Back open</div>
+        <div class="opt none ${!st?'current':''}" data-status="">Empty</div>
+      </div>
+    </div></td>
+    <td class="col-del"><button class="icon-btn ib-ok" title="Approve → add / update in list">✓</button><button class="icon-btn ib-no" title="Discard">✕</button></td>
+  </tr>`;
+  };
+
+  const render = () => {
+    const wrap = $('#ib-tbl'); const sy = wrap ? wrap.scrollTop : 0;
+    const rows = Object.values(byId);
+    const cnt = $('#ib-cnt'); if (cnt) cnt.textContent = rows.length + ' pending';
+    if (typeof pollInboxBadge === 'function') pollInboxBadge();
+    if (!rows.length) { $('#ib-tbl').innerHTML = '<div id="ib-empty" style="padding:24px;color:var(--text-mute);font-size:12.5px">No pending cargoes. New cargo messages from Teams will show up here automatically.</div>'; return; }
+    const bySec = {};
+    for (const r of rows) (bySec[r.section || '?'] ??= []).push(r);
+    const ordered = [...SECTIONS.filter(s => bySec[s]), ...Object.keys(bySec).filter(s => s !== '?' && !SECTIONS.includes(s)).sort(), ...(bySec['?'] ? ['?'] : [])];
+    const cmp = (a, b) => String(a.laycan_from || '9') < String(b.laycan_from || '9') ? -1 : String(a.laycan_from || '9') > String(b.laycan_from || '9') ? 1 : String(b.msg_time || '').localeCompare(String(a.msg_time || ''));
+    const html = [`<table class="grid"><thead><tr>
+    <th class="th-filter col-c-chrtrs"><input data-col="chrtrs" placeholder="Chrtrs" value="${attr(F.chrtrs||'')}"></th>
+    <th class="th-filter col-c-dates"><input class="filter-date-range" type="text" readonly data-col="dates" placeholder="Laycan" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.dates_from, F.dates_to))}"></th>
+    <th class="th-filter col-c-port"><input data-col="load_port" placeholder="Load" value="${attr(F.load_port||'')}"></th>
+    <th class="th-filter col-c-port"><input data-col="disch_port" placeholder="Disch" value="${attr(F.disch_port||'')}"></th>
+    <th class="th-filter col-c-cgo"><input data-col="cgo" placeholder="Cgo" value="${attr(F.cgo||'')}"></th>
+    <th class="th-filter col-c-size"><input data-col="size" placeholder="Size" value="${attr(F.size||'')}"></th>
+    <th class="th-filter col-ideas"><input data-col="notes" placeholder="Notes" value="${attr(F.notes||'')}"></th>
+    <th class="th-filter col-lsbrkr"><input data-col="ls_brkr" placeholder="LS" value="${attr(F.ls_brkr||'')}"></th>
+    <th class="th-filter col-c-update"><input class="filter-date-range" type="text" readonly data-col="update_date" placeholder="Update" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.update_from, F.update_to))}"></th>
+    <th class="th-filter col-c-stato"><input data-col="status" placeholder="Status" value="${attr(F.status||'')}"></th>
+    <th class="col-del"></th>
+  </tr></thead><tbody>`];
+    for (const sec of ordered) {
+      const list = bySec[sec].sort(cmp);
+      const label = sec === '?' ? 'SECTION TO BE CHOSEN (double-click the charterer)' : sec;
+      html.push(`<tr class="section-area ${sec === '?' ? 'area-red' : areaClass(sec)}"><td colspan="11">${esc(label)}<span class="area-count">${list.length}</span></td></tr>`);
+      for (const r of list) html.push(rowHtml(r));
+    }
+    html.push('</tbody></table>');
+    $('#ib-tbl').innerHTML = html.join('');
+    $$('#ib-tbl th.th-filter input[data-col]').forEach(inp => {
+      if (inp.value) inp.classList.add('filter-active');
+      if (inp.classList.contains('filter-date-range')) {
+        const col = inp.dataset.col, fromK = col === 'dates' ? 'dates_from' : 'update_from', toK = col === 'dates' ? 'dates_to' : 'update_to';
+        inp.onclick = () => openFilterDateRange(inp, F[fromK], F[toK], (from, to) => { F[fromK] = from; F[toK] = to; inp.value = fmtFilterDateRange(from, to); inp.classList.toggle('filter-active', !!from); applyFilter(); });
+        return;
+      }
+      inp.oninput = () => { F[inp.dataset.col] = inp.value; inp.classList.toggle('filter-active', !!inp.value); applyFilter(); };
+    });
+    applyFilter();
+    if (sy) $('#ib-tbl').scrollTop = sy;
+  };
+  // ---- popup messaggio originale ----
+  let pop = document.getElementById('ib-pop');
+  if (!pop) { pop = document.createElement('div'); pop.id = 'ib-pop'; document.body.appendChild(pop); }
+  let popT = null, popRow = null;
+  const hidePop = () => { clearTimeout(popT); popT = null; popRow = null; pop.style.display = 'none'; };
+  const showPop = (tr, x, y) => {
+    const r = byId[Number(tr.dataset.row)]; if (!r) return;
+    const when = r.msg_time ? new Date(r.msg_time).toLocaleString('it-IT', { timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+    const ex = findC(r);
+    pop.innerHTML = `<div class="ib-pop-h"><span>${esc(r.chat || '')}</span><span><b>${esc(r.sender || '')}</b></span><span>${esc(when)}</span><span style="margin-left:auto">${ex ? 'IN LIST' : 'NOT IN LIST'}</span></div><pre>${esc(String(r.raw || '').replace(/\n{3,}/g, '\n\n').trim())}</pre>`;
+    pop.style.display = 'block';
+    const W = pop.offsetWidth, H = pop.offsetHeight;
+    let left = Math.min(x + 14, window.innerWidth - W - 8), top = y + 18;
+    if (top + H > window.innerHeight - 8) top = Math.max(8, y - H - 12);
+    pop.style.left = left + 'px'; pop.style.top = top + 'px';
+  };
+  $('#ib-tbl').addEventListener('mousemove', (e) => {
+    const tr = e.target.closest('tr[data-row]');
+    if (!tr || $('#ib-tbl td.editing')) { if (popRow) hidePop(); return; }
+    if (tr === popRow) return;
+    hidePop(); popRow = tr;
+    const x = e.clientX, y = e.clientY;
+    popT = setTimeout(() => showPop(tr, x, y), 450);
+  });
+  $('#ib-tbl').addEventListener('mouseleave', hidePop);
+  $('#ib-tbl').addEventListener('scroll', hidePop, { passive: true });
+  $('#ib-tbl').addEventListener('mousedown', hidePop, true);
+
+  const applyFilter = () => {
+    const stLabel = r => { const st = stOf(r); return st === 'on_subs' ? 'on subs' : st === 'off_mkt' ? 'off mrkt' : st === 'fresh' ? 'fresh' : st === 'open' ? 'back open' : ''; };
+    $$('#ib-tbl tbody tr[data-row]').forEach(tr => {
+      const r = byId[Number(tr.dataset.row)]; if (!r) return;
+      let show = true;
+      for (const k of ['chrtrs', 'load_port', 'disch_port', 'cgo', 'size', 'ls_brkr']) if (show && F[k] && !matchText(r[k], F[k])) show = false;
+      if (show && F.notes && !matchText(fmtIdeasPlain(r.notes || '', msgDay(r)), F.notes)) show = false;
+      if (show && F.dates_from) { const ft = F.dates_to || F.dates_from; if (!r.laycan_from || (r.laycan_to || r.laycan_from) < F.dates_from || r.laycan_from > ft) show = false; }
+      if (show && F.update_from) { const d = msgDay(r), ft = F.update_to || F.update_from; if (!d || d < F.update_from || d > ft) show = false; }
+      if (show && F.status && !matchText(stLabel(r), F.status)) show = false;
+      tr.style.display = show ? '' : 'none';
+    });
+    $$('#ib-tbl tbody tr.section-area').forEach(sec => {
+      let n = 0, el = sec.nextElementSibling;
+      while (el && !el.classList.contains('section-area')) { if (el.style.display !== 'none') n++; el = el.nextElementSibling; }
+      sec.style.display = n ? '' : 'none';
+    });
+  };
+  const rerow = (r) => { const tr = $(`#ib-tbl tr[data-row="${r.id}"]`); if (!tr) return render(); tr.outerHTML = rowHtml(r); applyFilter(); };
+
+  // ---- editing inline ----
+  const edit = (td, r, f) => {
+    if (td.classList.contains('editing')) return;
+    td.classList.add('editing');
+    const done = () => { rerow(r); };
+    if (f === 'laycan_from') {
+      td.innerHTML = '';
+      const o0 = r.laycan_from || '', t0 = r.laycan_to || '';
+      const dr = createDateRangePicker({ from: o0, to: t0, placeholder: 'Select dates', onChange: (a, b) => {
+        const A = a || null, B = b || null;
+        if ((A || '') !== o0 || (B || '') !== t0) persist(r, { laycan_from: A, laycan_to: B });
+        if (A && B) setTimeout(done, 80);
+      } });
+      td.appendChild(dr);
+      const btn = dr.querySelector('.dr-btn'); if (btn) btn.click();
+      const off = (e) => { if (!td.contains(e.target) && !e.target.closest('.dr-popup')) { document.removeEventListener('mousedown', off, true); done(); } };
+      setTimeout(() => document.addEventListener('mousedown', off, true), 50);
+      return;
+    }
+    if (f === 'chrtrs') {
+      td.innerHTML = `<div class="ib-vsl"><input value="${attr(r.chrtrs || '')}"><select><option value="">— section —</option>${SECTIONS.map(a => `<option${a === r.section ? ' selected' : ''}>${a}</option>`).join('')}</select></div>`;
+      const inp = td.querySelector('input'), sel = td.querySelector('select');
+      let closed = false;
+      const save = () => {
+        if (closed) return; closed = true;
+        const nv = inp.value.trim().toUpperCase() || r.chrtrs, ns = sel.value || null;
+        const p = {}; if (nv !== r.chrtrs) p.chrtrs = nv;
+        if (ns !== (r.section || null)) { p.section = ns; p.basin = basinOf(ns); p.area = ns ? ns.replace(/\s+(?:FH|TA)$/, '') : null; }
+        if (Object.keys(p).length) persist(r, p);
+        if ('section' in p) render(); else done();
+      };
+      inp.focus(); inp.select();
+      inp.onkeydown = e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') { closed = true; done(); } };
+      sel.onkeydown = inp.onkeydown;
+      const off = (e) => { if (!td.contains(e.target)) { document.removeEventListener('mousedown', off, true); save(); } };
+      setTimeout(() => document.addEventListener('mousedown', off, true), 50);
+      return;
+    }
+    const cur = r[f] || '';
+    td.innerHTML = `<input value="${attr(f === 'notes' ? fmtIdeasPlain(cur, msgDay(r)) : cur)}">`;
+    const inp = td.querySelector('input'); inp.focus(); inp.select();
+    let closed = false;
+    const save = () => { if (closed) return; closed = true; let nv = inp.value.trim() || null; if (nv) nv = nv.toUpperCase(); if (nv !== (cur || null)) persist(r, { [f]: nv }); done(); };
+    inp.onkeydown = e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') { closed = true; done(); } };
+    inp.onblur = save;
+  };
+  $('#ib-tbl').addEventListener('dblclick', (e) => {
+    const td = e.target.closest('td.ib-ed'); if (!td) return;
+    const tr = td.closest('tr[data-row]'); const r = byId[Number(tr.dataset.row)]; if (!r) return;
+    e.preventDefault(); e.stopPropagation();
+    edit(td, r, td.dataset.f);
+  }, true);
+
+  // ---- click: stato, approva, scarta ----
+  $('#ib-tbl').addEventListener('click', async (e) => {
+    const tr = e.target.closest('tr[data-row]'); if (!tr) return;
+    const r = byId[Number(tr.dataset.row)]; if (!r) return;
+    const opt = e.target.closest('.status-menu .opt');
+    if (opt) { e.stopPropagation(); persist(r, { cgo_status: opt.dataset.status || null }); rerow(r); return; }
+    if (e.target.closest('.ib-no')) { delete byId[r.id]; render(); await sb.from('inbox_cargoes').update({ status: 'rejected' }).eq('id', r.id); return; }
+    if (e.target.closest('.ib-ok')) {
+      if (!r.chrtrs) return;
+      if (!r.section) { alert('Choose the section first (double-click the charterer).'); return; }
+      const st = stOf(r);
+      const ex = findC(r);
+      const upd = msgDay(r) || todayIso();
+      const basin = basinOf(r.section);
+      const area = r.area || r.section.replace(/\s+(?:FH|TA)$/, '');
+      const patch = { chrtrs: r.chrtrs, section: r.section, area, basin, update_date: upd };
+      for (const k of ['laycan_from', 'laycan_to', 'load_port', 'disch_port', 'cgo', 'size', 'notes']) if (r[k]) patch[k] = r[k];   // vuoto in Inbox → resta il valore in lista
+      if (r.ls_brkr) patch.ls_brkr = r.ls_brkr.toUpperCase();
+      if (st === 'open') patch.status = null; else if (st) patch.status = st;
+      if (ex) updCargo(ex.id, patch); else addCargo({ date: todayIso(), ...patch });
+      delete byId[r.id]; render();
+      await sb.from('inbox_cargoes').update({ status: 'approved' }).eq('id', r.id);
+    }
+  });
+
+  const checkLive = async () => {
+    const live = $('#ib-live'); if (!live) return;
+    try {
+      const { data, error } = await sb.from('scraper_heartbeat').select('id,at,info').eq('id', 'teams').maybeSingle();
+      if (error) throw error;
+      const at = data && data.at ? new Date(data.at) : null;
+      const age = at ? (Date.now() - at.getTime()) / 1000 : Infinity;
+      if (age < 120) { live.textContent = '● live'; live.style.color = 'var(--green,#2a9d5c)'; live.title = 'Teams reader running (last beat ' + Math.round(age) + 's ago)'; }
+      else { const seen = at ? at.toLocaleString('en-GB', { timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'never'; live.textContent = '● offline'; live.style.color = 'var(--red)'; live.title = 'Teams reader not running (last seen ' + seen + ')'; }
+    } catch (e) { live.textContent = '● unknown'; live.style.color = 'var(--text-mute)'; live.title = String(e.message || e); }
+  };
+  const sync = async () => {
+    checkLive();
+    const { data, error } = await sb.from('inbox_cargoes').select('*').eq('status', 'pending').order('msg_time', { ascending: false }).order('id', { ascending: false });
+    if (error) { if (!$('#ib-tbl table') && !$('#ib-empty')) $('#ib-tbl').innerHTML = '<div style="padding:16px;color:var(--red)">' + esc(error.message) + '</div>'; return; }
+    let rows = data || [];
+    { // doppioni: stesso chrtrs + load + disch, laycan sovrapposto → solo l'ultimo messaggio; il piu' nuovo eredita i campi vuoti
+      const keep = [], old = [], fills = [];
+      const FILL = ['laycan_from', 'laycan_to', 'load_port', 'disch_port', 'cgo', 'size', 'notes', 'section', 'area', 'basin'];
+      for (const r of rows) {
+        const cur = keep.find(k => norm(k.chrtrs) === norm(r.chrtrs) && w1(k.load_port) === w1(r.load_port) && (!k.disch_port || !r.disch_port || w1(k.disch_port) === w1(r.disch_port)) && overlap(k.laycan_from, k.laycan_to, r.laycan_from, r.laycan_to));
+        if (!cur) { keep.push(r); continue; }
+        old.push(r.id);
+        const patch = {}; for (const f of FILL) if ((cur[f] == null || cur[f] === '') && r[f] != null && r[f] !== '') { cur[f] = r[f]; patch[f] = r[f]; }
+        if (Object.keys(patch).length) fills.push([cur.id, patch]);
+      }
+      if (old.length) sb.from('inbox_cargoes').update({ status: 'superseded' }).in('id', old).then(() => {});
+      for (const [id, patch] of fills) sb.from('inbox_cargoes').update(patch).eq('id', id).then(() => {});
+      rows = keep;
+    }
+    if ($('#ib-tbl td.editing')) return;
+    const ids = new Set(rows.map(r => r.id));
+    let changed = false;
+    for (const id of Object.keys(byId)) if (!ids.has(Number(id))) { delete byId[id]; changed = true; }
+    for (const r of rows) { const prev = byId[r.id]; if (!prev || JSON.stringify(prev) !== JSON.stringify(r)) { byId[r.id] = r; changed = true; } }
+    if (changed || !$('#ib-tbl table')) render();
+  };
+  sync();
+  if (window.__ibTimer) clearInterval(window.__ibTimer);
+  window.__ibTimer = setInterval(() => { if (location.hash.startsWith('#/inbox') && window.__ibMode === 'cgo') sync(); else { clearInterval(window.__ibTimer); window.__ibTimer = null; } }, 8000);
+}
 routes['inbox'] = function() {
   if (CURRENT_USER_ROLE !== 'admin') { location.hash = '#/atl-tng'; return; }
-  $('#topbar-actions').innerHTML = `<span id="ib-live" title="Reader status" style="font-size:11.5px;color:var(--text-mute);margin-right:8px">● checking…</span><span class="count-pill" id="ib-cnt">—</span>`;
+  if (window.__ibMode === 'cgo') return renderInboxCargo();
+  $('#topbar-actions').innerHTML = inboxModeBar() + `<span id="ib-live" title="Reader status" style="font-size:11.5px;color:var(--text-mute);margin-right:8px">● checking…</span><span class="count-pill" id="ib-cnt">—</span>`;
+  bindInboxModeBar();
   $('#content').innerHTML = `
     <style>
       #ib-tbl tr.ib-subs td { background: rgba(236,72,153,.13) !important; }
@@ -8948,7 +9243,7 @@ routes['inbox'] = function() {
     const wrap = $('#ib-tbl'); const sy = wrap ? wrap.scrollTop : 0;
     const rows = Object.values(byId);
     const cnt = $('#ib-cnt'); if (cnt) cnt.textContent = rows.length + ' pending';
-    if (typeof updateInboxBadge === 'function') updateInboxBadge(rows.length);
+    if (typeof pollInboxBadge === 'function') pollInboxBadge();
     if (!rows.length) { $('#ib-tbl').innerHTML = '<div id="ib-empty" style="padding:24px;color:var(--text-mute);font-size:12.5px">No pending positions. New ECSA messages from Teams will show up here automatically.</div>'; return; }
     const byArea = {};
     for (const r of rows) (byArea[r.area || '?'] ??= []).push(r);
@@ -9192,7 +9487,7 @@ routes['inbox'] = function() {
   };
   sync();
   if (window.__ibTimer) clearInterval(window.__ibTimer);
-  window.__ibTimer = setInterval(() => { if (location.hash.startsWith('#/inbox')) sync(); else { clearInterval(window.__ibTimer); window.__ibTimer = null; } }, 8000);
+  window.__ibTimer = setInterval(() => { if (location.hash.startsWith('#/inbox') && window.__ibMode !== 'cgo') sync(); else { clearInterval(window.__ibTimer); window.__ibTimer = null; } }, 8000);
 };
 // Badge nella sidebar: quante posizioni in attesa (visibile da ogni pagina, refresh ogni 30s)
 function updateInboxBadge(n) {
@@ -9203,7 +9498,7 @@ function updateInboxBadge(n) {
 }
 async function pollInboxBadge() {
   if (typeof CURRENT_USER_ROLE === 'undefined' || CURRENT_USER_ROLE !== 'admin') return;
-  try { const { count, error } = await sb.from('inbox_candidates').select('id', { count: 'exact', head: true }).eq('status', 'pending'); if (!error) updateInboxBadge(count || 0); } catch {}
+  try { const [a, b] = await Promise.all([sb.from('inbox_candidates').select('id', { count: 'exact', head: true }).eq('status', 'pending'), sb.from('inbox_cargoes').select('id', { count: 'exact', head: true }).eq('status', 'pending')]); if (!a.error) updateInboxBadge((a.count || 0) + (b.error ? 0 : (b.count || 0))); } catch {}
 }
 [1000, 3000, 6000, 10000].forEach(ms => setTimeout(pollInboxBadge, ms));   // primi tentativi finche' il ruolo non e' noto
 setInterval(pollInboxBadge, 20000);
