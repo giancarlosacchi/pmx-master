@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v23 -->
+<!-- build: 20260903-inbox-v24 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -1983,6 +1983,14 @@ table.grid th.col-flags, table.grid td.col-flags { width: 120px; max-width: 120p
 /* col-stato: header normale, td con overflow visibile per il menu a tendina */
 table.grid th.col-stato { width: 90px; max-width: 90px; overflow: hidden; }
 table.grid td.col-stato { width: 90px; max-width: 90px; overflow: visible !important; position: relative; }
+/* DWT, LS broker, Update, Flags, Status: contenuto centrato in tutte le pagine (Giancarlo 4 set 2026) */
+table.grid td.col-dwt, table.grid td.col-lsbrkr, table.grid td.col-update, table.grid td.col-flags, table.grid td.col-stato,
+table.grid td[data-col="dwt_blt"], table.grid td[data-col="ls_brkr"], table.grid td[data-col="update_date"],
+table.grid th.col-dwt, table.grid th.col-lsbrkr, table.grid th.col-update, table.grid th.col-flags, table.grid th.col-stato,
+table.grid th[data-col="dwt_blt"], table.grid th[data-col="ls_brkr"], table.grid th[data-col="update_date"] { text-align: center !important; }
+table.grid th.col-dwt input, table.grid th.col-lsbrkr input, table.grid th.col-update input, table.grid th.col-flags input, table.grid th.col-stato input,
+table.grid th[data-col="dwt_blt"] input, table.grid th[data-col="ls_brkr"] input, table.grid th[data-col="update_date"] input { text-align: center; }
+table.grid td.col-flags .flags-cell, table.grid td.col-stato .status-wrap { margin: 0 auto; }
 /* Difensivo: niente status-chip mai dentro al thead */
 table.grid thead .status-chip, table.grid thead .status-wrap, table.grid thead .status-menu { display: none !important; }
 /* Thead sempre sopra tutto il resto */
