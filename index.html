@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v17 -->
+<!-- build: 20260903-inbox-v18 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -8788,7 +8788,7 @@ routes['inbox'] = function() {
   $('#content').innerHTML = `
     <style>
       #ib-tbl tr.ib-subs td { background: rgba(236,72,153,.13) !important; }
-      #ib-tbl tr.ib-remove td { background: rgba(239,68,68,.13) !important; }
+      #ib-tbl tr.ib-remove td { background: rgba(236,72,153,.13) !important; }   /* 'gone' = come on subs */
       #ib-tbl tr.ib-unsubs td { background: rgba(59,130,246,.12) !important; }
       #ib-tbl tr.ib-noarea td.col-vessel { color: var(--red); }
       #ib-tbl .ib-pill { display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 8px; font-size: 9.5px; font-weight: 700; color: #fff; vertical-align: middle; cursor: help; }
@@ -8817,7 +8817,7 @@ routes['inbox'] = function() {
   const dwtK = d => { const m = String(d || '').match(/^\s*(\d{2,3})/); return m ? Number(m[1]) : null; };
   const findV = (name, dwt) => (DATA.vessels || []).find(x => norm(x.vessel) === norm(name) && (dwt == null || dwtK(dwt) == null || dwtK(x.dwt_blt) == null || Math.abs(dwtK(x.dwt_blt) - dwtK(dwt)) <= 3));
   const plain = s => String(s || '').replace(/<[^>]+>/g, '');
-  const kindOf = r => r.kind && r.kind !== 'position' ? r.kind : '';
+  const kindOf = r => { const k = r.kind && r.kind !== 'position' ? r.kind : ''; return k === 'remove' ? 'subs' : k; };   // 'gone' = on subs, mai cancellazione
   const stOf = r => r.vsl_status || (kindOf(r) === 'subs' ? 'on_subs' : kindOf(r) === 'unsubs' ? 'open' : '');
   const persist = (r, patch) => { Object.assign(r, patch); sb.from('inbox_candidates').update(patch).eq('id', r.id).then(() => {}); };
 
@@ -8829,7 +8829,7 @@ routes['inbox'] = function() {
     const ex = findV(r.vessel, r.dwt_blt);
     const t = (r.msg_time || '').slice(5, 16).replace('T', ' ');
     const tip = ex ? `In list: ${plain(ex.area || '')} ${plain(ex.open_port || '')} ${plain(fmtDateRange(ex.open_from, ex.open_to))}` : 'NOT in list';
-    const pill = (kind && kind !== 'subs') ? `<span class="ib-pill" style="background:${KIND_LBL[kind][1]}" title="${attr(ex ? 'In list' : 'NOT in list')}">${KIND_LBL[kind][0]}</span>` : '';   // FXD non serve: riga rosa + status "on subs"
+    const pill = (kind && kind !== 'subs' && kind !== 'remove') ? `<span class="ib-pill" style="background:${KIND_LBL[kind][1]}" title="${attr(ex ? 'In list' : 'NOT in list')}">${KIND_LBL[kind][0]}</span>` : '';   // FXD non serve: riga rosa + status "on subs"
     const flags = (r.scrbr_ftd ? `<span class="flags-label">SCRFTD</span>` : '') + pill;
     const E = (f, extra) => `class="editable ${extra || ''} ib-ed" data-f="${f}"`;
     return `<tr class="${cls} row-area ${areaClass(r.area)} ${kind ? 'ib-' + kind : ''} ${st === 'on_subs' ? 'ib-subs' : ''} ${r.area ? '' : 'ib-noarea'}" data-row="${r.id}">
