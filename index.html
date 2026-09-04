@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v15 -->
+<!-- build: 20260903-inbox-v16 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -9047,13 +9047,8 @@ routes['inbox'] = function() {
     if (error) { if (!$('#ib-tbl table') && !$('#ib-empty')) $('#ib-tbl').innerHTML = '<div style="padding:16px;color:var(--red)">' + esc(error.message) + '</div>'; return; }
     let rows = data || [];
     { const seen = new Set(), keep = [], old = [];
-      const score = r => (r.ideas ? 2 : 0) + (r.ows_brkr ? 1 : 0) + (r.bunker ? 1 : 0) + (r.area ? 1 : 0);
-      const byKey = new Map();
-      for (const r of rows) { const k = (r.kind || 'position') + '|' + norm(r.vessel); const cur = byKey.get(k);
-        if (!cur) { byKey.set(k, r); continue; }
-        const close = Math.abs(new Date(cur.msg_time) - new Date(r.msg_time)) < 12 * 3600e3;
-        if (close && score(r) > score(cur)) { old.push(cur.id); byKey.set(k, r); } else old.push(r.id); }
-      keep.push(...byKey.values());
+      // stessa nave piu' volte: vale SOLO l'ultimo messaggio (le righe sono gia' ordinate dalla piu' recente)
+      for (const r of rows) { const k = (r.kind || 'position') + '|' + norm(r.vessel); if (seen.has(k)) old.push(r.id); else { seen.add(k); keep.push(r); } }
       if (old.length) { sb.from('inbox_candidates').update({ status: 'superseded' }).in('id', old).then(() => {}); }
       rows = keep; }
     if ($('#ib-tbl td.editing')) return;            // non ridisegnare mentre stai modificando
