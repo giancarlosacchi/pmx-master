@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v21 -->
+<!-- build: 20260903-inbox-v22 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2556,6 +2556,7 @@ async function bootAppAfterAuth(user, allowedRow) {
   }
   document.body.classList.add('logged-in');
   if (CURRENT_USER_ROLE === 'admin') document.body.classList.add('is-admin');
+  if (CURRENT_USER_ROLE === 'admin' && typeof pollInboxBadge === 'function') { pollInboxBadge(); setTimeout(pollInboxBadge, 2500); }   // badge Inbox subito dopo il login, da qualsiasi pagina
   if (String((user && user.email) || '').toLowerCase() === 'gsc@lightshipchartering.com') document.body.classList.add('is-gsc');
   renderUserChip(user);
   // 1) Load latest data from cloud (with auto-migration if cloud empty)
@@ -8866,14 +8867,14 @@ routes['inbox'] = function() {
     <th class="th-filter col-vessel"><input data-col="vessel" placeholder="Vessel" value="${attr(F.vessel||'')}"></th>
     <th class="th-filter col-dwt"><input data-col="dwt_blt" placeholder="DWT" value="${attr(F.dwt_blt||'')}"></th>
     <th class="th-filter col-open"><input data-col="open_port" placeholder="Open" value="${attr(F.open_port||'')}"></th>
-    <th class="th-filter col-dates"><input type="text" readonly placeholder="Dates"></th>
+    <th class="th-filter col-dates"><input class="filter-date-range" type="text" readonly data-col="dates" placeholder="Dates" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.dates_from, F.dates_to))}"></th>
     <th class="th-filter col-ideas"><input data-col="ideas" placeholder="Ideas / Info" value="${attr(F.ideas||'')}"></th>
     <th class="th-filter col-ows"><input data-col="ows_brkr" placeholder="Ows" value="${attr(F.ows_brkr||'')}"></th>
     <th class="th-filter col-bunker"><input data-col="bunker" placeholder="Bunker" value="${attr(F.bunker||'')}"></th>
     <th class="th-filter col-lsbrkr"><input data-col="ls_brkr" placeholder="LS" value="${attr(F.ls_brkr||'')}"></th>
-    <th class="th-filter col-update"><input type="text" readonly placeholder="Update"></th>
-    <th class="th-filter col-flags"><input type="text" readonly placeholder="Flags"></th>
-    <th class="th-filter col-stato"><input type="text" readonly placeholder="Status"></th>
+    <th class="th-filter col-update"><input class="filter-date-range" type="text" readonly data-col="update_date" placeholder="Update" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.update_from, F.update_to))}"></th>
+    <th class="th-filter col-flags"><input data-col="flags" placeholder="Flags" value="${attr(F.flags||'')}"></th>
+    <th class="th-filter col-stato"><input data-col="status" placeholder="Status" value="${attr(F.status||'')}"></th>
     <th class="col-del"></th>
   </tr></thead><tbody>`];
     for (const area of ordered) {
@@ -8884,7 +8885,16 @@ routes['inbox'] = function() {
     }
     html.push('</tbody></table>');
     $('#ib-tbl').innerHTML = html.join('');
-    $$('#ib-tbl th.th-filter input[data-col]').forEach(inp => inp.oninput = () => { F[inp.dataset.col] = inp.value; applyFilter(); });
+    // filtri colonna: stesse regole di ATL/PAC TNG (testo, DWT con > < intervalli, calendario per Dates/Update, Flags, Status)
+    $$('#ib-tbl th.th-filter input[data-col]').forEach(inp => {
+      if (inp.value) inp.classList.add('filter-active');
+      if (inp.classList.contains('filter-date-range')) {
+        const col = inp.dataset.col, fromK = col === 'dates' ? 'dates_from' : 'update_from', toK = col === 'dates' ? 'dates_to' : 'update_to';
+        inp.onclick = () => openFilterDateRange(inp, F[fromK], F[toK], (from, to) => { F[fromK] = from; F[toK] = to; inp.value = fmtFilterDateRange(from, to); inp.classList.toggle('filter-active', !!from); applyFilter(); });
+        return;
+      }
+      inp.oninput = () => { F[inp.dataset.col] = inp.value; inp.classList.toggle('filter-active', !!inp.value); applyFilter(); };
+    });
     applyFilter();
     if (sy) $('#ib-tbl').scrollTop = sy;
   };
@@ -8916,10 +8926,23 @@ routes['inbox'] = function() {
   $('#ib-tbl').addEventListener('scroll', hidePop, { passive: true });
   $('#ib-tbl').addEventListener('mousedown', hidePop, true);
   const applyFilter = () => {
-    const act = Object.entries(F).filter(([, v]) => v && v.trim());
+    const stLabel = r => { const st = stOf(r); return st === 'on_subs' ? 'on subs' : st === 'off_mkt' ? 'off mrkt' : st === 'fresh' ? 'fresh' : st === 'open' ? 'back open' : ''; };
+    const flagsTxt = (r, tr) => { const td = tr.querySelector('td.col-flags'); return (td ? td.textContent : '') + ' ' + (r.scrbr_ftd ? 'SCRBR' : '') + ' ' + (kindOf(r) === 'unsubs' ? 'F/F' : ''); };
+    const msgDay = r => (r.msg_time || '').slice(0, 10);
     $$('#ib-tbl tbody tr[data-row]').forEach(tr => {
       const r = byId[Number(tr.dataset.row)]; if (!r) return;
-      const show = act.every(([k, v]) => String(r[k] || '').toUpperCase().includes(v.trim().toUpperCase()));
+      let show = true;
+      if (F.vessel && !matchText(r.vessel, F.vessel)) show = false;
+      if (show && F.dwt_blt && !matchDwt(r.dwt_blt, F.dwt_blt)) show = false;
+      if (show && F.open_port && !matchText(r.open_port, F.open_port)) show = false;
+      if (show && F.dates_from) { const ft = F.dates_to || F.dates_from; if (!r.open_from || !r.open_to || r.open_from > ft || r.open_to < F.dates_from) show = false; }
+      if (show && F.ideas && !matchText(fmtIdeasPlain(r.ideas || '', msgDay(r)), F.ideas)) show = false;
+      if (show && F.ows_brkr && !matchText(r.ows_brkr, F.ows_brkr)) show = false;
+      if (show && F.bunker && !matchText(r.bunker, F.bunker)) show = false;
+      if (show && F.ls_brkr && !matchText(r.ls_brkr, F.ls_brkr)) show = false;
+      if (show && F.update_from) { const d = msgDay(r), ft = F.update_to || F.update_from; if (!d || d < F.update_from || d > ft) show = false; }
+      if (show && F.flags && !matchText(flagsTxt(r, tr), F.flags)) show = false;
+      if (show && F.status && !matchText(stLabel(r), F.status)) show = false;
       tr.style.display = show ? '' : 'none';
     });
     $$('#ib-tbl tbody tr.section-area').forEach(sec => {
@@ -9091,8 +9114,8 @@ async function pollInboxBadge() {
   if (typeof CURRENT_USER_ROLE === 'undefined' || CURRENT_USER_ROLE !== 'admin') return;
   try { const { count, error } = await sb.from('inbox_candidates').select('id', { count: 'exact', head: true }).eq('status', 'pending'); if (!error) updateInboxBadge(count || 0); } catch {}
 }
-setTimeout(pollInboxBadge, 4000);
-setInterval(pollInboxBadge, 30000);
+[1000, 3000, 6000, 10000].forEach(ms => setTimeout(pollInboxBadge, ms));   // primi tentativi finche' il ruolo non e' noto
+setInterval(pollInboxBadge, 20000);
 routes['admin'] = function() {
   // Defense in depth: even if a non-admin types #/admin in URL, redirect away
   if (CURRENT_USER_ROLE !== 'admin') {
