@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v30 -->
+<!-- build: 20260903-inbox-v31 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -8912,7 +8912,7 @@ function renderInboxCargo() {
   const msgDay = r => (r.msg_time || '').slice(0, 10);
   const kindOf = r => r.kind && r.kind !== 'cargo' ? r.kind : '';
   const stOf = r => { const s = r.cgo_status || (kindOf(r) === 'subs' ? 'on_subs' : kindOf(r) === 'unsubs' ? 'open' : ''); return (s === 'fresh' && msgDay(r) !== todayIso()) ? '' : s; };
-  const findC = r => (DATA.cargoes || []).find(c => norm(c.chrtrs) === norm(r.chrtrs) && w1(c.load_port) === w1(r.load_port) && (!r.disch_port || !c.disch_port || w1(c.disch_port) === w1(r.disch_port)) && overlap(c.laycan_from, c.laycan_to, r.laycan_from, r.laycan_to));
+  const findC = r => (DATA.cargoes || []).find(c => norm(c.chrtrs) === norm(r.chrtrs) && w1(c.load_port) === w1(r.load_port) && overlap(c.laycan_from, c.laycan_to, r.laycan_from, r.laycan_to));
   const persist = (r, patch) => { Object.assign(r, patch); sb.from('inbox_cargoes').update(patch).eq('id', r.id).then(() => {}); };
   const plain = s => String(s || '').replace(/<[^>]+>/g, '');
 
@@ -9139,7 +9139,7 @@ function renderInboxCargo() {
       const keep = [], old = [], fills = [];
       const FILL = ['laycan_from', 'laycan_to', 'load_port', 'disch_port', 'cgo', 'size', 'notes', 'section', 'area', 'basin'];
       for (const r of rows) {
-        const cur = keep.find(k => norm(k.chrtrs) === norm(r.chrtrs) && w1(k.load_port) === w1(r.load_port) && (!k.disch_port || !r.disch_port || w1(k.disch_port) === w1(r.disch_port)) && overlap(k.laycan_from, k.laycan_to, r.laycan_from, r.laycan_to));
+        const cur = keep.find(k => norm(k.chrtrs) === norm(r.chrtrs) && w1(k.load_port) === w1(r.load_port) && overlap(k.laycan_from, k.laycan_to, r.laycan_from, r.laycan_to));
         if (!cur) { keep.push(r); continue; }
         old.push(r.id);
         const patch = {}; for (const f of FILL) if ((cur[f] == null || cur[f] === '') && r[f] != null && r[f] !== '') { cur[f] = r[f]; patch[f] = r[f]; }
