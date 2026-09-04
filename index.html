@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v27 -->
+<!-- build: 20260903-inbox-v28 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -8311,7 +8311,8 @@ routes['accounts'] = function() {
   for (const a of DATA.accounts) {
     (groups[a.city || 'Altri'] ??= []).push(a);
   }
-  const KNOWN_CITIES = ['GENEVA','LONDON','BEIJING','CPH','GENOA','SPORE','ATHENS','Altri'];
+  const TBA = 'TO BE DISCUSSED / ASSIGNED';   // sezione a parte (non e' un ufficio): clienti ancora da assegnare
+  const KNOWN_CITIES = [TBA,'GENEVA','LONDON','BEIJING','CPH','GENOA','SPORE','ATHENS','Altri'];
   for (const c of KNOWN_CITIES) if (!groups[c]) groups[c] = [];
   const CITY_COLORS = {
     GENEVA:  { c: '#1A73E8', soft: 'rgba(26,115,232,.12)' },
@@ -8322,10 +8323,13 @@ routes['accounts'] = function() {
     SPORE:   { c: '#00B8D4', soft: 'rgba(0,184,212,.12)' },
     ATHENS:  { c: '#F4511E', soft: 'rgba(244,81,30,.12)' },
     Altri:   { c: '#5F6F93', soft: 'rgba(95,111,147,.12)' },
+    [TBA]:   { c: '#D81B9A', soft: 'rgba(216,27,154,.12)' },
   };
   let h = '';
-  for (const city of Object.keys(groups)) {
-    if (!groups[city].length && !KNOWN_CITIES.includes(city)) continue;
+  const cityOrder = [...KNOWN_CITIES, ...Object.keys(groups).filter(c => !KNOWN_CITIES.includes(c))];
+  for (const city of cityOrder) {
+    if (!groups[city]) continue;
+    if (!groups[city].length && (!KNOWN_CITIES.includes(city) || city === TBA)) continue;
     const col = CITY_COLORS[city] || CITY_COLORS.Altri;
     h += `<div class="acct-city-block" style="--city-c:${col.c};--city-soft:${col.soft}">
       <div class="acct-city-title"><span>${esc(city)}</span><span class="city-count">${groups[city].length}</span></div>`;
@@ -8340,7 +8344,7 @@ routes['accounts'] = function() {
         <button class="acct-add-client" data-col="${a.col}">+ Add client</button>
       </div>`;
     }
-    h += `<button class="acct-add-broker" data-city="${attr(city)}">+ Add broker</button>`;
+    if (city !== TBA) h += `<button class="acct-add-broker" data-city="${attr(city)}">+ Add broker</button>`;
     h += '</div></div>';
   }
   $('#content').innerHTML = `<div class="page-scroll">${h}</div>`;
