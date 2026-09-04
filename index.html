@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v26 -->
+<!-- build: 20260903-inbox-v27 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2726,7 +2726,7 @@ async function loadDataFromCloud() {
       DATA.cargoes = cloudC;
       DATA.cargoes.forEach(normCgoSection);
       dedupeData();
-      DATA.accounts = a.data || [];
+      DATA.accounts = dedupeAccounts(a.data || []);
       if (r.data && r.data.length) {
         DATA.rundowns = DATA.rundowns || {};
         for (const row of r.data) DATA.rundowns[row.key] = row.text || '';
@@ -8296,7 +8296,17 @@ function addClient(col) {
   });
 }
 
+// LS Accounts: un broker per colonna, clienti senza doppioni (difesa contro i re-import doppi del passato)
+function dedupeAccounts(list) {
+  const seen = new Map();
+  for (const x of list || []) {
+    const k = (x.col ?? '') + '|' + (x.city || '') + '|' + (x.broker || '');
+    if (!seen.has(k)) seen.set(k, { ...x, clients: [...new Set((x.clients || []).map(c => String(c).trim()).filter(Boolean))] });
+  }
+  return [...seen.values()].sort((p, q) => (p.col || 0) - (q.col || 0));
+}
 routes['accounts'] = function() {
+  DATA.accounts = dedupeAccounts(DATA.accounts);
   const groups = {};
   for (const a of DATA.accounts) {
     (groups[a.city || 'Altri'] ??= []).push(a);
