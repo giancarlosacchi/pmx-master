@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v28 -->
+<!-- build: 20260903-inbox-v29 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2182,6 +2182,11 @@ table.grid th.col-c-stato { overflow: hidden; }
 }
 .acct-add-broker:hover { color: var(--gold); border-color: var(--gold); }
 
+/* TO BE DISCUSSED / ASSIGNED: blocco compatto in cima, clienti su piu' colonne */
+.acct-tba .acct-grid { display: block; }
+.acct-tba .acct-card { width: 100%; max-width: none; }
+.acct-tba .acct-clients { columns: 5 160px; column-gap: 18px; }
+.acct-tba .acct-clients li { break-inside: avoid; }
 /* ===== Colori uffici LS Accounts ===== */
 .acct-city-block { padding-left: 14px; border-left: 4px solid var(--city-c, var(--gold)); margin-bottom: 24px; }
 .acct-city-title {
@@ -8331,7 +8336,7 @@ routes['accounts'] = function() {
     if (!groups[city]) continue;
     if (!groups[city].length && (!KNOWN_CITIES.includes(city) || city === TBA)) continue;
     const col = CITY_COLORS[city] || CITY_COLORS.Altri;
-    h += `<div class="acct-city-block" style="--city-c:${col.c};--city-soft:${col.soft}">
+    h += `<div class="acct-city-block${city === TBA ? ' acct-tba' : ''}" style="--city-c:${col.c};--city-soft:${col.soft}">
       <div class="acct-city-title"><span>${esc(city)}</span><span class="city-count">${groups[city].length}</span></div>`;
     h += '<div class="acct-grid">';
     for (const a of groups[city]) {
