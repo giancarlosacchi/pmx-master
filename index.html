@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v20 -->
+<!-- build: 20260903-inbox-v21 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -9013,7 +9013,16 @@ routes['inbox'] = function() {
         if (!area) { alert('Choose the area first (double-click the vessel name).'); return; }
         const patch = { vessel: r.vessel, area, basin: PAC_AREAS.has(area) ? 'PAC' : 'ATL', update_date: upd };
         for (const k of ['dwt_blt', 'open_port', 'open_from', 'open_to', 'bunker', 'ows_brkr']) if (r[k]) patch[k] = r[k];   // vuoto in Inbox → resta il valore in lista
-        if (r.ideas) patch.ideas = r.ideas;                       // se il messaggio non aveva offerte, le ideas esistenti restano
+        if (r.ideas) {
+          // offerta SOLO periodo su nave che in lista ha un'offerta viaggio: non sostituisce, si aggiunge dopo (Giancarlo 4 set 2026)
+          const isPer = t => /\b(?:\d+\s*)?(?:MOS|MONS|MONTHS|PERIOD|YRS?|YEARS?)\b|%\s*(?:BKI|CURVE)|CURVE VALUE|\bMIN\s*\d+\s*\/\s*(?:ABT|MAX)\s*\d+/i.test(t);
+          const segs = t => String(t || '').split(/\s*\/\/\s*/).filter(Boolean);
+          const newSegs = segs(r.ideas), oldSegs = ex ? segs(ex.ideas) : [];
+          if (ex && oldSegs.length && newSegs.every(isPer) && oldSegs.some(x => !isPer(x))) {
+            const keep = oldSegs.filter(x => !isPer(x));
+            patch.ideas = [...keep, ...newSegs.filter(n => !keep.includes(n))].join(' // ');
+          } else patch.ideas = r.ideas;
+        }                                                          // se il messaggio non aveva offerte, le ideas esistenti restano
         if (r.ls_brkr) patch.ls_brkr = r.ls_brkr.toUpperCase();
         if (st === 'open') { patch.status = null; patch.subs = null; }
         else if (st) { patch.status = st; if (st === 'on_subs') patch.subs = 'S'; }
