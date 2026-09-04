@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v25 -->
+<!-- build: 20260903-inbox-v26 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -8859,6 +8859,7 @@ routes['inbox'] = function() {
       #ib-tbl tr.ib-noarea td.col-vessel { color: var(--red); }
       #ib-tbl .ib-pill { display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 8px; font-size: 9.5px; font-weight: 700; color: #fff; vertical-align: middle; cursor: help; }
       #ib-tbl table.grid th.col-del, #ib-tbl table.grid td.col-del { width: 46px; max-width: 46px; min-width: 46px; overflow: visible; white-space: nowrap; padding-left: 2px !important; padding-right: 2px !important; }
+      #ib-tbl .ib-inherit { opacity: .55; font-style: italic; }
       #ib-tbl .ib-ok { color: var(--green,#2a9d5c); font-weight: 700; }
       #ib-tbl .ib-no { color: var(--red); font-weight: 700; margin-left: 2px; }
       #ib-tbl td.editing input, #ib-tbl td.editing select { width: 100%; box-sizing: border-box; background: var(--bg-3); border: 1px solid var(--gold); color: var(--text); border-radius: 4px; padding: 2px 4px; font: inherit; font-size: 12px; }
@@ -8905,8 +8906,8 @@ routes['inbox'] = function() {
     <td ${E('open_port', 'col-open')}>${esc(r.open_port || '')}</td>
     <td ${E('open_from', 'col-dates')}>${fmtDateRange(r.open_from, r.open_to)}</td>
     <td ${E('ideas', 'col-ideas' + (isIdeasOffers(r.ideas, (r.msg_time || '').slice(0, 10) || r.update_date) ? ' cell-offers' : ''))}><div class="ideas-text">${fmtIdeas(r.ideas || '', (r.msg_time || '').slice(0, 10) || r.update_date)}</div></td>
-    <td ${E('ows_brkr', 'dim col-ows')}>${esc(r.ows_brkr || '')}</td>
-    <td ${E('bunker', 'dim col-bunker')}>${esc(r.bunker || '')}</td>
+    <td ${E('ows_brkr', 'dim col-ows')}>${r.ows_brkr ? esc(r.ows_brkr) : (ex && ex.ows_brkr ? `<span class="ib-inherit" title="From the list (message had no owner)">${esc(ex.ows_brkr)}</span>` : '')}</td>
+    <td ${E('bunker', 'dim col-bunker')}>${r.bunker ? esc(r.bunker) : (ex && ex.bunker ? `<span class="ib-inherit" title="From the list (message had no bunker)">${esc(ex.bunker)}</span>` : '')}</td>
     <td ${E('ls_brkr', 'dim col-lsbrkr')}>${esc(r.ls_brkr || '')}</td>
     <td class="dim col-update">${fmtUpdate(r.update_date)}</td>
     <td class="col-flags"><div class="flags-cell has-label">${flags}</div></td>
