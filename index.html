@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v19 -->
+<!-- build: 20260903-inbox-v20 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -4477,20 +4477,20 @@ function _daysAgo(iso) {
 //   - ieri (1 giorno fa): "YDAY OFFERS USD..." NON in grassetto
 //   - 2+ giorni fa: "LAST OFFERS USD..." NON in grassetto
 // Si applica solo ai segmenti la cui PRIMA parola è "OFFERS" (non a "YDAY OFFERS" o "LAST OFFERS" già scritti manualmente).
+// Regola del mattino (Giancarlo 4 set 2026): ogni giorno OFFERS → YDAY OFFERS → LAST OFFERS.
+// Vale anche per GUIDE e IDEA. Il testo salvato resta quello del giorno del messaggio: il prefisso
+// si calcola dall'eta' (update_date in lista, data messaggio in Inbox).
+function rollIdeasSeg(seg, age) {
+  if (age <= 0) return seg;
+  if (age === 1) return seg.replace(/^(\s*)YDAY\s+(OFFERS?|GUIDE|IDEA)\b/i, '$1LAST $2').replace(/^(\s*)(OFFERS?|GUIDE|IDEA)\b/i, '$1YDAY $2');
+  return seg.replace(/^(\s*)(?:YDAY\s+)?(OFFERS?|GUIDE|IDEA)\b/i, '$1LAST $2');
+}
 function fmtIdeas(text, updateDateIso) {
   if (!text) return '';
   const age = updateDateIso ? _daysAgo(updateDateIso) : 0;
   const segments = String(text).split(/(\s*\/\/\s*)/);
-  // Trasformazione del testo: OFFER(S) → YDAY/LAST OFFER(S). Il bold è applicato
-  // a livello di cella (classe .cell-offers) — vedi isIdeasOffers() + CSS.
-  // Accetta sia "OFFER" sia "OFFERS" (singolare o plurale).
-  return segments.map(seg => {
-    const trimmed = seg.trim();
-    if (!/^OFFERS?\b/i.test(trimmed)) return esc(seg);
-    if (age <= 0) return esc(seg);                                       // oggi
-    if (age === 1) return esc(seg.replace(/^(\s*)(OFFERS?)/i, '$1YDAY $2'));  // ieri: prefix YDAY
-    return esc(seg.replace(/^(\s*)(OFFERS?)/i, '$1LAST $2'));            // 2+ giorni: prefix LAST
-  }).join('');
+  // Il bold è applicato a livello di cella (classe .cell-offers) — vedi isIdeasOffers() + CSS.
+  return segments.map(seg => esc(rollIdeasSeg(seg, age))).join('');
 }
 // Versione plain-text di fmtIdeas: applica le stesse regole di prefisso
 // YDAY/LAST ma SENZA escape HTML — usata per pre-popolare l'editor inline
@@ -4500,13 +4500,7 @@ function fmtIdeasPlain(text, updateDateIso) {
   if (!text) return '';
   const age = updateDateIso ? _daysAgo(updateDateIso) : 0;
   const segments = String(text).split(/(\s*\/\/\s*)/);
-  return segments.map(seg => {
-    const trimmed = seg.trim();
-    if (!/^OFFERS?\b/i.test(trimmed)) return seg;
-    if (age <= 0) return seg;
-    if (age === 1) return seg.replace(/^(\s*)(OFFERS?)/i, '$1YDAY $2');
-    return seg.replace(/^(\s*)(OFFERS?)/i, '$1LAST $2');
-  }).join('');
+  return segments.map(seg => rollIdeasSeg(seg, age)).join('');
 }
 // Vero solo quando la cella mostra "OFFER(S) …" (oggi). YDAY/LAST OFFER(S) → falso.
 function isIdeasOffers(text, updateDateIso) {
@@ -8838,7 +8832,7 @@ routes['inbox'] = function() {
     <td ${E('dwt_blt', 'dim col-dwt')}>${esc(r.dwt_blt || '')}</td>
     <td ${E('open_port', 'col-open')}>${esc(r.open_port || '')}</td>
     <td ${E('open_from', 'col-dates')}>${fmtDateRange(r.open_from, r.open_to)}</td>
-    <td ${E('ideas', 'col-ideas' + (isIdeasOffers(r.ideas, r.update_date) ? ' cell-offers' : ''))}><div class="ideas-text">${fmtIdeas(r.ideas || '', r.update_date)}</div></td>
+    <td ${E('ideas', 'col-ideas' + (isIdeasOffers(r.ideas, (r.msg_time || '').slice(0, 10) || r.update_date) ? ' cell-offers' : ''))}><div class="ideas-text">${fmtIdeas(r.ideas || '', (r.msg_time || '').slice(0, 10) || r.update_date)}</div></td>
     <td ${E('ows_brkr', 'dim col-ows')}>${esc(r.ows_brkr || '')}</td>
     <td ${E('bunker', 'dim col-bunker')}>${esc(r.bunker || '')}</td>
     <td ${E('ls_brkr', 'dim col-lsbrkr')}>${esc(r.ls_brkr || '')}</td>
@@ -9017,8 +9011,8 @@ routes['inbox'] = function() {
         else if (p.open_port || p.area) addVessel({ vessel: r.vessel, ...p });
       } else {
         if (!area) { alert('Choose the area first (double-click the vessel name).'); return; }
-        const patch = { vessel: r.vessel, dwt_blt: r.dwt_blt, open_port: r.open_port, open_from: r.open_from, open_to: r.open_to,
-          area, basin: PAC_AREAS.has(area) ? 'PAC' : 'ATL', bunker: r.bunker, ows_brkr: r.ows_brkr, update_date: upd };
+        const patch = { vessel: r.vessel, area, basin: PAC_AREAS.has(area) ? 'PAC' : 'ATL', update_date: upd };
+        for (const k of ['dwt_blt', 'open_port', 'open_from', 'open_to', 'bunker', 'ows_brkr']) if (r[k]) patch[k] = r[k];   // vuoto in Inbox → resta il valore in lista
         if (r.ideas) patch.ideas = r.ideas;                       // se il messaggio non aveva offerte, le ideas esistenti restano
         if (r.ls_brkr) patch.ls_brkr = r.ls_brkr.toUpperCase();
         if (st === 'open') { patch.status = null; patch.subs = null; }
