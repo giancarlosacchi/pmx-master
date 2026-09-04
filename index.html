@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v16 -->
+<!-- build: 20260903-inbox-v17 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -9046,10 +9046,19 @@ routes['inbox'] = function() {
     const { data, error } = await sb.from('inbox_candidates').select('*').eq('status', 'pending').order('msg_time', { ascending: false }).order('id', { ascending: false });
     if (error) { if (!$('#ib-tbl table') && !$('#ib-empty')) $('#ib-tbl').innerHTML = '<div style="padding:16px;color:var(--red)">' + esc(error.message) + '</div>'; return; }
     let rows = data || [];
-    { const seen = new Set(), keep = [], old = [];
-      // stessa nave piu' volte: vale SOLO l'ultimo messaggio (le righe sono gia' ordinate dalla piu' recente)
-      for (const r of rows) { const k = (r.kind || 'position') + '|' + norm(r.vessel); if (seen.has(k)) old.push(r.id); else { seen.add(k); keep.push(r); } }
+    { const byKey = new Map(), keep = [], old = [], fills = [];
+      // stessa nave piu' volte (qualunque kind): vale SOLO l'ultimo messaggio (righe gia' ordinate dalla piu' recente).
+      // Se l'ultimo e' un cambio stato (subs/remove) senza porto/dwt, eredita i dati dalla posizione precedente.
+      const FILL = ['dwt_blt', 'open_port', 'open_from', 'open_to', 'area', 'basin', 'ideas', 'ows_brkr', 'bunker', 'scrbr_ftd'];
+      for (const r of rows) {
+        const k = norm(r.vessel), cur = byKey.get(k);
+        if (!cur) { byKey.set(k, r); keep.push(r); continue; }
+        old.push(r.id);
+        const patch = {}; for (const f of FILL) if ((cur[f] == null || cur[f] === '') && r[f] != null && r[f] !== '') { cur[f] = r[f]; patch[f] = r[f]; }
+        if (Object.keys(patch).length) fills.push([cur.id, patch]);
+      }
       if (old.length) { sb.from('inbox_candidates').update({ status: 'superseded' }).in('id', old).then(() => {}); }
+      for (const [id, patch] of fills) sb.from('inbox_candidates').update(patch).eq('id', id).then(() => {});
       rows = keep; }
     if ($('#ib-tbl td.editing')) return;            // non ridisegnare mentre stai modificando
     const ids = new Set(rows.map(r => r.id));
