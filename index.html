@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v18 -->
+<!-- build: 20260903-inbox-v19 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -8818,7 +8818,8 @@ routes['inbox'] = function() {
   const findV = (name, dwt) => (DATA.vessels || []).find(x => norm(x.vessel) === norm(name) && (dwt == null || dwtK(dwt) == null || dwtK(x.dwt_blt) == null || Math.abs(dwtK(x.dwt_blt) - dwtK(dwt)) <= 3));
   const plain = s => String(s || '').replace(/<[^>]+>/g, '');
   const kindOf = r => { const k = r.kind && r.kind !== 'position' ? r.kind : ''; return k === 'remove' ? 'subs' : k; };   // 'gone' = on subs, mai cancellazione
-  const stOf = r => r.vsl_status || (kindOf(r) === 'subs' ? 'on_subs' : kindOf(r) === 'unsubs' ? 'open' : '');
+  // 'fresh' vale solo il giorno del messaggio (come in lista: il giorno dopo decade)
+  const stOf = r => { const s = r.vsl_status || (kindOf(r) === 'subs' ? 'on_subs' : kindOf(r) === 'unsubs' ? 'open' : ''); return (s === 'fresh' && (r.msg_time || '').slice(0, 10) !== todayIso()) ? '' : s; };
   const persist = (r, patch) => { Object.assign(r, patch); sb.from('inbox_candidates').update(patch).eq('id', r.id).then(() => {}); };
 
   const rowHtml = (r) => {
