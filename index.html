@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v31 -->
+<!-- build: 20260903-inbox-v32 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -4559,7 +4559,8 @@ function _daysAgo(iso) {
 // si calcola dall'eta' (update_date in lista, data messaggio in Inbox).
 function rollIdeasSeg(seg, age) {
   if (age <= 0) return seg;
-  if (age === 1) return seg.replace(/^(\s*)YDAY\s+(OFFERS?|GUIDE|IDEA)\b/i, '$1LAST $2').replace(/^(\s*)(OFFERS?|GUIDE|IDEA)\b/i, '$1YDAY $2');
+  // Monday: offers older than today are always LAST (never YDAY — Friday's offers)
+  if (age === 1 && new Date(todayIso() + 'T00:00:00Z').getUTCDay() !== 1) return seg.replace(/^(\s*)YDAY\s+(OFFERS?|GUIDE|IDEA)\b/i, '$1LAST $2').replace(/^(\s*)(OFFERS?|GUIDE|IDEA)\b/i, '$1YDAY $2');
   return seg.replace(/^(\s*)(?:YDAY\s+)?(OFFERS?|GUIDE|IDEA)\b/i, '$1LAST $2');
 }
 function fmtIdeas(text, updateDateIso) {
