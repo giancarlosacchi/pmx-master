@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v32 -->
+<!-- build: 20260903-inbox-v33 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -1117,6 +1117,7 @@ pre.rundown { white-space: pre-wrap; font-family: inherit;
 .global-search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: var(--text-mute); pointer-events: none; }
 .topbar .primary.round-add { width: 36px; height: 36px; border-radius: 50%; padding: 0; display: inline-flex; align-items: center; justify-content: center; flex: none; }
 .muted { color: var(--text-mute); } .dim { color: var(--text-dim); }
+table.grid td.col-ows, table.grid td.col-bunker { color: var(--text); }   /* same colour/weight as every other cell */
 .cell-truncate { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cell-truncate:hover { white-space: normal; overflow: visible; }
 .notice { background: rgba(56,189,248,.08); border: 1px solid rgba(56,189,248,.3); color: #bae6fd;
@@ -8875,15 +8876,16 @@ routes['vsl-descr'] = function() {
 window.__ibMode = window.__ibMode || 'vsl';
 function inboxModeBar() {
   const m = window.__ibMode;
-  return `<span class="ib-mode" style="display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-right:10px;font-size:11.5px;font-weight:700">
+  return `<span class="ib-mode" style="display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-left:12px;vertical-align:5px;font-size:11.5px;font-weight:700;letter-spacing:0">
     <button type="button" data-mode="vsl" style="padding:3px 10px;border:0;cursor:pointer;background:${m === 'vsl' ? 'var(--gold,#c9a227)' : 'transparent'};color:${m === 'vsl' ? '#fff' : 'var(--text-dim)'}">VSL</button>
     <button type="button" data-mode="cgo" style="padding:3px 10px;border:0;cursor:pointer;background:${m === 'cgo' ? 'var(--gold,#c9a227)' : 'transparent'};color:${m === 'cgo' ? '#fff' : 'var(--text-dim)'}">CGO</button></span>`;
 }
 function bindInboxModeBar() {
-  $$('#topbar-actions .ib-mode button').forEach(b => b.onclick = () => { if (window.__ibMode === b.dataset.mode) return; window.__ibMode = b.dataset.mode; routes['inbox'](); });
+  $$('.ib-mode button').forEach(b => b.onclick = () => { if (window.__ibMode === b.dataset.mode) return; window.__ibMode = b.dataset.mode; routes['inbox'](); });
 }
 function renderInboxCargo() {
-  $('#topbar-actions').innerHTML = inboxModeBar() + `<span id="ib-live" title="Reader status" style="font-size:11.5px;color:var(--text-mute);margin-right:8px">● checking…</span><span class="count-pill" id="ib-cnt">—</span>`;
+  $('#page-title').insertAdjacentHTML('beforeend', inboxModeBar());
+  $('#topbar-actions').innerHTML = `<span id="ib-live" title="Reader status" style="font-size:11.5px;color:var(--text-mute);margin-right:8px">● checking…</span><span class="count-pill" id="ib-cnt">—</span>`;
   bindInboxModeBar();
   $('#content').innerHTML = `
     <style>
@@ -8893,7 +8895,7 @@ function renderInboxCargo() {
       #ib-tbl table.grid th.col-del, #ib-tbl table.grid td.col-del { width: 46px; max-width: 46px; min-width: 46px; overflow: visible; white-space: nowrap; padding-left: 2px !important; padding-right: 2px !important; }
       #ib-tbl .ib-ok { color: var(--green,#2a9d5c); font-weight: 700; }
       #ib-tbl .ib-no { color: var(--red); font-weight: 700; margin-left: 2px; }
-      #ib-tbl .ib-inherit { opacity: .55; font-style: italic; }
+      #ib-tbl .ib-inherit { opacity: 1; font-style: normal; }
       #ib-tbl td.editing input, #ib-tbl td.editing select { width: 100%; box-sizing: border-box; background: var(--bg-3); border: 1px solid var(--gold); color: var(--text); border-radius: 4px; padding: 2px 4px; font: inherit; font-size: 12px; }
       #ib-tbl td.editing .ib-vsl { display: flex; flex-direction: column; gap: 3px; } #ib-tbl td.editing .ib-vsl input, #ib-tbl td.editing .ib-vsl select { width: 100% !important; }
       #ib-tbl table.grid td.col-c-chrtrs.editing { overflow: visible; white-space: normal; max-width: none; }
@@ -9164,7 +9166,8 @@ function renderInboxCargo() {
 routes['inbox'] = function() {
   if (CURRENT_USER_ROLE !== 'admin') { location.hash = '#/atl-tng'; return; }
   if (window.__ibMode === 'cgo') return renderInboxCargo();
-  $('#topbar-actions').innerHTML = inboxModeBar() + `<span id="ib-live" title="Reader status" style="font-size:11.5px;color:var(--text-mute);margin-right:8px">● checking…</span><span class="count-pill" id="ib-cnt">—</span>`;
+  $('#page-title').insertAdjacentHTML('beforeend', inboxModeBar());
+  $('#topbar-actions').innerHTML = `<span id="ib-live" title="Reader status" style="font-size:11.5px;color:var(--text-mute);margin-right:8px">● checking…</span><span class="count-pill" id="ib-cnt">—</span>`;
   bindInboxModeBar();
   $('#content').innerHTML = `
     <style>
@@ -9174,7 +9177,7 @@ routes['inbox'] = function() {
       #ib-tbl tr.ib-noarea td.col-vessel { color: var(--red); }
       #ib-tbl .ib-pill { display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 8px; font-size: 9.5px; font-weight: 700; color: #fff; vertical-align: middle; cursor: help; }
       #ib-tbl table.grid th.col-del, #ib-tbl table.grid td.col-del { width: 46px; max-width: 46px; min-width: 46px; overflow: visible; white-space: nowrap; padding-left: 2px !important; padding-right: 2px !important; }
-      #ib-tbl .ib-inherit { opacity: .55; font-style: italic; }
+      #ib-tbl .ib-inherit { opacity: 1; font-style: normal; }
       #ib-tbl .ib-ok { color: var(--green,#2a9d5c); font-weight: 700; }
       #ib-tbl .ib-no { color: var(--red); font-weight: 700; margin-left: 2px; }
       #ib-tbl td.editing input, #ib-tbl td.editing select { width: 100%; box-sizing: border-box; background: var(--bg-3); border: 1px solid var(--gold); color: var(--text); border-radius: 4px; padding: 2px 4px; font: inherit; font-size: 12px; }
