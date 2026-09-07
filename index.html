@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v33 -->
+<!-- build: 20260903-inbox-v34 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -8884,7 +8884,7 @@ function bindInboxModeBar() {
   $$('.ib-mode button').forEach(b => b.onclick = () => { if (window.__ibMode === b.dataset.mode) return; window.__ibMode = b.dataset.mode; routes['inbox'](); });
 }
 function renderInboxCargo() {
-  $('#page-title').insertAdjacentHTML('beforeend', inboxModeBar());
+  $$('#page-title .ib-mode').forEach(x => x.remove()); $('#page-title').insertAdjacentHTML('beforeend', inboxModeBar());
   $('#topbar-actions').innerHTML = `<span id="ib-live" title="Reader status" style="font-size:11.5px;color:var(--text-mute);margin-right:8px">● checking…</span><span class="count-pill" id="ib-cnt">—</span>`;
   bindInboxModeBar();
   $('#content').innerHTML = `
@@ -9166,7 +9166,7 @@ function renderInboxCargo() {
 routes['inbox'] = function() {
   if (CURRENT_USER_ROLE !== 'admin') { location.hash = '#/atl-tng'; return; }
   if (window.__ibMode === 'cgo') return renderInboxCargo();
-  $('#page-title').insertAdjacentHTML('beforeend', inboxModeBar());
+  $$('#page-title .ib-mode').forEach(x => x.remove()); $('#page-title').insertAdjacentHTML('beforeend', inboxModeBar());
   $('#topbar-actions').innerHTML = `<span id="ib-live" title="Reader status" style="font-size:11.5px;color:var(--text-mute);margin-right:8px">● checking…</span><span class="count-pill" id="ib-cnt">—</span>`;
   bindInboxModeBar();
   $('#content').innerHTML = `
