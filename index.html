@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v34 -->
+<!-- build: 20260903-inbox-v35 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2429,7 +2429,7 @@ body:not(.logged-in) .app { visibility: hidden; }
 .cloud-toast.error { border-color: rgba(239,83,80,.35); color: #C5392B; }
 .cloud-toast.ok { border-color: rgba(45,138,79,.35); color: #2D8A4F; }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -2592,8 +2592,11 @@ async function bootAppAfterAuth(user, allowedRow) {
   if (typeof setRoute === 'function') {
     try { setRoute(); } catch(e) { console.error('setRoute failed:', e); }
   }
-  // 3) Start cloud sync (writes go to Supabase from now on)
-  startCloudSync();
+  // 3) Start cloud sync (writes go to Supabase from now on) — MAI se il primo load e' fallito:
+  //    scriveremmo i dati di cache (id 1..N) sopra le righe vere dei colleghi.
+  if (window._cloudLoadFailed) {
+    showReadOnlyBanner('Cloud not reachable — page is READ ONLY until you reload with a working connection.');
+  } else startCloudSync();
   // 4) Start realtime subscription (changes from other users propagate to us)
   startRealtimeSync();
   // 5) Snapshot orario per la version history (fire-and-forget)
@@ -2688,6 +2691,9 @@ function dedupeData(){
       if (!fromBadBatch) return true;
       return !syncedKeys[entKey(r)];
     });
+    // Le righe scartate restano in cloud: sono solo nascoste qui (mai un DELETE in cloud a causa della dedupe)
+    window._dedupeDropped = window._dedupeDropped || new Set();
+    arr.forEach(function(r){ if (kept.indexOf(r) < 0 && r && r.id != null) window._dedupeDropped.add(r.id); });
     DATA[t] = kept;
     if (DATA[t].length !== before) {
       try { console.info('[dedupe] ' + t + ': ' + before + ' -> ' + DATA[t].length + ' (' + (before - DATA[t].length) + ' doppioni rimossi)'); } catch(e){}
@@ -2738,6 +2744,14 @@ async function loadDataFromCloud() {
         for (const row of r.data) DATA.rundowns[row.key] = row.text || '';
       }
       window.DATA = DATA;
+      window._acctCloudIds = new Set((a.data || []).map(x => x.id).filter(x => x != null));
+      // Lo snapshot di sync deve rispecchiare ESATTAMENTE quello che e' in cloud adesso:
+      // altrimenti la prima modifica successiva rispedirebbe centinaia di righe (e riporterebbe indietro quelle dei colleghi)
+      if (_lastSyncSnapshot) {
+        _lastSyncSnapshot.vessels = new Map((DATA.vessels||[]).map(v => [v.id, _hash(v)]));
+        _lastSyncSnapshot.cargoes = new Map((DATA.cargoes||[]).map(c => [c.id, _hash(c)]));
+      }
+      window._cloudLoadFailed = false;
       // Update localStorage cache so reloads are fast
       saveData(DATA);
     } else {
@@ -2745,6 +2759,8 @@ async function loadDataFromCloud() {
     }
   } catch (err) {
     console.error('Cloud load failed:', err);
+    if (window._cloudLoadFailed !== false) window._cloudLoadFailed = true;   // primo load mai riuscito → niente scritture
+    if (isAuthError(err)) showSessionExpired(); else
     cloudToast('Cloud load failed — using local data. ' + (err.message || ''), { kind: 'error', duration: 5000 });
   }
 }
@@ -2817,82 +2833,113 @@ function scheduleCloudSync() {
   _syncTimer = setTimeout(syncDirtyToCloud, 50);
 }
 
+const _pendingInsert = new Set();   // tmp id con INSERT in volo (evita doppio insert se si edita nel frattempo)
+let _syncRetry = 0, _syncRetryTimer = null;
+function _diffRow(prevJson, cur, COLS) {
+  // Solo i campi cambiati rispetto all'ultimo stato noto del cloud (niente clobber delle colonne dei colleghi)
+  let prev = null; try { prev = prevJson ? JSON.parse(prevJson) : null; } catch(e) {}
+  const out = {};
+  for (const k of COLS) {
+    if (cur[k] === undefined) continue;
+    if (!prev || _hash(prev[k] === undefined ? null : prev[k]) !== _hash(cur[k])) out[k] = cur[k];
+  }
+  return out;
+}
 async function syncDirtyToCloud() {
   if (!_lastSyncSnapshot) return;
-  // Se è in corso un restore, NON sincronizzare: evita che le modifiche locali
-  // vadano in cloud durante la finestra di delete+insert del restore.
   if (window._restoring) return;
+  if (window._cloudLoadFailed) return;
   const VESSEL_COLS = ['vessel','dwt_blt','open_port','open_from','open_to','ideas','ows_brkr','bunker','ls_brkr','update_date','area','basin','status','subs','yard','copy_text','ukr_trader','rus_trader','iran_trader','scr_ftd','ex_our_cp','grain_clean','neo_pnm_ftd','scrbr_ftd','oz_grain','bhp','co2_ftd'];
   const CARGO_COLS  = ['chrtrs','laycan_from','laycan_to','load_port','disch_port','cgo','size','notes','ls_brkr','update_date','date','area','section','basin','status','copy_text'];
-
+  const dropped = window._dedupeDropped || new Set();
   const tasks = [];
-  // Vessels: detect added/modified/deleted
-  const prevV = _lastSyncSnapshot.vessels;
-  const currV = new Map((DATA.vessels||[]).map(v => [v.id, v]));
-  for (const [id, v] of currV) {
-    const h = _hash(v);
-    if (!prevV.has(id) || prevV.get(id) !== h) {
-      const row = {}; for (const k of VESSEL_COLS) if (v[k] !== undefined) row[k] = v[k];
-      if (typeof v.id === 'number' && v.id > 0) {
-        // ID già del cloud → upsert sicuro
-        tasks.push(sb.from('vessels').upsert({ id: v.id, ...row }).then(handleErr('vessel upsert')));
+  let failed = 0;
+  const isNum = id => typeof id === 'number' && id > 0;
+
+  const planTable = (table, COLS) => {
+    const prev = _lastSyncSnapshot[table];
+    const curr = new Map((DATA[table]||[]).map(r => [r.id, r]));
+    for (const [id, r] of curr) {
+      const h = _hash(r);
+      if (prev.has(id) && prev.get(id) === h) continue;
+      if (isNum(id)) {
+        if (!prev.has(id)) {
+          // riga con id cloud mai vista dallo snapshot (es. arrivata via realtime prima dello snapshot): upsert completo
+          const row = {}; for (const k of COLS) if (r[k] !== undefined) row[k] = r[k];
+          tasks.push(sb.from(table).upsert({ id, ...row }).then(res => { if (res.error) { failed++; return handleErr(table + ' upsert')(res); } prev.set(id, h); }));
+        } else {
+          const diff = _diffRow(prev.get(id), r, COLS);
+          if (!Object.keys(diff).length) { prev.set(id, h); continue; }
+          tasks.push(sb.from(table).update(diff).eq('id', id).select('id').then(res => {
+            if (res.error) { failed++; return handleErr(table + ' update')(res); }
+            if (!res.data || !res.data.length) { failed++; cloudToast('Row no longer exists in cloud (deleted by a colleague?) — reload the page.', { kind: 'error', duration: 6000 }); return; }
+            prev.set(id, h);
+          }));
+        }
       } else {
-        // ID temporaneo (tmp_...) → INSERT senza id, Postgres assegna l'ID definitivo.
-        // Quando torna la risposta, ripiantiamo l'ID definitivo in DATA, UNDO_STACK, snapshot.
-        const oldId = v.id;
-        tasks.push(sb.from('vessels').insert(row).select().single().then(({data, error}) => {
-          if (error) return handleErr('vessel insert')({error});
-          if (data) _remapId('vessels', oldId, data.id, data);
+        if (_pendingInsert.has(id)) continue;   // insert gia' in volo: al ritorno _remapId riallinea, poi si risincronizza il resto
+        _pendingInsert.add(id);
+        const row = {}; for (const k of COLS) if (r[k] !== undefined) row[k] = r[k];
+        const oldId = id;
+        tasks.push(sb.from(table).insert(row).select().single().then(({data, error}) => {
+          _pendingInsert.delete(oldId);
+          if (error) { failed++; return handleErr(table + ' insert')({error}); }
+          if (data) _remapId(table, oldId, data.id, data);
         }));
       }
     }
-  }
-  for (const [id] of prevV) {
-    if (!currV.has(id)) {
-      tasks.push(sb.from('vessels').delete().eq('id', id).then(handleErr('vessel delete')));
+    for (const [id] of prev) {
+      if (curr.has(id)) continue;
+      if (!isNum(id) || dropped.has(id)) { prev.delete(id); continue; }   // mai cancellare in cloud per colpa della dedupe o di id temporanei
+      tasks.push(sb.from(table).delete().eq('id', id).then(res => { if (res.error) { failed++; return handleErr(table + ' delete')(res); } prev.delete(id); }));
     }
-  }
-  // Cargoes: same logic
-  const prevC = _lastSyncSnapshot.cargoes;
-  const currC = new Map((DATA.cargoes||[]).map(c => [c.id, c]));
-  for (const [id, c] of currC) {
-    const h = _hash(c);
-    if (!prevC.has(id) || prevC.get(id) !== h) {
-      const row = {}; for (const k of CARGO_COLS) if (c[k] !== undefined) row[k] = c[k];
-      if (typeof c.id === 'number' && c.id > 0) {
-        tasks.push(sb.from('cargoes').upsert({ id: c.id, ...row }).then(handleErr('cargo upsert')));
-      } else {
-        const oldId = c.id;
-        tasks.push(sb.from('cargoes').insert(row).select().single().then(({data, error}) => {
-          if (error) return handleErr('cargo insert')({error});
-          if (data) _remapId('cargoes', oldId, data.id, data);
-        }));
-      }
-    }
-  }
-  for (const [id] of prevC) {
-    if (!currC.has(id)) {
-      tasks.push(sb.from('cargoes').delete().eq('id', id).then(handleErr('cargo delete')));
-    }
-  }
+  };
+  planTable('vessels', VESSEL_COLS);
+  planTable('cargoes', CARGO_COLS);
 
   if (tasks.length === 0) return;
-  // Salvataggio silenzioso: niente toast per non dare percezione di lentezza.
-  // Il toast appare SOLO in caso di errore (vedi handleErr).
   await Promise.all(tasks);
-  // Update snapshot
-  _lastSyncSnapshot.vessels = new Map((DATA.vessels||[]).map(v => [v.id, _hash(v)]));
-  _lastSyncSnapshot.cargoes = new Map((DATA.cargoes||[]).map(c => [c.id, _hash(c)]));
+  if (failed) {
+    // riprova con backoff (rete, sessione, RLS): le righe non confermate restano "sporche" e vengono rispedite
+    _syncRetry = Math.min(_syncRetry + 1, 6);
+    if (_syncRetryTimer) clearTimeout(_syncRetryTimer);
+    if (_syncRetry <= 5) _syncRetryTimer = setTimeout(syncDirtyToCloud, [2000, 5000, 10000, 20000, 40000][_syncRetry - 1] || 40000);
+    else cloudToast('Some changes are NOT saved in cloud after several attempts — check your connection and reload.', { kind: 'error', duration: 10000 });
+  } else _syncRetry = 0;
+  // se nel frattempo l'utente ha modificato ancora, un nuovo giro parte da persist(); qui non serve ricalcolare nulla
 }
 
+function isAuthError(e) {
+  const m = String((e && (e.message || e.code)) || '').toLowerCase();
+  return !!(e && (e.status === 401 || e.code === 'PGRST301' || e.code === 'PGRST303' || /jwt|token|not authenticated|refresh_token|session/.test(m)));
+}
+let _sessionOverlayShown = false;
+function showSessionExpired() {
+  if (_sessionOverlayShown) return; _sessionOverlayShown = true;
+  const d = document.createElement('div');
+  d.id = 'session-expired';
+  d.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(15,23,42,.72);display:flex;align-items:center;justify-content:center;font-family:inherit';
+  d.innerHTML = '<div style="background:var(--bg-2,#fff);color:var(--text,#111);border-radius:14px;padding:26px 30px;max-width:420px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.35)"><div style="font-size:18px;font-weight:800;margin-bottom:8px">Session expired</div><div style="font-size:13px;line-height:1.5;margin-bottom:16px">Your login has expired, so changes are <b>no longer being saved</b>. Reload the page and sign in again.</div><button class="primary" style="font-size:13px;padding:8px 18px" onclick="location.reload()">Reload</button></div>';
+  document.body.appendChild(d);
+}
+function showReadOnlyBanner(text) {
+  let b = document.getElementById('ro-banner');
+  if (!b) { b = document.createElement('div'); b.id = 'ro-banner'; b.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:99998;background:#b91c1c;color:#fff;font-size:12.5px;font-weight:700;text-align:center;padding:6px 10px'; document.body.appendChild(b); }
+  b.textContent = text;
+}
 function handleErr(label) {
   return ({error}) => {
     if (error) {
       console.error('Cloud ' + label + ' failed:', error);
+      if (isAuthError(error)) { showSessionExpired(); return; }
       cloudToast('Save error (' + label + '): ' + error.message, { kind: 'error', duration: 4000 });
     }
   };
 }
+// sessione: se Supabase ci scollega (refresh token scaduto/invalidato) lo diciamo subito, invece di lavorare a vuoto
+sb.auth.onAuthStateChange((ev) => {
+  if (ev === 'SIGNED_OUT' && document.body.classList.contains('logged-in')) showSessionExpired();
+});
 
 // Quando Postgres assegna un nuovo ID a una insert (al posto del nostro 'tmp_xxx'),
 // propaghiamo il cambio ID a TUTTE le strutture che potrebbero referenziare l'ID vecchio:
@@ -2920,7 +2967,10 @@ function _remapId(table, oldId, newId, cloudRow) {
   // 3) Aggiorna lo snapshot di sync
   if (_lastSyncSnapshot && _lastSyncSnapshot[table]) {
     _lastSyncSnapshot[table].delete(oldId);
+    // snapshot = riga come e' in cloud; se l'utente ha gia' modificato ancora la riga (hash locale diverso), il prossimo giro manda la differenza
+    const arr2 = DATA[table]; const cur = arr2 && arr2.find(r => r.id === newId);
     _lastSyncSnapshot[table].set(newId, _hash(cloudRow));
+    if (cur && _hash(cur) !== _hash(cloudRow)) scheduleCloudSync();
   }
   // 4) Salva il cache localStorage aggiornato
   try { saveData(DATA); } catch(e) {}
@@ -4231,7 +4281,7 @@ document.addEventListener('dblclick', (e) => {
   if (!document.body.classList.contains('is-admin')) return;
   const td = e.target.closest('td.editable');
   if (!td) return;
-  const kind = td.dataset.kind, id = Number(td.dataset.id), field = td.dataset.field;
+  const kind = td.dataset.kind, id = rowId(td.dataset.id), field = td.dataset.field;
   if (kind && id && field) inlineEdit(td, kind, id, field);
 });
 
@@ -4413,17 +4463,17 @@ function setupAreaSticky() {
     if (armedBtn === btn) {
       disarm();
       if (btn.classList.contains('row-del')) {
-        delVessel(Number(btn.dataset.id)); setRoute();
+        delVessel(rowId(btn.dataset.id)); setRoute();
       } else if (btn.classList.contains('c-del')) {
-        delCargo(Number(btn.dataset.id)); setRoute();
+        delCargo(rowId(btn.dataset.id)); setRoute();
       } else if (btn.classList.contains('acct-del')) {
         const col = Number(btn.dataset.col);
         DATA.accounts = DATA.accounts.filter(x => x.col !== col);
-        saveData(DATA); routes['accounts']();
+        _saveAccounts(); routes['accounts']();
       } else if (btn.classList.contains('cli-del')) {
         const col = Number(btn.dataset.col), idx = Number(btn.dataset.idx);
         const a = DATA.accounts.find(x => x.col === col);
-        if (a && a.clients[idx] !== undefined) { a.clients.splice(idx, 1); saveData(DATA); routes['accounts'](); }
+        if (a && a.clients[idx] !== undefined) { a.clients.splice(idx, 1); _saveAccounts(); routes['accounts'](); }
       }
       return;
     }
@@ -4500,7 +4550,7 @@ let _todayIsoCacheT = 0;
 function todayIso() {
   const now = Date.now();
   if (_todayIsoCache && (now - _todayIsoCacheT) < 60000) return _todayIsoCache;
-  _todayIsoCache = new Date().toISOString().slice(0,10);
+  _todayIsoCache = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome' }).format(new Date());   // data di Roma, non UTC
   _todayIsoCacheT = now;
   return _todayIsoCache;
 }
@@ -4536,10 +4586,25 @@ function bootstrap() {
     live: SEED_DATA.live,
   };
 }
-function saveData(d) { localStorage.setItem(KEY, JSON.stringify(d)); }
+function _capHistory(d) {
+  try {
+    const h = d && d.history; if (!h) return;
+    for (const t of ['vessels', 'cargoes']) {
+      const m = h[t]; if (!m) continue; const keys = Object.keys(m); if (keys.length <= 2000) continue;
+      keys.sort((a, b) => String(m[a].lastSeen || '').localeCompare(String(m[b].lastSeen || '')));
+      for (const k of keys.slice(0, keys.length - 2000)) delete m[k];
+    }
+  } catch(e) {}
+}
+function saveData(d) {
+  // la cache locale non deve MAI bloccare il salvataggio in cloud (QuotaExceeded, storage disabilitato...)
+  try { _capHistory(d); localStorage.setItem(KEY, JSON.stringify(d)); }
+  catch(e) { console.warn('saveData (local cache) failed:', e && e.message); try { if (d && d.history) { d.history = { vessels: {}, cargoes: {} }; localStorage.setItem(KEY, JSON.stringify(d)); } } catch(e2) {} }
+}
 let DATA = loadData();
 window.DATA = DATA;
 
+const rowId = x => (/^\d+$/.test(String(x)) ? Number(x) : String(x));   // id cloud (numero) o temporaneo 'tmp_…' (stringa)
 const $ = (s, r=document) => r.querySelector(s);
 const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
 function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -4669,11 +4734,11 @@ function logUserAction(kind, table, id, before, after) {
 }
 
 function persist() {
-  saveData(DATA);
   updateUndoButtons();
   if (window._cloudSyncActive && typeof scheduleCloudSync === 'function') {
-    scheduleCloudSync();
+    scheduleCloudSync();   // prima il cloud (fonte di verita'), poi la cache locale
   }
+  saveData(DATA);
 }
 
 // Stesso record è cambiato da un altro utente?
@@ -5139,16 +5204,16 @@ function renderMasterTable(rows, cbCols, basin) {
   }
   html.push('</tbody></table>');
   $('#tbl').innerHTML = html.join('');
-  $$('#tbl .row-edit').forEach(b => b.onclick = () => openVesselForm(Number(b.dataset.id), basin));
+  $$('#tbl .row-edit').forEach(b => b.onclick = () => openVesselForm(rowId(b.dataset.id), basin));
   $$('#tbl .status-menu .opt').forEach(o => o.onclick = (e) => {
     e.stopPropagation();
-    const id = Number(o.dataset.id);
+    const id = rowId(o.dataset.id);
     const next = o.dataset.status;
     updVessel(id, { status: next, subs: next === 'on_subs' ? 'S' : '' });
     routes[location.hash.replace(/^#\//,'') || 'atl-tng']();
   });
   $$('#tbl .flag-chip').forEach(c => c.onclick = () => {
-    const id = Number(c.dataset.id);
+    const id = rowId(c.dataset.id);
     const col = c.dataset.col;
     const v = DATA.vessels.find(x => x.id === id);
     const newVal = v[col] ? 0 : 1;
@@ -5883,7 +5948,7 @@ routes['ecsa-list'] = function() {
     if (window.P6) window.P6.after(entries.map(e => e.v.vessel), refresh);
     $$('#tbl .status-menu .opt').forEach(o => o.onclick = (e) => {
       e.stopPropagation();
-      const id = Number(o.dataset.id);
+      const id = rowId(o.dataset.id);
       const next = o.dataset.status;
       updVessel(id, { status: next, subs: next === 'on_subs' ? 'S' : '' });
       refresh();
@@ -6022,7 +6087,7 @@ function renderCargoList(basin) {
     }
     html.push('</tbody></table>');
     $('#ca-tbl').innerHTML = html.join('');
-    $$('#ca-tbl .c-edit').forEach(b => b.onclick = () => openCargoForm(Number(b.dataset.id), basin));
+    $$('#ca-tbl .c-edit').forEach(b => b.onclick = () => openCargoForm(rowId(b.dataset.id), basin));
     $$('#ca-tbl .status-menu .opt').forEach(o => o.onclick = (e) => {
       e.stopPropagation();
       const id = Number(o.dataset.cid);
@@ -6602,7 +6667,7 @@ routes['vsl'] = function() {
     // Bottoni hide riga
     $$('#vf-results .row-hide-btn').forEach(b => b.onclick = (e) => {
       e.stopPropagation();
-      hiddenRows.add(Number(b.dataset.id));
+      hiddenRows.add(rowId(b.dataset.id));
       run();
     });
     // Bottoni hide colonna
@@ -6910,7 +6975,7 @@ routes['cgo'] = function() {
     // Hook hide row
     $$('#cf-results .row-hide-btn').forEach(b => b.onclick = (e) => {
       e.stopPropagation();
-      hiddenCgoRows.add(Number(b.dataset.id));
+      hiddenCgoRows.add(rowId(b.dataset.id));
       run();
     });
     // Hook hide col
@@ -6942,7 +7007,7 @@ routes['cgo'] = function() {
       }, 250);
     });
     // Edit + status menu
-    $$('#cf-results .c-edit').forEach(b => b.onclick = () => openCargoForm(Number(b.dataset.id), 'ATL'));
+    $$('#cf-results .c-edit').forEach(b => b.onclick = () => openCargoForm(rowId(b.dataset.id), 'ATL'));
     $$('#cf-results .status-menu .opt').forEach(o => o.onclick = (e) => {
       e.stopPropagation();
       const id = Number(o.dataset.cid);
@@ -8089,7 +8154,8 @@ function renderRundown(key, title) {
   $('#rd-text').oninput = debounce((e) => {
     DATA.rundowns[key] = e.target.value;
     persist();
-  }, 300);
+    if (window._cloudSyncActive && !window._cloudLoadFailed) sb.from('rundowns').upsert({ key, text: e.target.value }).then(handleErr('rundown save'));
+  }, 600);
   $('#rd-copy').onclick = () => {
     copyToClipboard($('#rd-text').value);
     const b = $('#rd-copy');
@@ -8268,7 +8334,24 @@ function renderDistMatrix(which) {
 
 // ============== LIGHTSHIP ACCOUNTS ==============
 
-function _saveAccounts() { saveData(DATA); }
+async function _saveAccounts() {
+  saveData(DATA);
+  if (!window._cloudSyncActive || window._cloudLoadFailed) return;
+  try {
+    const rows = (DATA.accounts || []).map(a => ({ id: a.id, col: a.col, city: a.city || '', broker: a.broker || '', clients: a.clients || [] }));
+    const withId = rows.filter(r => r.id != null), noId = rows.filter(r => r.id == null).map(({ id, ...r }) => r);
+    if (withId.length) { const r1 = await sb.from('accounts').upsert(withId); if (r1.error) throw r1.error; }
+    if (noId.length) {
+      const r2 = await sb.from('accounts').insert(noId).select('id,col'); if (r2.error) throw r2.error;
+      for (const ins of (r2.data || [])) { const loc = (DATA.accounts || []).find(a => a.id == null && a.col === ins.col); if (loc) loc.id = ins.id; }
+    }
+    const nowIds = new Set(rows.map(r => r.id).filter(x => x != null));
+    const gone = [...(window._acctCloudIds || [])].filter(id => !nowIds.has(id));
+    if (gone.length) { const r3 = await sb.from('accounts').delete().in('id', gone); if (r3.error) throw r3.error; }
+    window._acctCloudIds = new Set([...nowIds]);
+    saveData(DATA);
+  } catch (e) { handleErr('accounts')({ error: e }); }
+}
 function promptInline(title, placeholder, onConfirm) {
   modal.open(title, `
     <input id="prompt-input" placeholder="${attr(placeholder||'')}" style="width:100%;background:var(--bg-3);border:1px solid var(--line);color:var(--text);border-radius:6px;padding:8px 10px;font:inherit;font-size:13px;outline:none">
@@ -9116,9 +9199,11 @@ function renderInboxCargo() {
       for (const k of ['laycan_from', 'laycan_to', 'load_port', 'disch_port', 'cgo', 'size', 'notes']) if (r[k]) patch[k] = r[k];   // vuoto in Inbox → resta il valore in lista
       if (r.ls_brkr) patch.ls_brkr = r.ls_brkr.toUpperCase();
       if (st === 'open') patch.status = null; else if (st) patch.status = st;
+      { const cl = await sb.from('inbox_cargoes').update({ status: 'approved' }).eq('id', r.id).eq('status', 'pending').select('id');
+        if (cl.error) { handleErr('inbox approve')(cl); return; }
+        if (!cl.data || !cl.data.length) { cloudToast('Already handled by a colleague.', { kind: 'info', duration: 3000 }); delete byId[r.id]; render(); return; } }
       if (ex) updCargo(ex.id, patch); else addCargo({ date: todayIso(), ...patch });
       delete byId[r.id]; render();
-      await sb.from('inbox_cargoes').update({ status: 'approved' }).eq('id', r.id);
     }
   });
 
@@ -9129,7 +9214,8 @@ function renderInboxCargo() {
       if (error) throw error;
       const at = data && data.at ? new Date(data.at) : null;
       const age = at ? (Date.now() - at.getTime()) / 1000 : Infinity;
-      if (age < 120) { live.textContent = '● live'; live.style.color = 'var(--green,#2a9d5c)'; live.title = 'Teams reader running (last beat ' + Math.round(age) + 's ago)'; }
+      const pollS = Math.max(0, Number((data && data.info && data.info.poll_ms) || 0) / 1000);
+      if (age < Math.max(150, pollS * 2 + 90)) { live.textContent = '● live'; live.style.color = 'var(--green,#2a9d5c)'; live.title = 'Teams reader running (last beat ' + Math.round(age) + 's ago)'; }
       else { const seen = at ? at.toLocaleString('en-GB', { timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'never'; live.textContent = '● offline'; live.style.color = 'var(--red)'; live.title = 'Teams reader not running (last seen ' + seen + ')'; }
     } catch (e) { live.textContent = '● unknown'; live.style.color = 'var(--text-mute)'; live.title = String(e.message || e); }
   };
@@ -9410,6 +9496,10 @@ routes['inbox'] = function() {
       const ex = findV(r.vessel, r.dwt_blt);
       const upd = (r.msg_time || '').slice(0, 10) || todayIso();
       const area = r.area || null;
+      if (!kind && !area) { alert('Choose the area first (double-click the vessel name).'); return; }
+      { const cl = await sb.from('inbox_candidates').update({ status: 'approved' }).eq('id', r.id).eq('status', 'pending').select('id');
+        if (cl.error) { handleErr('inbox approve')(cl); return; }
+        if (!cl.data || !cl.data.length) { cloudToast('Already handled by a colleague.', { kind: 'info', duration: 3000 }); delete byId[r.id]; render(); return; } }
       if (kind === 'remove') {
         if (ex) delVessel(ex.id);
       } else if (kind) {
@@ -9443,7 +9533,6 @@ routes['inbox'] = function() {
         if (ex) updVessel(ex.id, patch); else addVessel({ ...patch });
       }
       delete byId[r.id]; render();
-      await sb.from('inbox_candidates').update({ status: 'approved' }).eq('id', r.id);
     }
   });
 
@@ -9454,7 +9543,8 @@ routes['inbox'] = function() {
       if (error) throw error;
       const at = data && data.at ? new Date(data.at) : null;
       const age = at ? (Date.now() - at.getTime()) / 1000 : Infinity;
-      if (age < 120) { live.textContent = '● live'; live.style.color = 'var(--green,#2a9d5c)'; live.title = 'Teams reader running (last beat ' + Math.round(age) + 's ago)'; }
+      const pollS = Math.max(0, Number((data && data.info && data.info.poll_ms) || 0) / 1000);
+      if (age < Math.max(150, pollS * 2 + 90)) { live.textContent = '● live'; live.style.color = 'var(--green,#2a9d5c)'; live.title = 'Teams reader running (last beat ' + Math.round(age) + 's ago)'; }
       else { const seen = at ? at.toLocaleString('en-GB', { timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'never'; live.textContent = '● offline'; live.style.color = 'var(--red)'; live.title = 'Teams reader not running — last seen ' + seen; }
     } catch (e) { live.textContent = '● unknown'; live.style.color = 'var(--text-mute)'; live.title = String(e.message || e); }
   };
