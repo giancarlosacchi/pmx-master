@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v42 -->
+<!-- build: 20260903-inbox-v43 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -274,6 +274,7 @@ html[data-palette] .sidebar .sb-user { color: color-mix(in srgb, var(--pal-secon
 /* ===== v42: sidebar "rail" — striscia con sole icone, si allarga quando il mouse si avvicina ===== */
 @media (min-width: 701px) {
   html[data-sb="rail"] .app { grid-template-columns: 84px 1fr; }
+  html[data-sb="rail"] .main { grid-column: 2; }
   html[data-sb="rail"] .sidebar { position: fixed; left: 14px; top: 14px; height: calc(100vh - 28px); width: 56px; padding: 12px 6px 10px; z-index: 150;
     overflow: visible; transition: width 180ms var(--ease-mac, ease), padding 180ms var(--ease-mac, ease), box-shadow 180ms ease; }
   html[data-sb="rail"] .sidebar::after { content: ''; position: absolute; top: 0; bottom: 0; left: 100%; width: 26px; } /* zona "vicino": allarga anche senza esserci sopra */
