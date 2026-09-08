@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v39 -->
+<!-- build: 20260903-inbox-v40 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -126,122 +126,133 @@
   --radius: 10px; --radius-sm: 6px; --radius-lg: 14px;
 }
 
-/* ===== PALETTES (8 set 2026): 6 temi colore scelti nelle impostazioni; ognuno forza il giorno/notte adatto ===== */
-:root { --paper-grid: rgba(0,0,0,.15); }
-
-/* palette: signal — accent #0057FF on #F8F7F4 */
-html[data-palette="signal"] {
+/* ===== PALETTES (8 set 2026): 5 temi a 4 colori + Paper (originale con griglia). Ogni palette = pagina chiara, sidebar scura, colori piatti. ===== */
+/* palette crimson: pagina #F2F1ED, sidebar/testate #161616, accento #710014, secondario #B38F6F — colori piatti, niente griglia */
+html[data-palette="crimson"] {
   color-scheme: light;
-  --pal-accent: #0057FF; --pal-surface: #F8F7F4;
-  --bg-0: #F8F7F4; --bg-1: color-mix(in srgb, #F8F7F4 92%, #0057FF 8%); --bg-2: color-mix(in srgb, #F8F7F4 55%, #ffffff 45%); --bg-3: color-mix(in srgb, #F8F7F4 88%, #0057FF 12%);
-  --bg-hover: color-mix(in srgb, #0057FF 12%, #F8F7F4); --line: color-mix(in srgb, #0057FF 22%, #F8F7F4); --line-soft: color-mix(in srgb, #0057FF 12%, #F8F7F4);
-  --text: color-mix(in srgb, #0057FF 25%, #111318); --text-dim: color-mix(in srgb, #0057FF 35%, #4a4f5a); --text-mute: color-mix(in srgb, #0057FF 30%, #7b8290);
-  --gold: #0057FF; --gold-soft: color-mix(in srgb, #0057FF 14%, transparent); --cyan: #0057FF;
-  --logo-grad: linear-gradient(135deg, #0057FF 0%, color-mix(in srgb, #0057FF 70%, #000) 100%); --logo-shadow: color-mix(in srgb, #0057FF 35%, transparent);
-  --section-grad: linear-gradient(90deg, #0057FF 0%, color-mix(in srgb, #0057FF 80%, #000) 100%); --section-color: #ffffff; --section-border: color-mix(in srgb, #0057FF 40%, transparent); --section-shadow: 0 1px 3px rgba(0,0,0,.12);
-  --halfsection-bg: color-mix(in srgb, #0057FF 12%, #F8F7F4); --halfsection-color: color-mix(in srgb, #0057FF 85%, #000);
-  --bg-grad: linear-gradient(180deg, #F8F7F4 0%, color-mix(in srgb, #F8F7F4 94%, #0057FF 6%) 100%);
-  --glass-bg: color-mix(in srgb, #F8F7F4 40%, rgba(255,255,255,var(--glass-op-l))); --glass-bg-strong: color-mix(in srgb, #F8F7F4 30%, #ffffff);
-  --glass-border: color-mix(in srgb, #0057FF 22%, transparent);
-  --paper-grid: color-mix(in srgb, #0057FF 16%, transparent);
-  --paper-line: color-mix(in srgb, #0057FF 35%, transparent);
+  --pal-surface: #F2F1ED; --pal-dark: #161616; --pal-accent: #710014; --pal-second: #B38F6F;
+  --bg-0: #F2F1ED; --bg-1: #161616; --bg-2: color-mix(in srgb, #F2F1ED 60%, #ffffff 40%); --bg-3: color-mix(in srgb, #F2F1ED 90%, #161616 10%);
+  --bg-hover: color-mix(in srgb, #710014 10%, #F2F1ED); --line: color-mix(in srgb, #161616 18%, #F2F1ED); --line-soft: color-mix(in srgb, #161616 10%, #F2F1ED);
+  --text: #161616; --text-dim: color-mix(in srgb, #161616 70%, #F2F1ED); --text-mute: color-mix(in srgb, #161616 50%, #F2F1ED);
+  --gold: #710014; --gold-soft: color-mix(in srgb, #710014 14%, transparent); --cyan: #B38F6F;
+  --logo-grad: linear-gradient(135deg, #710014 0%, #161616 100%); --logo-shadow: color-mix(in srgb, #710014 35%, transparent);
+  --section-grad: linear-gradient(90deg, #161616 0%, #B38F6F 100%); --section-color: #ffffff; --section-border: color-mix(in srgb, #161616 30%, transparent); --section-shadow: 0 1px 3px rgba(0,0,0,.14);
+  --halfsection-bg: color-mix(in srgb, #B38F6F 14%, #F2F1ED); --halfsection-color: color-mix(in srgb, #B38F6F 80%, #161616);
+  --bg-grad: #F2F1ED;
+  --glass-bg: color-mix(in srgb, #F2F1ED 55%, #ffffff); --glass-bg-strong: color-mix(in srgb, #F2F1ED 40%, #ffffff);
+  --glass-border: color-mix(in srgb, #161616 14%, transparent); --glass-shadow: 0 12px 40px -18px color-mix(in srgb, #161616 45%, transparent);
+  --paper-line: color-mix(in srgb, #B38F6F 40%, transparent);
 }
-/* palette: butter — accent #3A0CA3 on #FFF275 */
-html[data-palette="butter"] {
+html[data-palette="crimson"] .sidebar {
+  background: #161616 !important; border-color: color-mix(in srgb, #ffffff 10%, transparent) !important; color-scheme: dark;
+  --text: #f4f4f2; --text-dim: color-mix(in srgb, #f4f4f2 72%, #161616); --text-mute: color-mix(in srgb, #f4f4f2 50%, #161616);
+  --line: color-mix(in srgb, #ffffff 14%, transparent); --line-soft: color-mix(in srgb, #ffffff 8%, transparent); --bg-3: color-mix(in srgb, #ffffff 8%, #161616); --bg-hover: color-mix(in srgb, #ffffff 8%, #161616);
+  --gold: #710014; --gold-soft: color-mix(in srgb, #710014 22%, transparent);
+}
+html[data-palette="crimson"] .sidebar .brand-logo { background: #ffffff; }
+html[data-palette="crimson"] .count-pill { background: #710014; color: #fff; }
+/* palette pebble: pagina #EEEEEE, sidebar/testate #313841, accento #EA9216, secondario #3A4750 — colori piatti, niente griglia */
+html[data-palette="pebble"] {
   color-scheme: light;
-  --pal-accent: #3A0CA3; --pal-surface: #FFF275;
-  --bg-0: #FFF275; --bg-1: color-mix(in srgb, #FFF275 92%, #3A0CA3 8%); --bg-2: color-mix(in srgb, #FFF275 55%, #ffffff 45%); --bg-3: color-mix(in srgb, #FFF275 88%, #3A0CA3 12%);
-  --bg-hover: color-mix(in srgb, #3A0CA3 12%, #FFF275); --line: color-mix(in srgb, #3A0CA3 22%, #FFF275); --line-soft: color-mix(in srgb, #3A0CA3 12%, #FFF275);
-  --text: color-mix(in srgb, #3A0CA3 25%, #111318); --text-dim: color-mix(in srgb, #3A0CA3 35%, #4a4f5a); --text-mute: color-mix(in srgb, #3A0CA3 30%, #7b8290);
-  --gold: #3A0CA3; --gold-soft: color-mix(in srgb, #3A0CA3 14%, transparent); --cyan: #3A0CA3;
-  --logo-grad: linear-gradient(135deg, #3A0CA3 0%, color-mix(in srgb, #3A0CA3 70%, #000) 100%); --logo-shadow: color-mix(in srgb, #3A0CA3 35%, transparent);
-  --section-grad: linear-gradient(90deg, #3A0CA3 0%, color-mix(in srgb, #3A0CA3 80%, #000) 100%); --section-color: #ffffff; --section-border: color-mix(in srgb, #3A0CA3 40%, transparent); --section-shadow: 0 1px 3px rgba(0,0,0,.12);
-  --halfsection-bg: color-mix(in srgb, #3A0CA3 12%, #FFF275); --halfsection-color: color-mix(in srgb, #3A0CA3 85%, #000);
-  --bg-grad: linear-gradient(180deg, #FFF275 0%, color-mix(in srgb, #FFF275 94%, #3A0CA3 6%) 100%);
-  --glass-bg: color-mix(in srgb, #FFF275 40%, rgba(255,255,255,var(--glass-op-l))); --glass-bg-strong: color-mix(in srgb, #FFF275 30%, #ffffff);
-  --glass-border: color-mix(in srgb, #3A0CA3 22%, transparent);
-  --paper-grid: color-mix(in srgb, #3A0CA3 16%, transparent);
-  --paper-line: color-mix(in srgb, #3A0CA3 35%, transparent);
+  --pal-surface: #EEEEEE; --pal-dark: #313841; --pal-accent: #EA9216; --pal-second: #3A4750;
+  --bg-0: #EEEEEE; --bg-1: #313841; --bg-2: color-mix(in srgb, #EEEEEE 60%, #ffffff 40%); --bg-3: color-mix(in srgb, #EEEEEE 90%, #313841 10%);
+  --bg-hover: color-mix(in srgb, #EA9216 10%, #EEEEEE); --line: color-mix(in srgb, #313841 18%, #EEEEEE); --line-soft: color-mix(in srgb, #313841 10%, #EEEEEE);
+  --text: #313841; --text-dim: color-mix(in srgb, #313841 70%, #EEEEEE); --text-mute: color-mix(in srgb, #313841 50%, #EEEEEE);
+  --gold: #EA9216; --gold-soft: color-mix(in srgb, #EA9216 14%, transparent); --cyan: #3A4750;
+  --logo-grad: linear-gradient(135deg, #EA9216 0%, #313841 100%); --logo-shadow: color-mix(in srgb, #EA9216 35%, transparent);
+  --section-grad: linear-gradient(90deg, #313841 0%, #3A4750 100%); --section-color: #ffffff; --section-border: color-mix(in srgb, #313841 30%, transparent); --section-shadow: 0 1px 3px rgba(0,0,0,.14);
+  --halfsection-bg: color-mix(in srgb, #3A4750 14%, #EEEEEE); --halfsection-color: color-mix(in srgb, #3A4750 80%, #313841);
+  --bg-grad: #EEEEEE;
+  --glass-bg: color-mix(in srgb, #EEEEEE 55%, #ffffff); --glass-bg-strong: color-mix(in srgb, #EEEEEE 40%, #ffffff);
+  --glass-border: color-mix(in srgb, #313841 14%, transparent); --glass-shadow: 0 12px 40px -18px color-mix(in srgb, #313841 45%, transparent);
+  --paper-line: color-mix(in srgb, #3A4750 40%, transparent);
 }
-/* palette: lime — accent #B6FF2E on #23262F (dark) */
-html[data-palette="lime"] {
-  color-scheme: dark;
-  --pal-accent: #B6FF2E; --pal-surface: #23262F;
-  --bg-0: color-mix(in srgb, #23262F 88%, #000 12%); --bg-1: #23262F; --bg-2: color-mix(in srgb, #23262F 86%, #ffffff 14%); --bg-3: color-mix(in srgb, #23262F 78%, #ffffff 22%);
-  --bg-hover: color-mix(in srgb, #B6FF2E 16%, #23262F); --line: color-mix(in srgb, #B6FF2E 26%, #23262F); --line-soft: color-mix(in srgb, #B6FF2E 14%, #23262F);
-  --text: color-mix(in srgb, #B6FF2E 10%, #f3f4f8); --text-dim: color-mix(in srgb, #B6FF2E 25%, #b8bcc8); --text-mute: color-mix(in srgb, #B6FF2E 25%, #8a90a0);
-  --gold: #B6FF2E; --gold-soft: color-mix(in srgb, #B6FF2E 16%, transparent); --cyan: #B6FF2E;
-  --logo-grad: linear-gradient(135deg, #B6FF2E 0%, color-mix(in srgb, #B6FF2E 70%, #fff) 100%); --logo-shadow: color-mix(in srgb, #B6FF2E 40%, transparent);
-  --section-grad: linear-gradient(90deg, #B6FF2E 0%, color-mix(in srgb, #B6FF2E 75%, #23262F) 100%); --section-color: #23262F; --section-border: color-mix(in srgb, #B6FF2E 45%, transparent); --section-shadow: 0 1px 0 color-mix(in srgb, #B6FF2E 15%, transparent);
-  --halfsection-bg: color-mix(in srgb, #B6FF2E 14%, #23262F); --halfsection-color: #B6FF2E;
-  --off-bg: rgba(251,191,36,.12); --off-border: rgba(251,191,36,.45); --off-text: #fcd34d;
-  --subs-bg: rgba(244,114,182,.12); --subs-border: rgba(244,114,182,.45); --subs-text: #f9a8d4;
-  --bg-grad: linear-gradient(180deg, #23262F 0%, color-mix(in srgb, #23262F 85%, #000) 100%);
-  --glass-bg: color-mix(in srgb, #23262F 92%, rgba(0,0,0,var(--glass-op-d))); --glass-bg-strong: color-mix(in srgb, #23262F 90%, #000);
-  --glass-border: color-mix(in srgb, #B6FF2E 25%, transparent);
-  --paper-grid: color-mix(in srgb, #B6FF2E 12%, transparent);
-  --paper-line: color-mix(in srgb, #B6FF2E 30%, transparent);
+html[data-palette="pebble"] .sidebar {
+  background: #313841 !important; border-color: color-mix(in srgb, #ffffff 10%, transparent) !important; color-scheme: dark;
+  --text: #f4f4f2; --text-dim: color-mix(in srgb, #f4f4f2 72%, #313841); --text-mute: color-mix(in srgb, #f4f4f2 50%, #313841);
+  --line: color-mix(in srgb, #ffffff 14%, transparent); --line-soft: color-mix(in srgb, #ffffff 8%, transparent); --bg-3: color-mix(in srgb, #ffffff 8%, #313841); --bg-hover: color-mix(in srgb, #ffffff 8%, #313841);
+  --gold: #EA9216; --gold-soft: color-mix(in srgb, #EA9216 22%, transparent);
 }
-html[data-palette="lime"] .brand-logo { background: #23262F; }
-html[data-palette="lime"] tr.section-area td, html[data-palette="lime"] .area-pill, html[data-palette="lime"] .flag-chip.on { color: #23262F !important; }
-/* palette: dragon — accent #FF4696 on #1E1033 (dark) */
-html[data-palette="dragon"] {
-  color-scheme: dark;
-  --pal-accent: #FF4696; --pal-surface: #1E1033;
-  --bg-0: color-mix(in srgb, #1E1033 88%, #000 12%); --bg-1: #1E1033; --bg-2: color-mix(in srgb, #1E1033 86%, #ffffff 14%); --bg-3: color-mix(in srgb, #1E1033 78%, #ffffff 22%);
-  --bg-hover: color-mix(in srgb, #FF4696 16%, #1E1033); --line: color-mix(in srgb, #FF4696 26%, #1E1033); --line-soft: color-mix(in srgb, #FF4696 14%, #1E1033);
-  --text: color-mix(in srgb, #FF4696 10%, #f3f4f8); --text-dim: color-mix(in srgb, #FF4696 25%, #b8bcc8); --text-mute: color-mix(in srgb, #FF4696 25%, #8a90a0);
-  --gold: #FF4696; --gold-soft: color-mix(in srgb, #FF4696 16%, transparent); --cyan: #FF4696;
-  --logo-grad: linear-gradient(135deg, #FF4696 0%, color-mix(in srgb, #FF4696 70%, #fff) 100%); --logo-shadow: color-mix(in srgb, #FF4696 40%, transparent);
-  --section-grad: linear-gradient(90deg, #FF4696 0%, color-mix(in srgb, #FF4696 75%, #1E1033) 100%); --section-color: #1E1033; --section-border: color-mix(in srgb, #FF4696 45%, transparent); --section-shadow: 0 1px 0 color-mix(in srgb, #FF4696 15%, transparent);
-  --halfsection-bg: color-mix(in srgb, #FF4696 14%, #1E1033); --halfsection-color: #FF4696;
-  --off-bg: rgba(251,191,36,.12); --off-border: rgba(251,191,36,.45); --off-text: #fcd34d;
-  --subs-bg: rgba(244,114,182,.12); --subs-border: rgba(244,114,182,.45); --subs-text: #f9a8d4;
-  --bg-grad: linear-gradient(180deg, #1E1033 0%, color-mix(in srgb, #1E1033 85%, #000) 100%);
-  --glass-bg: color-mix(in srgb, #1E1033 92%, rgba(0,0,0,var(--glass-op-d))); --glass-bg-strong: color-mix(in srgb, #1E1033 90%, #000);
-  --glass-border: color-mix(in srgb, #FF4696 25%, transparent);
-  --paper-grid: color-mix(in srgb, #FF4696 12%, transparent);
-  --paper-line: color-mix(in srgb, #FF4696 30%, transparent);
-}
-html[data-palette="dragon"] .brand-logo { background: #1E1033; }
-html[data-palette="dragon"] tr.section-area td, html[data-palette="dragon"] .area-pill, html[data-palette="dragon"] .flag-chip.on { color: #1E1033 !important; }
-/* palette: emerald — accent #064E3B on #F8E7C9 */
-html[data-palette="emerald"] {
+html[data-palette="pebble"] .sidebar .brand-logo { background: #ffffff; }
+html[data-palette="pebble"] .count-pill { background: #EA9216; color: #fff; }
+/* palette sage: pagina #E2F0CC, sidebar/testate #011207, accento #8BC53D, secondario #012F13 — colori piatti, niente griglia */
+html[data-palette="sage"] {
   color-scheme: light;
-  --pal-accent: #064E3B; --pal-surface: #F8E7C9;
-  --bg-0: #F8E7C9; --bg-1: color-mix(in srgb, #F8E7C9 92%, #064E3B 8%); --bg-2: color-mix(in srgb, #F8E7C9 55%, #ffffff 45%); --bg-3: color-mix(in srgb, #F8E7C9 88%, #064E3B 12%);
-  --bg-hover: color-mix(in srgb, #064E3B 12%, #F8E7C9); --line: color-mix(in srgb, #064E3B 22%, #F8E7C9); --line-soft: color-mix(in srgb, #064E3B 12%, #F8E7C9);
-  --text: color-mix(in srgb, #064E3B 25%, #111318); --text-dim: color-mix(in srgb, #064E3B 35%, #4a4f5a); --text-mute: color-mix(in srgb, #064E3B 30%, #7b8290);
-  --gold: #064E3B; --gold-soft: color-mix(in srgb, #064E3B 14%, transparent); --cyan: #064E3B;
-  --logo-grad: linear-gradient(135deg, #064E3B 0%, color-mix(in srgb, #064E3B 70%, #000) 100%); --logo-shadow: color-mix(in srgb, #064E3B 35%, transparent);
-  --section-grad: linear-gradient(90deg, #064E3B 0%, color-mix(in srgb, #064E3B 80%, #000) 100%); --section-color: #ffffff; --section-border: color-mix(in srgb, #064E3B 40%, transparent); --section-shadow: 0 1px 3px rgba(0,0,0,.12);
-  --halfsection-bg: color-mix(in srgb, #064E3B 12%, #F8E7C9); --halfsection-color: color-mix(in srgb, #064E3B 85%, #000);
-  --bg-grad: linear-gradient(180deg, #F8E7C9 0%, color-mix(in srgb, #F8E7C9 94%, #064E3B 6%) 100%);
-  --glass-bg: color-mix(in srgb, #F8E7C9 40%, rgba(255,255,255,var(--glass-op-l))); --glass-bg-strong: color-mix(in srgb, #F8E7C9 30%, #ffffff);
-  --glass-border: color-mix(in srgb, #064E3B 22%, transparent);
-  --paper-grid: color-mix(in srgb, #064E3B 16%, transparent);
-  --paper-line: color-mix(in srgb, #064E3B 35%, transparent);
+  --pal-surface: #E2F0CC; --pal-dark: #011207; --pal-accent: #8BC53D; --pal-second: #012F13;
+  --bg-0: #E2F0CC; --bg-1: #011207; --bg-2: color-mix(in srgb, #E2F0CC 60%, #ffffff 40%); --bg-3: color-mix(in srgb, #E2F0CC 90%, #011207 10%);
+  --bg-hover: color-mix(in srgb, #8BC53D 10%, #E2F0CC); --line: color-mix(in srgb, #011207 18%, #E2F0CC); --line-soft: color-mix(in srgb, #011207 10%, #E2F0CC);
+  --text: #011207; --text-dim: color-mix(in srgb, #011207 70%, #E2F0CC); --text-mute: color-mix(in srgb, #011207 50%, #E2F0CC);
+  --gold: #8BC53D; --gold-soft: color-mix(in srgb, #8BC53D 14%, transparent); --cyan: #012F13;
+  --logo-grad: linear-gradient(135deg, #8BC53D 0%, #011207 100%); --logo-shadow: color-mix(in srgb, #8BC53D 35%, transparent);
+  --section-grad: linear-gradient(90deg, #011207 0%, #012F13 100%); --section-color: #ffffff; --section-border: color-mix(in srgb, #011207 30%, transparent); --section-shadow: 0 1px 3px rgba(0,0,0,.14);
+  --halfsection-bg: color-mix(in srgb, #012F13 14%, #E2F0CC); --halfsection-color: color-mix(in srgb, #012F13 80%, #011207);
+  --bg-grad: #E2F0CC;
+  --glass-bg: color-mix(in srgb, #E2F0CC 55%, #ffffff); --glass-bg-strong: color-mix(in srgb, #E2F0CC 40%, #ffffff);
+  --glass-border: color-mix(in srgb, #011207 14%, transparent); --glass-shadow: 0 12px 40px -18px color-mix(in srgb, #011207 45%, transparent);
+  --paper-line: color-mix(in srgb, #012F13 40%, transparent);
 }
-/* palette: ultra — accent #6A00F4 on #FFD6A5 */
-html[data-palette="ultra"] {
+html[data-palette="sage"] .sidebar {
+  background: #011207 !important; border-color: color-mix(in srgb, #ffffff 10%, transparent) !important; color-scheme: dark;
+  --text: #f4f4f2; --text-dim: color-mix(in srgb, #f4f4f2 72%, #011207); --text-mute: color-mix(in srgb, #f4f4f2 50%, #011207);
+  --line: color-mix(in srgb, #ffffff 14%, transparent); --line-soft: color-mix(in srgb, #ffffff 8%, transparent); --bg-3: color-mix(in srgb, #ffffff 8%, #011207); --bg-hover: color-mix(in srgb, #ffffff 8%, #011207);
+  --gold: #8BC53D; --gold-soft: color-mix(in srgb, #8BC53D 22%, transparent);
+}
+html[data-palette="sage"] .sidebar .brand-logo { background: #ffffff; }
+html[data-palette="sage"] .count-pill { background: #8BC53D; color: #fff; }
+/* palette navy: pagina #F9F9F9, sidebar/testate #092634, accento #FF6E42, secondario #004E72 — colori piatti, niente griglia */
+html[data-palette="navy"] {
   color-scheme: light;
-  --pal-accent: #6A00F4; --pal-surface: #FFD6A5;
-  --bg-0: #FFD6A5; --bg-1: color-mix(in srgb, #FFD6A5 92%, #6A00F4 8%); --bg-2: color-mix(in srgb, #FFD6A5 55%, #ffffff 45%); --bg-3: color-mix(in srgb, #FFD6A5 88%, #6A00F4 12%);
-  --bg-hover: color-mix(in srgb, #6A00F4 12%, #FFD6A5); --line: color-mix(in srgb, #6A00F4 22%, #FFD6A5); --line-soft: color-mix(in srgb, #6A00F4 12%, #FFD6A5);
-  --text: color-mix(in srgb, #6A00F4 25%, #111318); --text-dim: color-mix(in srgb, #6A00F4 35%, #4a4f5a); --text-mute: color-mix(in srgb, #6A00F4 30%, #7b8290);
-  --gold: #6A00F4; --gold-soft: color-mix(in srgb, #6A00F4 14%, transparent); --cyan: #6A00F4;
-  --logo-grad: linear-gradient(135deg, #6A00F4 0%, color-mix(in srgb, #6A00F4 70%, #000) 100%); --logo-shadow: color-mix(in srgb, #6A00F4 35%, transparent);
-  --section-grad: linear-gradient(90deg, #6A00F4 0%, color-mix(in srgb, #6A00F4 80%, #000) 100%); --section-color: #ffffff; --section-border: color-mix(in srgb, #6A00F4 40%, transparent); --section-shadow: 0 1px 3px rgba(0,0,0,.12);
-  --halfsection-bg: color-mix(in srgb, #6A00F4 12%, #FFD6A5); --halfsection-color: color-mix(in srgb, #6A00F4 85%, #000);
-  --bg-grad: linear-gradient(180deg, #FFD6A5 0%, color-mix(in srgb, #FFD6A5 94%, #6A00F4 6%) 100%);
-  --glass-bg: color-mix(in srgb, #FFD6A5 40%, rgba(255,255,255,var(--glass-op-l))); --glass-bg-strong: color-mix(in srgb, #FFD6A5 30%, #ffffff);
-  --glass-border: color-mix(in srgb, #6A00F4 22%, transparent);
-  --paper-grid: color-mix(in srgb, #6A00F4 16%, transparent);
-  --paper-line: color-mix(in srgb, #6A00F4 35%, transparent);
+  --pal-surface: #F9F9F9; --pal-dark: #092634; --pal-accent: #FF6E42; --pal-second: #004E72;
+  --bg-0: #F9F9F9; --bg-1: #092634; --bg-2: color-mix(in srgb, #F9F9F9 60%, #ffffff 40%); --bg-3: color-mix(in srgb, #F9F9F9 90%, #092634 10%);
+  --bg-hover: color-mix(in srgb, #FF6E42 10%, #F9F9F9); --line: color-mix(in srgb, #092634 18%, #F9F9F9); --line-soft: color-mix(in srgb, #092634 10%, #F9F9F9);
+  --text: #092634; --text-dim: color-mix(in srgb, #092634 70%, #F9F9F9); --text-mute: color-mix(in srgb, #092634 50%, #F9F9F9);
+  --gold: #FF6E42; --gold-soft: color-mix(in srgb, #FF6E42 14%, transparent); --cyan: #004E72;
+  --logo-grad: linear-gradient(135deg, #FF6E42 0%, #092634 100%); --logo-shadow: color-mix(in srgb, #FF6E42 35%, transparent);
+  --section-grad: linear-gradient(90deg, #092634 0%, #004E72 100%); --section-color: #ffffff; --section-border: color-mix(in srgb, #092634 30%, transparent); --section-shadow: 0 1px 3px rgba(0,0,0,.14);
+  --halfsection-bg: color-mix(in srgb, #004E72 14%, #F9F9F9); --halfsection-color: color-mix(in srgb, #004E72 80%, #092634);
+  --bg-grad: #F9F9F9;
+  --glass-bg: color-mix(in srgb, #F9F9F9 55%, #ffffff); --glass-bg-strong: color-mix(in srgb, #F9F9F9 40%, #ffffff);
+  --glass-border: color-mix(in srgb, #092634 14%, transparent); --glass-shadow: 0 12px 40px -18px color-mix(in srgb, #092634 45%, transparent);
+  --paper-line: color-mix(in srgb, #004E72 40%, transparent);
 }
-html[data-palette] body { background-color: var(--bg-0); background-image: linear-gradient(to right, var(--paper-grid) 1px, transparent 1px), linear-gradient(to bottom, var(--paper-grid) 1px, transparent 1px); }
-html[data-palette] table.grid thead th { background: var(--bg-3) !important; }
+html[data-palette="navy"] .sidebar {
+  background: #092634 !important; border-color: color-mix(in srgb, #ffffff 10%, transparent) !important; color-scheme: dark;
+  --text: #f4f4f2; --text-dim: color-mix(in srgb, #f4f4f2 72%, #092634); --text-mute: color-mix(in srgb, #f4f4f2 50%, #092634);
+  --line: color-mix(in srgb, #ffffff 14%, transparent); --line-soft: color-mix(in srgb, #ffffff 8%, transparent); --bg-3: color-mix(in srgb, #ffffff 8%, #092634); --bg-hover: color-mix(in srgb, #ffffff 8%, #092634);
+  --gold: #FF6E42; --gold-soft: color-mix(in srgb, #FF6E42 22%, transparent);
+}
+html[data-palette="navy"] .sidebar .brand-logo { background: #ffffff; }
+html[data-palette="navy"] .count-pill { background: #FF6E42; color: #fff; }
+/* palette almond: pagina #D6BD98, sidebar/testate #1A3636, accento #40534C, secondario #677D6A — colori piatti, niente griglia */
+html[data-palette="almond"] {
+  color-scheme: light;
+  --pal-surface: #D6BD98; --pal-dark: #1A3636; --pal-accent: #40534C; --pal-second: #677D6A;
+  --bg-0: #D6BD98; --bg-1: #1A3636; --bg-2: color-mix(in srgb, #D6BD98 60%, #ffffff 40%); --bg-3: color-mix(in srgb, #D6BD98 90%, #1A3636 10%);
+  --bg-hover: color-mix(in srgb, #40534C 10%, #D6BD98); --line: color-mix(in srgb, #1A3636 18%, #D6BD98); --line-soft: color-mix(in srgb, #1A3636 10%, #D6BD98);
+  --text: #1A3636; --text-dim: color-mix(in srgb, #1A3636 70%, #D6BD98); --text-mute: color-mix(in srgb, #1A3636 50%, #D6BD98);
+  --gold: #40534C; --gold-soft: color-mix(in srgb, #40534C 14%, transparent); --cyan: #677D6A;
+  --logo-grad: linear-gradient(135deg, #40534C 0%, #1A3636 100%); --logo-shadow: color-mix(in srgb, #40534C 35%, transparent);
+  --section-grad: linear-gradient(90deg, #1A3636 0%, #677D6A 100%); --section-color: #ffffff; --section-border: color-mix(in srgb, #1A3636 30%, transparent); --section-shadow: 0 1px 3px rgba(0,0,0,.14);
+  --halfsection-bg: color-mix(in srgb, #677D6A 14%, #D6BD98); --halfsection-color: color-mix(in srgb, #677D6A 80%, #1A3636);
+  --bg-grad: #D6BD98;
+  --glass-bg: color-mix(in srgb, #D6BD98 55%, #ffffff); --glass-bg-strong: color-mix(in srgb, #D6BD98 40%, #ffffff);
+  --glass-border: color-mix(in srgb, #1A3636 14%, transparent); --glass-shadow: 0 12px 40px -18px color-mix(in srgb, #1A3636 45%, transparent);
+  --paper-line: color-mix(in srgb, #677D6A 40%, transparent);
+}
+html[data-palette="almond"] .sidebar {
+  background: #1A3636 !important; border-color: color-mix(in srgb, #ffffff 10%, transparent) !important; color-scheme: dark;
+  --text: #f4f4f2; --text-dim: color-mix(in srgb, #f4f4f2 72%, #1A3636); --text-mute: color-mix(in srgb, #f4f4f2 50%, #1A3636);
+  --line: color-mix(in srgb, #ffffff 14%, transparent); --line-soft: color-mix(in srgb, #ffffff 8%, transparent); --bg-3: color-mix(in srgb, #ffffff 8%, #1A3636); --bg-hover: color-mix(in srgb, #ffffff 8%, #1A3636);
+  --gold: #40534C; --gold-soft: color-mix(in srgb, #40534C 22%, transparent);
+}
+html[data-palette="almond"] .sidebar .brand-logo { background: #ffffff; }
+html[data-palette="almond"] .count-pill { background: #40534C; color: #fff; }
+html[data-palette] body { background-color: var(--bg-0) !important; background-image: none !important; }
+html[data-palette] table.grid thead th { background: var(--bg-3) !important; border-bottom-color: var(--line) !important; }
 html[data-palette] table.grid td, html[data-palette] table.grid th { border-color: var(--line-soft) !important; }
+html[data-palette] .topbar { background: var(--glass-bg) !important; }
+html[data-palette] .sidebar .nav a:hover { background: rgba(255,255,255,.07); }
+
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
@@ -11535,8 +11546,8 @@ document.addEventListener('click', function(e){
 /* ===== APPEARANCE & COPY SETTINGS ===== */
 (function(){
   var KEY='pmx-appearance-v3';
-  var DEF={bg:'paper', op:100, blur:0, copy:'text', palette:'signal'};
-  var PALETTES=[['signal','Signal Blue','#0057FF','#F8F7F4','light'],['butter','Butter Yellow','#3A0CA3','#FFF275','light'],['lime','Lime Spark','#B6FF2E','#23262F','dark'],['dragon','Dragonfruit','#FF4696','#1E1033','dark'],['emerald','Emerald Ink','#064E3B','#F8E7C9','light'],['ultra','Ultra Violet','#6A00F4','#FFD6A5','light']];
+  var DEF={bg:'paper', op:100, blur:0, copy:'text', palette:'paper'};
+  var PALETTES=[['paper','Paper','#ffffff','#1A73E8','#0F9D58','#F9AB00','light'],['crimson','Crimson','#F2F1ED','#161616','#710014','#B38F6F','light'],['pebble','Pebble','#EEEEEE','#313841','#EA9216','#3A4750','light'],['sage','Sage','#E2F0CC','#011207','#8BC53D','#012F13','light'],['navy','Navy','#F9F9F9','#092634','#FF6E42','#004E72','light'],['almond','Almond','#D6BD98','#1A3636','#40534C','#677D6A','light']];
   function load(){ try{ return Object.assign({},DEF,JSON.parse(localStorage.getItem(KEY)||'{}')); }catch(e){ return Object.assign({},DEF); } }
   function save(s){ try{ localStorage.setItem(KEY,JSON.stringify(s)); }catch(e){} }
   function apply(s){
@@ -11546,8 +11557,8 @@ document.addEventListener('click', function(e){
     if(s.blur===0) r.style.removeProperty('--glass-blur-px'); else r.style.setProperty('--glass-blur-px',s.blur+'px');
     r.removeAttribute('data-app-bg');   // resta solo lo sfondo 'paper' (vivid/soft rimossi)
     var pal=PALETTES.find(function(p){ return p[0]===s.palette; }) || PALETTES[0];
-    r.setAttribute('data-palette', pal[0]);
-    if (r.getAttribute('data-theme') !== pal[4]) { r.setAttribute('data-theme', pal[4]); try { localStorage.setItem('lspmx_theme', pal[4]); } catch(e){} }
+    if (pal[0]==='paper') r.removeAttribute('data-palette'); else r.setAttribute('data-palette', pal[0]);
+    if (r.getAttribute('data-theme') !== pal[6]) { r.setAttribute('data-theme', pal[6]); try { localStorage.setItem('lspmx_theme', pal[6]); } catch(e){} }
   }
   var S=load(); apply(S);
   try{ ['atl-tng','pac-tng','atl-cgo','pac-cgo','ecsa-list'].forEach(function(p){ localStorage.removeItem('cp-view-'+p); }); }catch(e){}
@@ -11559,7 +11570,7 @@ document.addEventListener('click', function(e){
     function seg(id,opts){ return '<div id="'+id+'" style="display:flex;gap:6px;margin-bottom:18px">'+opts.map(function(o){return '<button type="button" data-v="'+o[0]+'" style="'+BTN+'">'+o[1]+'</button>';}).join('')+'</div>'; }
     el.innerHTML =
       '<div style="color:var(--text-mute);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px">Theme</div>'+
-      '<div id="set-pal" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:18px">'+PALETTES.map(function(p){ return '<button type="button" data-v="'+p[0]+'" style="'+BTN+';display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;text-align:left"><span style="width:26px;height:26px;border-radius:8px;flex:none;background:linear-gradient(135deg,'+p[2]+' 50%,'+p[3]+' 50%);box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span><span>'+p[1]+'</span></button>'; }).join('')+'</div>'+
+      '<div id="set-pal" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:18px">'+PALETTES.map(function(p){ return '<button type="button" data-v="'+p[0]+'" style="'+BTN+';display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;text-align:left"><span style="width:30px;height:26px;border-radius:8px;flex:none;background:linear-gradient(90deg,'+p[2]+' 0 25%,'+p[3]+' 25% 50%,'+p[4]+' 50% 75%,'+p[5]+' 75% 100%);box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)"></span><span>'+p[1]+'</span></button>'; }).join('')+'</div>'+
       '<div style="margin-bottom:18px"><div style="display:flex;justify-content:space-between;color:var(--text-mute);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px"><span>Glass opacity</span><span id="set-op-v"></span></div><input id="set-op" type="range" min="30" max="100" step="5" style="width:100%"></div>'+
       '<div style="margin-bottom:18px"><div style="display:flex;justify-content:space-between;color:var(--text-mute);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px"><span>Blur</span><span id="set-bl-v"></span></div><input id="set-bl" type="range" min="0" max="60" step="2" style="width:100%"></div>'+
       '<div style="color:var(--text-mute);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px">Copy format (multi-select)</div>'+
@@ -11567,7 +11578,7 @@ document.addEventListener('click', function(e){
       '<button type="button" id="set-reset" style="'+BTN+';width:100%">Reset to default</button>';
     var op=el.querySelector('#set-op'), bl=el.querySelector('#set-bl');
     function mark(){
-      [['set-pal',S.palette||'signal'],['set-copy',S.copy||'text']].forEach(function(p){
+      [['set-pal',S.palette||'paper'],['set-copy',S.copy||'text']].forEach(function(p){
         var box=el.querySelector('#'+p[0]); if(!box) return;
         box.querySelectorAll('button').forEach(function(b){
           var on=b.getAttribute('data-v')===p[1];
