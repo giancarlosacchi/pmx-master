@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v38 -->
+<!-- build: 20260903-inbox-v39 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -125,6 +125,124 @@
   --bg-grad: linear-gradient(180deg, #ffffff 0%, #f8f9fa 100%);
   --radius: 10px; --radius-sm: 6px; --radius-lg: 14px;
 }
+
+/* ===== PALETTES (8 set 2026): 6 temi colore scelti nelle impostazioni; ognuno forza il giorno/notte adatto ===== */
+:root { --paper-grid: rgba(0,0,0,.15); }
+
+/* palette: signal — accent #0057FF on #F8F7F4 */
+html[data-palette="signal"] {
+  color-scheme: light;
+  --pal-accent: #0057FF; --pal-surface: #F8F7F4;
+  --bg-0: #F8F7F4; --bg-1: color-mix(in srgb, #F8F7F4 92%, #0057FF 8%); --bg-2: color-mix(in srgb, #F8F7F4 55%, #ffffff 45%); --bg-3: color-mix(in srgb, #F8F7F4 88%, #0057FF 12%);
+  --bg-hover: color-mix(in srgb, #0057FF 12%, #F8F7F4); --line: color-mix(in srgb, #0057FF 22%, #F8F7F4); --line-soft: color-mix(in srgb, #0057FF 12%, #F8F7F4);
+  --text: color-mix(in srgb, #0057FF 25%, #111318); --text-dim: color-mix(in srgb, #0057FF 35%, #4a4f5a); --text-mute: color-mix(in srgb, #0057FF 30%, #7b8290);
+  --gold: #0057FF; --gold-soft: color-mix(in srgb, #0057FF 14%, transparent); --cyan: #0057FF;
+  --logo-grad: linear-gradient(135deg, #0057FF 0%, color-mix(in srgb, #0057FF 70%, #000) 100%); --logo-shadow: color-mix(in srgb, #0057FF 35%, transparent);
+  --section-grad: linear-gradient(90deg, #0057FF 0%, color-mix(in srgb, #0057FF 80%, #000) 100%); --section-color: #ffffff; --section-border: color-mix(in srgb, #0057FF 40%, transparent); --section-shadow: 0 1px 3px rgba(0,0,0,.12);
+  --halfsection-bg: color-mix(in srgb, #0057FF 12%, #F8F7F4); --halfsection-color: color-mix(in srgb, #0057FF 85%, #000);
+  --bg-grad: linear-gradient(180deg, #F8F7F4 0%, color-mix(in srgb, #F8F7F4 94%, #0057FF 6%) 100%);
+  --glass-bg: color-mix(in srgb, #F8F7F4 40%, rgba(255,255,255,var(--glass-op-l))); --glass-bg-strong: color-mix(in srgb, #F8F7F4 30%, #ffffff);
+  --glass-border: color-mix(in srgb, #0057FF 22%, transparent);
+  --paper-grid: color-mix(in srgb, #0057FF 16%, transparent);
+  --paper-line: color-mix(in srgb, #0057FF 35%, transparent);
+}
+/* palette: butter — accent #3A0CA3 on #FFF275 */
+html[data-palette="butter"] {
+  color-scheme: light;
+  --pal-accent: #3A0CA3; --pal-surface: #FFF275;
+  --bg-0: #FFF275; --bg-1: color-mix(in srgb, #FFF275 92%, #3A0CA3 8%); --bg-2: color-mix(in srgb, #FFF275 55%, #ffffff 45%); --bg-3: color-mix(in srgb, #FFF275 88%, #3A0CA3 12%);
+  --bg-hover: color-mix(in srgb, #3A0CA3 12%, #FFF275); --line: color-mix(in srgb, #3A0CA3 22%, #FFF275); --line-soft: color-mix(in srgb, #3A0CA3 12%, #FFF275);
+  --text: color-mix(in srgb, #3A0CA3 25%, #111318); --text-dim: color-mix(in srgb, #3A0CA3 35%, #4a4f5a); --text-mute: color-mix(in srgb, #3A0CA3 30%, #7b8290);
+  --gold: #3A0CA3; --gold-soft: color-mix(in srgb, #3A0CA3 14%, transparent); --cyan: #3A0CA3;
+  --logo-grad: linear-gradient(135deg, #3A0CA3 0%, color-mix(in srgb, #3A0CA3 70%, #000) 100%); --logo-shadow: color-mix(in srgb, #3A0CA3 35%, transparent);
+  --section-grad: linear-gradient(90deg, #3A0CA3 0%, color-mix(in srgb, #3A0CA3 80%, #000) 100%); --section-color: #ffffff; --section-border: color-mix(in srgb, #3A0CA3 40%, transparent); --section-shadow: 0 1px 3px rgba(0,0,0,.12);
+  --halfsection-bg: color-mix(in srgb, #3A0CA3 12%, #FFF275); --halfsection-color: color-mix(in srgb, #3A0CA3 85%, #000);
+  --bg-grad: linear-gradient(180deg, #FFF275 0%, color-mix(in srgb, #FFF275 94%, #3A0CA3 6%) 100%);
+  --glass-bg: color-mix(in srgb, #FFF275 40%, rgba(255,255,255,var(--glass-op-l))); --glass-bg-strong: color-mix(in srgb, #FFF275 30%, #ffffff);
+  --glass-border: color-mix(in srgb, #3A0CA3 22%, transparent);
+  --paper-grid: color-mix(in srgb, #3A0CA3 16%, transparent);
+  --paper-line: color-mix(in srgb, #3A0CA3 35%, transparent);
+}
+/* palette: lime — accent #B6FF2E on #23262F (dark) */
+html[data-palette="lime"] {
+  color-scheme: dark;
+  --pal-accent: #B6FF2E; --pal-surface: #23262F;
+  --bg-0: color-mix(in srgb, #23262F 88%, #000 12%); --bg-1: #23262F; --bg-2: color-mix(in srgb, #23262F 86%, #ffffff 14%); --bg-3: color-mix(in srgb, #23262F 78%, #ffffff 22%);
+  --bg-hover: color-mix(in srgb, #B6FF2E 16%, #23262F); --line: color-mix(in srgb, #B6FF2E 26%, #23262F); --line-soft: color-mix(in srgb, #B6FF2E 14%, #23262F);
+  --text: color-mix(in srgb, #B6FF2E 10%, #f3f4f8); --text-dim: color-mix(in srgb, #B6FF2E 25%, #b8bcc8); --text-mute: color-mix(in srgb, #B6FF2E 25%, #8a90a0);
+  --gold: #B6FF2E; --gold-soft: color-mix(in srgb, #B6FF2E 16%, transparent); --cyan: #B6FF2E;
+  --logo-grad: linear-gradient(135deg, #B6FF2E 0%, color-mix(in srgb, #B6FF2E 70%, #fff) 100%); --logo-shadow: color-mix(in srgb, #B6FF2E 40%, transparent);
+  --section-grad: linear-gradient(90deg, #B6FF2E 0%, color-mix(in srgb, #B6FF2E 75%, #23262F) 100%); --section-color: #23262F; --section-border: color-mix(in srgb, #B6FF2E 45%, transparent); --section-shadow: 0 1px 0 color-mix(in srgb, #B6FF2E 15%, transparent);
+  --halfsection-bg: color-mix(in srgb, #B6FF2E 14%, #23262F); --halfsection-color: #B6FF2E;
+  --off-bg: rgba(251,191,36,.12); --off-border: rgba(251,191,36,.45); --off-text: #fcd34d;
+  --subs-bg: rgba(244,114,182,.12); --subs-border: rgba(244,114,182,.45); --subs-text: #f9a8d4;
+  --bg-grad: linear-gradient(180deg, #23262F 0%, color-mix(in srgb, #23262F 85%, #000) 100%);
+  --glass-bg: color-mix(in srgb, #23262F 92%, rgba(0,0,0,var(--glass-op-d))); --glass-bg-strong: color-mix(in srgb, #23262F 90%, #000);
+  --glass-border: color-mix(in srgb, #B6FF2E 25%, transparent);
+  --paper-grid: color-mix(in srgb, #B6FF2E 12%, transparent);
+  --paper-line: color-mix(in srgb, #B6FF2E 30%, transparent);
+}
+html[data-palette="lime"] .brand-logo { background: #23262F; }
+html[data-palette="lime"] tr.section-area td, html[data-palette="lime"] .area-pill, html[data-palette="lime"] .flag-chip.on { color: #23262F !important; }
+/* palette: dragon — accent #FF4696 on #1E1033 (dark) */
+html[data-palette="dragon"] {
+  color-scheme: dark;
+  --pal-accent: #FF4696; --pal-surface: #1E1033;
+  --bg-0: color-mix(in srgb, #1E1033 88%, #000 12%); --bg-1: #1E1033; --bg-2: color-mix(in srgb, #1E1033 86%, #ffffff 14%); --bg-3: color-mix(in srgb, #1E1033 78%, #ffffff 22%);
+  --bg-hover: color-mix(in srgb, #FF4696 16%, #1E1033); --line: color-mix(in srgb, #FF4696 26%, #1E1033); --line-soft: color-mix(in srgb, #FF4696 14%, #1E1033);
+  --text: color-mix(in srgb, #FF4696 10%, #f3f4f8); --text-dim: color-mix(in srgb, #FF4696 25%, #b8bcc8); --text-mute: color-mix(in srgb, #FF4696 25%, #8a90a0);
+  --gold: #FF4696; --gold-soft: color-mix(in srgb, #FF4696 16%, transparent); --cyan: #FF4696;
+  --logo-grad: linear-gradient(135deg, #FF4696 0%, color-mix(in srgb, #FF4696 70%, #fff) 100%); --logo-shadow: color-mix(in srgb, #FF4696 40%, transparent);
+  --section-grad: linear-gradient(90deg, #FF4696 0%, color-mix(in srgb, #FF4696 75%, #1E1033) 100%); --section-color: #1E1033; --section-border: color-mix(in srgb, #FF4696 45%, transparent); --section-shadow: 0 1px 0 color-mix(in srgb, #FF4696 15%, transparent);
+  --halfsection-bg: color-mix(in srgb, #FF4696 14%, #1E1033); --halfsection-color: #FF4696;
+  --off-bg: rgba(251,191,36,.12); --off-border: rgba(251,191,36,.45); --off-text: #fcd34d;
+  --subs-bg: rgba(244,114,182,.12); --subs-border: rgba(244,114,182,.45); --subs-text: #f9a8d4;
+  --bg-grad: linear-gradient(180deg, #1E1033 0%, color-mix(in srgb, #1E1033 85%, #000) 100%);
+  --glass-bg: color-mix(in srgb, #1E1033 92%, rgba(0,0,0,var(--glass-op-d))); --glass-bg-strong: color-mix(in srgb, #1E1033 90%, #000);
+  --glass-border: color-mix(in srgb, #FF4696 25%, transparent);
+  --paper-grid: color-mix(in srgb, #FF4696 12%, transparent);
+  --paper-line: color-mix(in srgb, #FF4696 30%, transparent);
+}
+html[data-palette="dragon"] .brand-logo { background: #1E1033; }
+html[data-palette="dragon"] tr.section-area td, html[data-palette="dragon"] .area-pill, html[data-palette="dragon"] .flag-chip.on { color: #1E1033 !important; }
+/* palette: emerald — accent #064E3B on #F8E7C9 */
+html[data-palette="emerald"] {
+  color-scheme: light;
+  --pal-accent: #064E3B; --pal-surface: #F8E7C9;
+  --bg-0: #F8E7C9; --bg-1: color-mix(in srgb, #F8E7C9 92%, #064E3B 8%); --bg-2: color-mix(in srgb, #F8E7C9 55%, #ffffff 45%); --bg-3: color-mix(in srgb, #F8E7C9 88%, #064E3B 12%);
+  --bg-hover: color-mix(in srgb, #064E3B 12%, #F8E7C9); --line: color-mix(in srgb, #064E3B 22%, #F8E7C9); --line-soft: color-mix(in srgb, #064E3B 12%, #F8E7C9);
+  --text: color-mix(in srgb, #064E3B 25%, #111318); --text-dim: color-mix(in srgb, #064E3B 35%, #4a4f5a); --text-mute: color-mix(in srgb, #064E3B 30%, #7b8290);
+  --gold: #064E3B; --gold-soft: color-mix(in srgb, #064E3B 14%, transparent); --cyan: #064E3B;
+  --logo-grad: linear-gradient(135deg, #064E3B 0%, color-mix(in srgb, #064E3B 70%, #000) 100%); --logo-shadow: color-mix(in srgb, #064E3B 35%, transparent);
+  --section-grad: linear-gradient(90deg, #064E3B 0%, color-mix(in srgb, #064E3B 80%, #000) 100%); --section-color: #ffffff; --section-border: color-mix(in srgb, #064E3B 40%, transparent); --section-shadow: 0 1px 3px rgba(0,0,0,.12);
+  --halfsection-bg: color-mix(in srgb, #064E3B 12%, #F8E7C9); --halfsection-color: color-mix(in srgb, #064E3B 85%, #000);
+  --bg-grad: linear-gradient(180deg, #F8E7C9 0%, color-mix(in srgb, #F8E7C9 94%, #064E3B 6%) 100%);
+  --glass-bg: color-mix(in srgb, #F8E7C9 40%, rgba(255,255,255,var(--glass-op-l))); --glass-bg-strong: color-mix(in srgb, #F8E7C9 30%, #ffffff);
+  --glass-border: color-mix(in srgb, #064E3B 22%, transparent);
+  --paper-grid: color-mix(in srgb, #064E3B 16%, transparent);
+  --paper-line: color-mix(in srgb, #064E3B 35%, transparent);
+}
+/* palette: ultra — accent #6A00F4 on #FFD6A5 */
+html[data-palette="ultra"] {
+  color-scheme: light;
+  --pal-accent: #6A00F4; --pal-surface: #FFD6A5;
+  --bg-0: #FFD6A5; --bg-1: color-mix(in srgb, #FFD6A5 92%, #6A00F4 8%); --bg-2: color-mix(in srgb, #FFD6A5 55%, #ffffff 45%); --bg-3: color-mix(in srgb, #FFD6A5 88%, #6A00F4 12%);
+  --bg-hover: color-mix(in srgb, #6A00F4 12%, #FFD6A5); --line: color-mix(in srgb, #6A00F4 22%, #FFD6A5); --line-soft: color-mix(in srgb, #6A00F4 12%, #FFD6A5);
+  --text: color-mix(in srgb, #6A00F4 25%, #111318); --text-dim: color-mix(in srgb, #6A00F4 35%, #4a4f5a); --text-mute: color-mix(in srgb, #6A00F4 30%, #7b8290);
+  --gold: #6A00F4; --gold-soft: color-mix(in srgb, #6A00F4 14%, transparent); --cyan: #6A00F4;
+  --logo-grad: linear-gradient(135deg, #6A00F4 0%, color-mix(in srgb, #6A00F4 70%, #000) 100%); --logo-shadow: color-mix(in srgb, #6A00F4 35%, transparent);
+  --section-grad: linear-gradient(90deg, #6A00F4 0%, color-mix(in srgb, #6A00F4 80%, #000) 100%); --section-color: #ffffff; --section-border: color-mix(in srgb, #6A00F4 40%, transparent); --section-shadow: 0 1px 3px rgba(0,0,0,.12);
+  --halfsection-bg: color-mix(in srgb, #6A00F4 12%, #FFD6A5); --halfsection-color: color-mix(in srgb, #6A00F4 85%, #000);
+  --bg-grad: linear-gradient(180deg, #FFD6A5 0%, color-mix(in srgb, #FFD6A5 94%, #6A00F4 6%) 100%);
+  --glass-bg: color-mix(in srgb, #FFD6A5 40%, rgba(255,255,255,var(--glass-op-l))); --glass-bg-strong: color-mix(in srgb, #FFD6A5 30%, #ffffff);
+  --glass-border: color-mix(in srgb, #6A00F4 22%, transparent);
+  --paper-grid: color-mix(in srgb, #6A00F4 16%, transparent);
+  --paper-line: color-mix(in srgb, #6A00F4 35%, transparent);
+}
+html[data-palette] body { background-color: var(--bg-0); background-image: linear-gradient(to right, var(--paper-grid) 1px, transparent 1px), linear-gradient(to bottom, var(--paper-grid) 1px, transparent 1px); }
+html[data-palette] table.grid thead th { background: var(--bg-3) !important; }
+html[data-palette] table.grid td, html[data-palette] table.grid th { border-color: var(--line-soft) !important; }
+
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 body {
@@ -11417,7 +11535,8 @@ document.addEventListener('click', function(e){
 /* ===== APPEARANCE & COPY SETTINGS ===== */
 (function(){
   var KEY='pmx-appearance-v3';
-  var DEF={bg:'paper', op:100, blur:0, copy:'text'};
+  var DEF={bg:'paper', op:100, blur:0, copy:'text', palette:'signal'};
+  var PALETTES=[['signal','Signal Blue','#0057FF','#F8F7F4','light'],['butter','Butter Yellow','#3A0CA3','#FFF275','light'],['lime','Lime Spark','#B6FF2E','#23262F','dark'],['dragon','Dragonfruit','#FF4696','#1E1033','dark'],['emerald','Emerald Ink','#064E3B','#F8E7C9','light'],['ultra','Ultra Violet','#6A00F4','#FFD6A5','light']];
   function load(){ try{ return Object.assign({},DEF,JSON.parse(localStorage.getItem(KEY)||'{}')); }catch(e){ return Object.assign({},DEF); } }
   function save(s){ try{ localStorage.setItem(KEY,JSON.stringify(s)); }catch(e){} }
   function apply(s){
@@ -11425,7 +11544,10 @@ document.addEventListener('click', function(e){
     if(s.op===100){ r.style.removeProperty('--glass-op-l'); r.style.removeProperty('--glass-op-d'); }
     else { r.style.setProperty('--glass-op-l',(s.op/100).toFixed(2)); r.style.setProperty('--glass-op-d',Math.min(1,s.op/100+.02).toFixed(2)); }
     if(s.blur===0) r.style.removeProperty('--glass-blur-px'); else r.style.setProperty('--glass-blur-px',s.blur+'px');
-    if(s.bg==='paper') r.removeAttribute('data-app-bg'); else r.setAttribute('data-app-bg', s.bg);
+    r.removeAttribute('data-app-bg');   // resta solo lo sfondo 'paper' (vivid/soft rimossi)
+    var pal=PALETTES.find(function(p){ return p[0]===s.palette; }) || PALETTES[0];
+    r.setAttribute('data-palette', pal[0]);
+    if (r.getAttribute('data-theme') !== pal[4]) { r.setAttribute('data-theme', pal[4]); try { localStorage.setItem('lspmx_theme', pal[4]); } catch(e){} }
   }
   var S=load(); apply(S);
   try{ ['atl-tng','pac-tng','atl-cgo','pac-cgo','ecsa-list'].forEach(function(p){ localStorage.removeItem('cp-view-'+p); }); }catch(e){}
@@ -11437,9 +11559,7 @@ document.addEventListener('click', function(e){
     function seg(id,opts){ return '<div id="'+id+'" style="display:flex;gap:6px;margin-bottom:18px">'+opts.map(function(o){return '<button type="button" data-v="'+o[0]+'" style="'+BTN+'">'+o[1]+'</button>';}).join('')+'</div>'; }
     el.innerHTML =
       '<div style="color:var(--text-mute);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px">Theme</div>'+
-      '<div id="set-theme-slot" style="margin-bottom:18px"></div>'+
-      '<div style="color:var(--text-mute);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px">Background</div>'+
-      seg('set-bg',[['vivid','Vivid'],['soft','Soft'],['paper','Paper']])+
+      '<div id="set-pal" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:18px">'+PALETTES.map(function(p){ return '<button type="button" data-v="'+p[0]+'" style="'+BTN+';display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;text-align:left"><span style="width:26px;height:26px;border-radius:8px;flex:none;background:linear-gradient(135deg,'+p[2]+' 50%,'+p[3]+' 50%);box-shadow:inset 0 0 0 1px rgba(0,0,0,.12)"></span><span>'+p[1]+'</span></button>'; }).join('')+'</div>'+
       '<div style="margin-bottom:18px"><div style="display:flex;justify-content:space-between;color:var(--text-mute);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px"><span>Glass opacity</span><span id="set-op-v"></span></div><input id="set-op" type="range" min="30" max="100" step="5" style="width:100%"></div>'+
       '<div style="margin-bottom:18px"><div style="display:flex;justify-content:space-between;color:var(--text-mute);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px"><span>Blur</span><span id="set-bl-v"></span></div><input id="set-bl" type="range" min="0" max="60" step="2" style="width:100%"></div>'+
       '<div style="color:var(--text-mute);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px">Copy format (multi-select)</div>'+
@@ -11447,7 +11567,7 @@ document.addEventListener('click', function(e){
       '<button type="button" id="set-reset" style="'+BTN+';width:100%">Reset to default</button>';
     var op=el.querySelector('#set-op'), bl=el.querySelector('#set-bl');
     function mark(){
-      [['set-bg',S.bg],['set-copy',S.copy||'text']].forEach(function(p){
+      [['set-pal',S.palette||'signal'],['set-copy',S.copy||'text']].forEach(function(p){
         var box=el.querySelector('#'+p[0]); if(!box) return;
         box.querySelectorAll('button').forEach(function(b){
           var on=b.getAttribute('data-v')===p[1];
@@ -11462,22 +11582,8 @@ document.addEventListener('click', function(e){
     }
     op.oninput=function(){ S.op=+op.value; apply(S); save(S); mark(); };
     bl.oninput=function(){ S.blur=+bl.value; apply(S); save(S); mark(); };
-    el.querySelector('#set-bg').querySelectorAll('button').forEach(function(b){ b.onclick=function(){ S.bg=b.getAttribute('data-v'); apply(S); save(S); mark(); }; });
-    (function(){
-      var orig=document.getElementById('theme-toggle');
-      var slot=el.querySelector('#set-theme-slot');
-      if(orig&&slot){
-        var c=orig.cloneNode(true);
-        c.id='theme-toggle-settings';
-        c.style.display='inline-flex';
-        slot.appendChild(c);
-        c.onclick=function(){
-          window.__themeWaveEl=c;
-          try { if (typeof toggleTheme==='function') toggleTheme(); }
-          finally { setTimeout(function(){ window.__themeWaveEl=null; }, 200); }
-        };
-      }
-    })();
+    el.querySelector('#set-pal').querySelectorAll('button').forEach(function(b){ b.onclick=function(){ S.palette=b.getAttribute('data-v'); apply(S); save(S); mark(); }; });
+    /* il toggle giorno/notte non serve piu': lo decide la palette */
     el.querySelector('#set-copy').querySelectorAll('button').forEach(function(b){ b.onclick=function(){ S.copy=b.getAttribute('data-v'); save(S); mark(); }; });
     el.querySelector('#set-reset').onclick=function(){ S=Object.assign({},DEF); apply(S); save(S); mark(); };
     mark();
