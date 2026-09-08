@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v41 -->
+<!-- build: 20260903-inbox-v42 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -252,6 +252,52 @@ html[data-palette] table.grid thead th { background: var(--bg-3) !important; bor
 html[data-palette] table.grid td, html[data-palette] table.grid th { border-color: var(--line-soft) !important; }
 html[data-palette] .topbar { background: var(--glass-bg) !important; }
 html[data-palette] .sidebar .nav a:hover { background: rgba(255,255,255,.07); }
+/* ===== v42: palette piu' presente (accento/secondario del tema al posto dei colori arcobaleno) ===== */
+html[data-palette] .sb-block { --sb-c: var(--pal-accent); background: color-mix(in srgb, #ffffff 4%, transparent); border-color: color-mix(in srgb, #ffffff 9%, transparent); }
+html[data-palette] .sb-cargoes, html[data-palette] .sb-rundowns, html[data-palette] .sb-reference { --sb-c: var(--pal-second); }
+html[data-palette] .sb-block .nav-section { color: color-mix(in srgb, var(--sb-c) 75%, #ffffff); }
+html[data-palette] .sb-block .nav a.active { background: var(--sb-c); color: #fff; border-left-color: #fff; }
+html[data-palette] .sb-block .nav a.active svg { opacity: 1; }
+html[data-palette] tr.section-area td { background: var(--pal-dark) !important; color: #fff !important; box-shadow: inset 5px 0 0 var(--pal-accent) !important; }
+html[data-palette] tr.section-area .area-count { background: var(--pal-accent) !important; color: #fff !important; }
+html[data-palette] tr.section-half td { background: color-mix(in srgb, var(--pal-second) 16%, var(--pal-surface)) !important; color: color-mix(in srgb, var(--pal-second) 80%, var(--pal-dark)) !important; box-shadow: inset 5px 0 0 var(--pal-second) !important; }
+html[data-palette] table.grid thead th { background: color-mix(in srgb, var(--pal-second) 14%, var(--pal-surface)) !important; color: var(--pal-dark) !important; }
+html[data-palette] .topbar { border-bottom: 2px solid var(--pal-accent) !important; }
+html[data-palette] .page-title::after { background: var(--pal-accent); width: 40px; }
+html[data-palette] button.primary { background: var(--pal-accent) !important; border-color: var(--pal-accent) !important; color: #fff !important; }
+html[data-palette] .stat-card, html[data-palette] .panel { border-top: 3px solid var(--pal-second); }
+html[data-palette] .count-pill { background: var(--pal-accent) !important; }
+html[data-palette] .sidebar .brand-title { color: color-mix(in srgb, var(--pal-accent) 55%, #ffffff); }
+html[data-palette] .sidebar-footer { border-top-color: color-mix(in srgb, var(--pal-second) 60%, transparent); }
+html[data-palette] .sidebar .sb-user { color: color-mix(in srgb, var(--pal-second) 70%, #ffffff); }
+
+/* ===== v42: sidebar "rail" — striscia con sole icone, si allarga quando il mouse si avvicina ===== */
+@media (min-width: 701px) {
+  html[data-sb="rail"] .app { grid-template-columns: 84px 1fr; }
+  html[data-sb="rail"] .sidebar { position: fixed; left: 14px; top: 14px; height: calc(100vh - 28px); width: 56px; padding: 12px 6px 10px; z-index: 150;
+    overflow: visible; transition: width 180ms var(--ease-mac, ease), padding 180ms var(--ease-mac, ease), box-shadow 180ms ease; }
+  html[data-sb="rail"] .sidebar::after { content: ''; position: absolute; top: 0; bottom: 0; left: 100%; width: 26px; } /* zona "vicino": allarga anche senza esserci sopra */
+  html[data-sb="rail"] .sidebar > * { overflow: hidden; white-space: nowrap; }
+  html[data-sb="rail"] .sidebar:hover { width: 232px; padding: 14px 10px 12px; box-shadow: 0 24px 70px -24px rgba(0,0,0,.75); }
+  /* stato chiuso */
+  html[data-sb="rail"] .sidebar:not(:hover) .brand { justify-content: center; gap: 0; margin-bottom: 8px; padding: 0; }
+  html[data-sb="rail"] .sidebar:not(:hover) .brand-title { display: none; }
+  html[data-sb="rail"] .sidebar:not(:hover) .brand-logo { width: 34px; height: 34px; border-radius: 9px; }
+  html[data-sb="rail"] .sidebar:not(:hover) .sb-block { padding: 3px 3px 4px; margin-bottom: 7px; border-radius: 10px; }
+  html[data-sb="rail"] .sidebar:not(:hover) .nav-section { font-size: 0; margin: 2px 0 3px; height: 3px; border-radius: 99px; background: color-mix(in srgb, var(--sb-c, var(--gold)) 55%, transparent); }
+  html[data-sb="rail"] .sidebar:not(:hover) .nav-label { display: none; }
+  html[data-sb="rail"] .sidebar:not(:hover) .nav a { padding: 8px 0; justify-content: center; gap: 0; border-left-width: 0; border-radius: 8px; position: relative; }
+  html[data-sb="rail"] .sidebar:not(:hover) .nav a svg { width: 18px; height: 18px; opacity: .9; }
+  html[data-sb="rail"] .sidebar:not(:hover) .nav a[data-badge]::after { content: attr(data-badge); position: absolute; right: 3px; bottom: 3px; font-size: 8px; font-weight: 800; line-height: 1;
+    padding: 1px 3px; border-radius: 4px; background: var(--sb-c, var(--gold)); color: #fff; letter-spacing: 0; }
+  html[data-sb="rail"] .sidebar:not(:hover) .nav a.active[data-badge]::after { background: #fff; color: var(--sb-c, var(--gold)); }
+  html[data-sb="rail"] .sidebar:not(:hover) .sidebar-footer { padding: 8px 0 0; text-align: center; }
+  html[data-sb="rail"] .sidebar:not(:hover) .sb-user { font-size: 9px; }
+  html[data-sb="rail"] .sidebar:not(:hover) .legend { display: none; }
+  /* stato aperto: etichette con fade */
+  html[data-sb="rail"] .sidebar .nav-label, html[data-sb="rail"] .sidebar .brand-title { transition: opacity 160ms ease 60ms; }
+  html[data-sb="rail"] .sidebar:hover .nav-label, html[data-sb="rail"] .sidebar:hover .brand-title { opacity: 1; }
+}
 
 
 * { box-sizing: border-box; }
@@ -2589,30 +2635,30 @@ body:not(.logged-in) .app { visibility: hidden; }
   <div class="sb-block sb-vessels">
     <div class="nav-section">Atlantic</div>
     <nav class="nav" id="nav">
-      <a data-route="atl-tng"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="13" y1="6" x2="13" y2="10"/><path d="M10 10h6v4h-6z"/><path d="M3 14h18l-2.5 5h-13z"/></svg><span class="nav-label">ATL TNG</span></a>
-      <a data-route="atl-cgo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a4 4 0 0 1 8 0v2"/></svg><span class="nav-label">ATL CGO</span></a>
+      <a data-route="atl-tng" data-badge="A"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="13" y1="6" x2="13" y2="10"/><path d="M10 10h6v4h-6z"/><path d="M3 14h18l-2.5 5h-13z"/></svg><span class="nav-label">ATL TNG</span></a>
+      <a data-route="atl-cgo" data-badge="A"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a4 4 0 0 1 8 0v2"/></svg><span class="nav-label">ATL CGO</span></a>
     </nav>
   </div>
   <div class="sb-block sb-cargoes">
     <div class="nav-section">Pacific</div>
     <nav class="nav">
-      <a data-route="pac-tng"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="13" y1="6" x2="13" y2="10"/><path d="M10 10h6v4h-6z"/><path d="M3 14h18l-2.5 5h-13z"/></svg><span class="nav-label">PAC TNG</span></a>
-      <a data-route="pac-cgo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a4 4 0 0 1 8 0v2"/></svg><span class="nav-label">PAC CGO</span></a>
+      <a data-route="pac-tng" data-badge="P"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="13" y1="6" x2="13" y2="10"/><path d="M10 10h6v4h-6z"/><path d="M3 14h18l-2.5 5h-13z"/></svg><span class="nav-label">PAC TNG</span></a>
+      <a data-route="pac-cgo" data-badge="P"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a4 4 0 0 1 8 0v2"/></svg><span class="nav-label">PAC CGO</span></a>
     </nav>
   </div>
   <div class="sb-block sb-finder">
     <div class="nav-section">Finder</div>
     <nav class="nav">
-      <a data-route="vsl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="nav-label">Vsl Finder</span></a>
-      <a data-route="cgo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="nav-label">Cgo Finder</span></a>
+      <a data-route="vsl" data-badge="V"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="nav-label">Vsl Finder</span></a>
+      <a data-route="cgo" data-badge="C"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="nav-label">Cgo Finder</span></a>
     </nav>
   </div>
   <div class="sb-block sb-rundowns">
     <div class="nav-section">Rundowns</div>
     <nav class="nav">
-      <a data-route="rundown-ecsa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v6h6"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/></svg><span class="nav-label">ECSA</span></a>
-      <a data-route="rundown-natl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v6h6"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/></svg><span class="nav-label">N.ATL</span></a>
-      <a data-route="rundown-pac"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v6h6"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/></svg><span class="nav-label">PACIFIC</span></a>
+      <a data-route="rundown-ecsa" data-badge="E"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v6h6"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/></svg><span class="nav-label">ECSA</span></a>
+      <a data-route="rundown-natl" data-badge="N"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v6h6"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/></svg><span class="nav-label">N.ATL</span></a>
+      <a data-route="rundown-pac" data-badge="P"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v6h6"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/></svg><span class="nav-label">PACIFIC</span></a>
     </nav>
   </div>
   <div class="sb-block sb-tools">
@@ -11546,7 +11592,7 @@ document.addEventListener('click', function(e){
 /* ===== APPEARANCE & COPY SETTINGS ===== */
 (function(){
   var KEY='pmx-appearance-v3';
-  var DEF={bg:'paper', op:100, blur:0, copy:'text', palette:'paper'};
+  var DEF={bg:'paper', op:100, blur:0, copy:'text', palette:'paper', sb:'rail'};
   var PALETTES=[['paper','Paper','#ffffff','#1A73E8','#0F9D58','#F9AB00','light'],['crimson','Crimson','#F2F1ED','#161616','#710014','#B38F6F','light'],['pebble','Pebble','#EEEEEE','#313841','#EA9216','#3A4750','light'],['sage','Sage','#E2F0CC','#011207','#8BC53D','#012F13','light'],['navy','Navy','#F9F9F9','#092634','#FF6E42','#004E72','light'],['almond','Almond','#D6BD98','#1A3636','#40534C','#677D6A','light']];
   function load(){ try{ return Object.assign({},DEF,JSON.parse(localStorage.getItem(KEY)||'{}')); }catch(e){ return Object.assign({},DEF); } }
   function save(s){ try{ localStorage.setItem(KEY,JSON.stringify(s)); }catch(e){} }
@@ -11558,6 +11604,7 @@ document.addEventListener('click', function(e){
     r.removeAttribute('data-app-bg');   // resta solo lo sfondo 'paper' (vivid/soft rimossi)
     var pal=PALETTES.find(function(p){ return p[0]===s.palette; }) || PALETTES[0];
     if (pal[0]==='paper') r.removeAttribute('data-palette'); else r.setAttribute('data-palette', pal[0]);
+    r.setAttribute('data-sb', s.sb==='full' ? 'full' : 'rail');
     if (r.getAttribute('data-theme') !== pal[6]) { r.setAttribute('data-theme', pal[6]); try { localStorage.setItem('lspmx_theme', pal[6]); } catch(e){} }
   }
   var S=load(); apply(S);
@@ -11573,12 +11620,14 @@ document.addEventListener('click', function(e){
       '<div id="set-pal" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:18px">'+PALETTES.map(function(p){ return '<button type="button" data-v="'+p[0]+'" style="'+BTN+';display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;text-align:left"><span style="width:30px;height:26px;border-radius:8px;flex:none;background:linear-gradient(90deg,'+p[2]+' 0 25%,'+p[3]+' 25% 50%,'+p[4]+' 50% 75%,'+p[5]+' 75% 100%);box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)"></span><span>'+p[1]+'</span></button>'; }).join('')+'</div>'+
       '<div style="margin-bottom:18px"><div style="display:flex;justify-content:space-between;color:var(--text-mute);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px"><span>Glass opacity</span><span id="set-op-v"></span></div><input id="set-op" type="range" min="30" max="100" step="5" style="width:100%"></div>'+
       '<div style="margin-bottom:18px"><div style="display:flex;justify-content:space-between;color:var(--text-mute);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px"><span>Blur</span><span id="set-bl-v"></span></div><input id="set-bl" type="range" min="0" max="60" step="2" style="width:100%"></div>'+
+      '<div style="color:var(--text-mute);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px">Sidebar</div>'+
+      seg('set-sb',[['rail','Compact (expands on hover)'],['full','Always open']])+
       '<div style="color:var(--text-mute);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px">Copy format (multi-select)</div>'+
       seg('set-copy',[['text','Text'],['image','Screenshot']])+
       '<button type="button" id="set-reset" style="'+BTN+';width:100%">Reset to default</button>';
     var op=el.querySelector('#set-op'), bl=el.querySelector('#set-bl');
     function mark(){
-      [['set-pal',S.palette||'paper'],['set-copy',S.copy||'text']].forEach(function(p){
+      [['set-pal',S.palette||'paper'],['set-copy',S.copy||'text'],['set-sb',S.sb||'rail']].forEach(function(p){
         var box=el.querySelector('#'+p[0]); if(!box) return;
         box.querySelectorAll('button').forEach(function(b){
           var on=b.getAttribute('data-v')===p[1];
@@ -11596,6 +11645,7 @@ document.addEventListener('click', function(e){
     el.querySelector('#set-pal').querySelectorAll('button').forEach(function(b){ b.onclick=function(){ S.palette=b.getAttribute('data-v'); apply(S); save(S); mark(); }; });
     /* il toggle giorno/notte non serve piu': lo decide la palette */
     el.querySelector('#set-copy').querySelectorAll('button').forEach(function(b){ b.onclick=function(){ S.copy=b.getAttribute('data-v'); save(S); mark(); }; });
+    el.querySelector('#set-sb').querySelectorAll('button').forEach(function(b){ b.onclick=function(){ S.sb=b.getAttribute('data-v'); apply(S); save(S); mark(); }; });
     el.querySelector('#set-reset').onclick=function(){ S=Object.assign({},DEF); apply(S); save(S); mark(); };
     mark();
   };
