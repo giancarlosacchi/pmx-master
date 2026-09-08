@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v36 -->
+<!-- build: 20260903-inbox-v37 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2601,6 +2601,40 @@ async function bootAppAfterAuth(user, allowedRow) {
   startRealtimeSync();
   // 5) Snapshot orario per la version history (fire-and-forget)
   setTimeout(() => maybeTakeHourlySnapshot(), 3000);
+  // 6) Allarme "Teams reader offline": visibile a TUTTI, su ogni pagina (controllo ogni 60s)
+  setTimeout(checkReaderBanner, 4000);
+  setInterval(checkReaderBanner, 60000);
+}
+
+// ============================================================
+// READER STATUS BANNER — se il bot Teams non batte piu' (in orario di mercato) lo dice a tutti
+// ============================================================
+function _romeNow() { return new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Rome' })); }
+function _isMarketHours() { const d = _romeNow(); const h = d.getHours() + d.getMinutes() / 60; return d.getDay() >= 1 && d.getDay() <= 5 && h >= 7.5 && h < 18.5; }
+function setReaderBanner(text) {
+  let b = document.getElementById('reader-banner');
+  if (!text) { if (b) b.remove(); return; }
+  if (!b) { b = document.createElement('div'); b.id = 'reader-banner'; b.style.cssText = 'position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:99990;background:#b91c1c;color:#fff;font-size:12.5px;font-weight:700;padding:8px 16px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:90vw;text-align:center'; document.body.appendChild(b); }
+  b.textContent = text;
+}
+async function checkReaderBanner() {
+  try {
+    if (!document.body.classList.contains('logged-in')) return;
+    const { data, error } = await sb.from('scraper_heartbeat').select('id,at,info').in('id', ['teams', 'broker']);
+    if (error) return;
+    const t = (data || []).find(x => x.id === 'teams'), b = (data || []).find(x => x.id === 'broker');
+    const fmt = iso => iso ? new Date(iso).toLocaleString('en-GB', { timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'never';
+    const info = (t && t.info) || {};
+    const ageS = t && t.at ? (Date.now() - new Date(t.at).getTime()) / 1000 : Infinity;
+    const pollS = Math.max(0, Number(info.poll_ms || 0) / 1000);
+    const limit = Math.max(600, pollS * 2 + 180);
+    const st = String(info.status || '');
+    if (st === 'login-needed') return setReaderBanner('TEAMS READER: login needed (Teams session expired) — please tell Giancarlo. Last beat ' + fmt(t.at));
+    if (b && b.info && b.info.status === 'crash-loop') return setReaderBanner('TEAMS READER keeps crashing (auto-retry every 10 min) — please tell Giancarlo.');
+    if (b && b.info && b.info.status === 'stopped' && _isMarketHours() && ageS > 300) return setReaderBanner('TEAMS READER stopped at ' + fmt(b.at) + ' — no new positions/cargoes arriving. Please tell Giancarlo.');
+    if (_isMarketHours() && ageS > limit) return setReaderBanner('TEAMS READER OFFLINE since ' + fmt(t && t.at) + ' — no new positions/cargoes arriving. Please tell Giancarlo.');
+    setReaderBanner(null);
+  } catch (e) { /* silenzioso */ }
 }
 
 // ============================================================
