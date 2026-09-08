@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v40 -->
+<!-- build: 20260903-inbox-v41 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -9206,7 +9206,7 @@ function renderInboxCargo() {
     <td ${E('cgo', 'col-c-cgo')}>${inh('cgo')}</td>
     <td ${E('size', 'dim col-c-size')}>${inh('size')}</td>
     <td ${E('notes', 'col-ideas' + (isIdeasOffers(r.notes, d) ? ' cell-offers' : ''))}><div class="ideas-text">${fmtIdeas(r.notes || '', d)}</div></td>
-    <td ${E('ls_brkr', 'dim col-lsbrkr')}>${esc(r.ls_brkr || '')}</td>
+    <td ${E('ls_brkr', 'dim col-lsbrkr')}>${r.ls_brkr ? esc(r.ls_brkr) : (ex && ex.ls_brkr ? `<span class="ib-inherit" title="From the list (rundown: whoever quotes it keeps it)">${esc(ex.ls_brkr)}</span>` : '')}</td>
     <td class="dim col-c-update">${fmtUpdate(r.update_date)}</td>
     <td class="col-c-stato"><div class="status-wrap">
       <span class="status-chip ${statusCls}">${statusLabel}</span>
