@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v35 -->
+<!-- build: 20260903-inbox-v36 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2983,7 +2983,7 @@ function _remapId(table, oldId, newId, cloudRow) {
 // Snapshot interval logic:
 // - Debounced 30s dopo ogni modifica (raggruppa burst di click rapidi)
 // - Min interval di 60s tra snapshots (evita di averne troppi in poco tempo)
-const SNAPSHOT_MIN_INTERVAL_SEC = 60;
+const SNAPSHOT_MIN_INTERVAL_SEC = 3600;   // 1/h per tutto il team (ogni snapshot e' un dump intero del DB: quota!)
 
 let _snapshotTimer = null;
 function scheduleSnapshot() {
@@ -3199,13 +3199,36 @@ function startRealtimeSync() {
     try {
       const sig = await _cloudSig();
       if (sig === _lastPollSig) return; // niente di nuovo: non scaricare nulla
-      await loadDataFromCloud();
+      const ok = await incrementalReload(sig);   // solo le righe cambiate (~KB) invece di tutto il DB (~500 KB)
+      if (!ok) await loadDataFromCloud();
       _lastPollSig = sig;
       _scheduleRtRender();
     } catch (e) {
       console.warn('[poll] safety net refresh failed:', e);
     }
-  }, 30000);
+  }, 60000);
+  // Ricarica incrementale: righe con updated_at piu' recente dell'ultimo massimo noto. Se il numero di righe non torna
+  // (cancellazioni) → false → il chiamante fa il reload completo.
+  window.incrementalReload = async function(sig) {
+    try {
+      const parts = String(sig || '').split('|');   // [countV, maxV, countC, maxC]
+      const want = { vessels: [Number(parts[0]), parts[1]], cargoes: [Number(parts[2]), parts[3]] };
+      for (const t of ['vessels', 'cargoes']) {
+        const arr = DATA[t] || [];
+        const localMax = arr.reduce((m, r) => (r.updated_at && r.updated_at > m ? r.updated_at : m), '');
+        const [cnt] = want[t];
+        const visible = arr.length + [...(window._dedupeDropped || [])].filter(id => !arr.some(r => r.id === id)).length;
+        if (Number.isFinite(cnt) && cnt < visible) return false;   // qualcosa e' stato cancellato: serve il reload completo
+        if (!localMax) return false;
+        const { data, error } = await sb.from(t).select('*').gt('updated_at', localMax).order('updated_at');
+        if (error) return false;
+        for (const row of (data || [])) { if (t === 'cargoes') normCgoSection(row); const i = arr.findIndex(r => r.id === row.id); if (i >= 0) { const sn = arr[i].__sessionNew; arr[i] = row; if (sn) arr[i].__sessionNew = true; } else arr.push(row); if (_lastSyncSnapshot && _lastSyncSnapshot[t]) _lastSyncSnapshot[t].set(row.id, _hash(row)); }
+        if (Number.isFinite(cnt) && cnt > arr.length + [...(window._dedupeDropped || [])].filter(id => !arr.some(r => r.id === id)).length) return false;   // righe nuove che non abbiamo preso (updated_at vecchio?) → reload completo
+      }
+      saveData(DATA);
+      return true;
+    } catch (e) { console.warn('[poll] incremental failed:', e); return false; }
+  };
 })();
 
 // Identifico gli eventi causati da me (non mostro toast, ma applico comunque
@@ -9219,8 +9242,12 @@ function renderInboxCargo() {
       else { const seen = at ? at.toLocaleString('en-GB', { timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'never'; live.textContent = '● offline'; live.style.color = 'var(--red)'; live.title = 'Teams reader not running (last seen ' + seen + ')'; }
     } catch (e) { live.textContent = '● unknown'; live.style.color = 'var(--text-mute)'; live.title = String(e.message || e); }
   };
-  const sync = async () => {
+  const sync = async (force) => {
     checkLive();
+    { const sg = await sb.from('inbox_cargoes').select('id', { count: 'exact' }).eq('status', 'pending').order('id', { ascending: false }).limit(1);
+      const sigNow = sg.error ? null : (sg.count + ':' + ((sg.data && sg.data[0] && sg.data[0].id) || 0));
+      if (!force && sigNow && sigNow === window.__ibSigCgo) return;   // nulla di nuovo: non riscaricare tutta l'Inbox
+      window.__ibSigCgo = sigNow; }
     const { data, error } = await sb.from('inbox_cargoes').select('*').eq('status', 'pending').order('msg_time', { ascending: false }).order('id', { ascending: false });
     if (error) { if (!$('#ib-tbl table') && !$('#ib-empty')) $('#ib-tbl').innerHTML = '<div style="padding:16px;color:var(--red)">' + esc(error.message) + '</div>'; return; }
     let rows = data || [];
@@ -9245,9 +9272,9 @@ function renderInboxCargo() {
     for (const r of rows) { const prev = byId[r.id]; if (!prev || JSON.stringify(prev) !== JSON.stringify(r)) { byId[r.id] = r; changed = true; } }
     if (changed || !$('#ib-tbl table')) render();
   };
-  sync();
+  sync(true);
   if (window.__ibTimer) clearInterval(window.__ibTimer);
-  window.__ibTimer = setInterval(() => { if (location.hash.startsWith('#/inbox') && window.__ibMode === 'cgo') sync(); else { clearInterval(window.__ibTimer); window.__ibTimer = null; } }, 8000);
+  window.__ibTimer = setInterval(() => { if (location.hash.startsWith('#/inbox') && window.__ibMode === 'cgo') sync(); else { clearInterval(window.__ibTimer); window.__ibTimer = null; } }, 30000);
 }
 routes['inbox'] = function() {
   if (CURRENT_USER_ROLE !== 'admin') { location.hash = '#/atl-tng'; return; }
@@ -9548,8 +9575,12 @@ routes['inbox'] = function() {
       else { const seen = at ? at.toLocaleString('en-GB', { timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'never'; live.textContent = '● offline'; live.style.color = 'var(--red)'; live.title = 'Teams reader not running — last seen ' + seen; }
     } catch (e) { live.textContent = '● unknown'; live.style.color = 'var(--text-mute)'; live.title = String(e.message || e); }
   };
-  const sync = async () => {
+  const sync = async (force) => {
     checkLive();
+    { const sg = await sb.from('inbox_candidates').select('id', { count: 'exact' }).eq('status', 'pending').order('id', { ascending: false }).limit(1);
+      const sigNow = sg.error ? null : (sg.count + ':' + ((sg.data && sg.data[0] && sg.data[0].id) || 0));
+      if (!force && sigNow && sigNow === window.__ibSigVsl) return;   // nulla di nuovo: non riscaricare tutta l'Inbox
+      window.__ibSigVsl = sigNow; }
     const { data, error } = await sb.from('inbox_candidates').select('*').eq('status', 'pending').order('msg_time', { ascending: false }).order('id', { ascending: false });
     if (error) { if (!$('#ib-tbl table') && !$('#ib-empty')) $('#ib-tbl').innerHTML = '<div style="padding:16px;color:var(--red)">' + esc(error.message) + '</div>'; return; }
     let rows = data || [];
@@ -9579,9 +9610,9 @@ routes['inbox'] = function() {
     }
     if (changed || !$('#ib-tbl table')) render();
   };
-  sync();
+  sync(true);
   if (window.__ibTimer) clearInterval(window.__ibTimer);
-  window.__ibTimer = setInterval(() => { if (location.hash.startsWith('#/inbox') && window.__ibMode !== 'cgo') sync(); else { clearInterval(window.__ibTimer); window.__ibTimer = null; } }, 8000);
+  window.__ibTimer = setInterval(() => { if (location.hash.startsWith('#/inbox') && window.__ibMode !== 'cgo') sync(); else { clearInterval(window.__ibTimer); window.__ibTimer = null; } }, 30000);
 };
 // Badge nella sidebar: quante posizioni in attesa (visibile da ogni pagina, refresh ogni 30s)
 function updateInboxBadge(n) {
@@ -9595,7 +9626,7 @@ async function pollInboxBadge() {
   try { const [a, b] = await Promise.all([sb.from('inbox_candidates').select('id', { count: 'exact', head: true }).eq('status', 'pending'), sb.from('inbox_cargoes').select('id', { count: 'exact', head: true }).eq('status', 'pending')]); if (!a.error) updateInboxBadge((a.count || 0) + (b.error ? 0 : (b.count || 0))); } catch {}
 }
 [1000, 3000, 6000, 10000].forEach(ms => setTimeout(pollInboxBadge, ms));   // primi tentativi finche' il ruolo non e' noto
-setInterval(pollInboxBadge, 20000);
+setInterval(pollInboxBadge, 60000);
 routes['admin'] = function() {
   // Defense in depth: even if a non-admin types #/admin in URL, redirect away
   if (CURRENT_USER_ROLE !== 'admin') {
