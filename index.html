@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v43 -->
+<!-- build: 20260903-inbox-v44 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -275,11 +275,12 @@ html[data-palette] .sidebar .sb-user { color: color-mix(in srgb, var(--pal-secon
 @media (min-width: 701px) {
   html[data-sb="rail"] .app { grid-template-columns: 84px 1fr; }
   html[data-sb="rail"] .main { grid-column: 2; }
-  html[data-sb="rail"] .sidebar { position: fixed; left: 14px; top: 14px; height: calc(100vh - 28px); width: 56px; padding: 12px 6px 10px; z-index: 150;
-    overflow: visible; transition: width 180ms var(--ease-mac, ease), padding 180ms var(--ease-mac, ease), box-shadow 180ms ease; }
-  html[data-sb="rail"] .sidebar::after { content: ''; position: absolute; top: 0; bottom: 0; left: 100%; width: 26px; } /* zona "vicino": allarga anche senza esserci sopra */
-  html[data-sb="rail"] .sidebar > * { overflow: hidden; white-space: nowrap; }
-  html[data-sb="rail"] .sidebar:hover { width: 232px; padding: 14px 10px 12px; box-shadow: 0 24px 70px -24px rgba(0,0,0,.75); }
+  html[data-sb="rail"] .sidebar { position: fixed; left: 14px; top: 14px; height: calc(100vh - 28px); width: 70px; padding: 12px 6px 10px; z-index: 150; box-sizing: border-box;
+    overflow: hidden; border-right: 14px solid transparent; background-clip: padding-box; /* i 14px trasparenti = zona "vicino": allarga anche senza esserci sopra */
+    transition: width 180ms var(--ease-mac, ease), padding 180ms var(--ease-mac, ease), box-shadow 180ms ease; }
+  html[data-sb="rail"] .sidebar > * { flex-shrink: 0; overflow: hidden; white-space: nowrap; }
+  html[data-sb="rail"] .sidebar:hover { width: 226px; padding: 14px 10px 12px; overflow-y: auto; overflow-x: hidden; box-shadow: 0 24px 70px -24px rgba(0,0,0,.75); }
+  html[data-sb="rail"] .sidebar .sidebar-footer { margin-top: auto; }
   /* stato chiuso */
   html[data-sb="rail"] .sidebar:not(:hover) .brand { justify-content: center; gap: 0; margin-bottom: 8px; padding: 0; }
   html[data-sb="rail"] .sidebar:not(:hover) .brand-title { display: none; }
