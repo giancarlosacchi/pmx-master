@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v37 -->
+<!-- build: 20260903-inbox-v38 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -9363,7 +9363,7 @@ routes['inbox'] = function() {
     const t = (r.msg_time || '').slice(5, 16).replace('T', ' ');
     const tip = ex ? `In list: ${plain(ex.area || '')} ${plain(ex.open_port || '')} ${plain(fmtDateRange(ex.open_from, ex.open_to))}` : 'NOT in list';
     const pill = (kind && kind !== 'subs' && kind !== 'remove') ? `<span class="ib-pill" style="background:${KIND_LBL[kind][1]}" title="${attr(ex ? 'In list' : 'NOT in list')}">${KIND_LBL[kind][0]}</span>` : '';   // FXD non serve: riga rosa + status "on subs"
-    const flags = (r.scrbr_ftd ? `<span class="flags-label">SCRFTD</span>` : '') + pill;
+    const flags = (r.scrbr_ftd ? `<span class="flags-label">SCRFTD</span>` : '') + (r.ex_our_cp ? `<span class="flags-label">EX OUR CP</span>` : '') + pill;
     const E = (f, extra) => `class="editable ${extra || ''} ib-ed" data-f="${f}"`;
     return `<tr class="${cls} row-area ${areaClass(r.area)} ${kind ? 'ib-' + kind : ''} ${st === 'on_subs' ? 'ib-subs' : ''} ${r.area ? '' : 'ib-noarea'}" data-row="${r.id}">
     <td ${E('vessel', 'col-vessel')} data-tip="${attr(tip)}">${esc(r.vessel || '')}</td>
@@ -9464,7 +9464,7 @@ routes['inbox'] = function() {
   $('#ib-tbl').addEventListener('mousedown', hidePop, true);
   const applyFilter = () => {
     const stLabel = r => { const st = stOf(r); return st === 'on_subs' ? 'on subs' : st === 'off_mkt' ? 'off mrkt' : st === 'fresh' ? 'fresh' : st === 'open' ? 'back open' : ''; };
-    const flagsTxt = (r, tr) => { const td = tr.querySelector('td.col-flags'); return (td ? td.textContent : '') + ' ' + (r.scrbr_ftd ? 'SCRBR' : '') + ' ' + (kindOf(r) === 'unsubs' ? 'F/F' : ''); };
+    const flagsTxt = (r, tr) => { const td = tr.querySelector('td.col-flags'); return (td ? td.textContent : '') + ' ' + (r.scrbr_ftd ? 'SCRBR' : '') + ' ' + (r.ex_our_cp ? 'EX OUR CP' : '') + ' ' + (kindOf(r) === 'unsubs' ? 'F/F' : ''); };
     const msgDay = r => (r.msg_time || '').slice(0, 10);
     $$('#ib-tbl tbody tr[data-row]').forEach(tr => {
       const r = byId[Number(tr.dataset.row)]; if (!r) return;
@@ -9570,6 +9570,7 @@ routes['inbox'] = function() {
         if (area) { p.area = area; p.basin = PAC_AREAS.has(area) ? 'PAC' : 'ATL'; }
         if (r.ls_brkr) p.ls_brkr = r.ls_brkr.toUpperCase();
         if (r.ideas && r.ideas !== (r.__ideas0 || null)) p.ideas = r.ideas;
+        if (r.ex_our_cp === true) p.ex_our_cp = true;
         if (st === 'open' || !st) { p.status = null; p.subs = null; } else { p.status = st; p.subs = st === 'on_subs' ? 'S' : null; }
         if (ex) updVessel(ex.id, p);
         else if (p.open_port || p.area) addVessel({ vessel: r.vessel, ...p });
@@ -9591,6 +9592,7 @@ routes['inbox'] = function() {
         if (st === 'open') { patch.status = null; patch.subs = null; }
         else if (st) { patch.status = st; if (st === 'on_subs') patch.subs = 'S'; }
         if (r.scrbr_ftd === true) patch.scrbr_ftd = true;
+        if (r.ex_our_cp === true) patch.ex_our_cp = true;
         if (ex) updVessel(ex.id, patch); else addVessel({ ...patch });
       }
       delete byId[r.id]; render();
@@ -9621,7 +9623,7 @@ routes['inbox'] = function() {
     { const byKey = new Map(), keep = [], old = [], fills = [];
       // stessa nave piu' volte (qualunque kind): vale SOLO l'ultimo messaggio (righe gia' ordinate dalla piu' recente).
       // Se l'ultimo e' un cambio stato (subs/remove) senza porto/dwt, eredita i dati dalla posizione precedente.
-      const FILL = ['dwt_blt', 'open_port', 'open_from', 'open_to', 'area', 'basin', 'ideas', 'ows_brkr', 'bunker', 'scrbr_ftd'];
+      const FILL = ['dwt_blt', 'open_port', 'open_from', 'open_to', 'area', 'basin', 'ideas', 'ows_brkr', 'bunker', 'scrbr_ftd', 'ex_our_cp'];
       for (const r of rows) {
         const k = norm(r.vessel), cur = byKey.get(k);
         if (!cur) { byKey.set(k, r); keep.push(r); continue; }
@@ -9632,6 +9634,9 @@ routes['inbox'] = function() {
       if (old.length) { sb.from('inbox_candidates').update({ status: 'superseded' }).in('id', old).then(() => {}); }
       for (const [id, patch] of fills) sb.from('inbox_candidates').update(patch).eq('id', id).then(() => {});
       rows = keep; }
+    { // "gone / on subs / fixed" su una nave che NON e' in lista: non c'e' nulla da aggiornare → via in silenzio (Giancarlo 8 set 2026)
+      const gone = rows.filter(r => kindOf(r) && !r.open_port && !findV(r.vessel, r.dwt_blt)).map(r => r.id);
+      if (gone.length) { sb.from('inbox_candidates').update({ status: 'rejected' }).in('id', gone).then(() => {}); rows = rows.filter(r => !gone.includes(r.id)); } }
     if ($('#ib-tbl td.editing')) return;            // non ridisegnare mentre stai modificando
     const ids = new Set(rows.map(r => r.id));
     let changed = false;
