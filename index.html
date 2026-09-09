@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v55 -->
+<!-- build: 20260903-inbox-v56 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -11282,7 +11282,9 @@ setRoute();
   var P6 = window.P6 = { set: { hsfo:590, vlsfo:740, lsmgo:1180, p6_last:null }, dist:{}, specs:{}, loaded:false, _pending:false };
   var STD = { intake:69300, days:106.32, vlsfo_t:1872.0, mgo_t:10.63, fixed:145000 };
   var Mm = 1.095;
-  var ALIAS = { 'SPORE':'SINGAPORE','PMO':'MUSCAT','PAKISTAN':'KARACHI','RECA':'RECALADA','PSSG RECALADA':'RECALADA','KRISHNA':'KRISHNAPATNAM','GIZAN':'JIZAN','HON GAI':'HONGAI','ECSA':'SANTOS' };
+  var ALIAS = { 'SPORE':'SINGAPORE','SGP':'SINGAPORE','SIN':'SINGAPORE','PMO':'MUSCAT','PAKISTAN':'KARACHI','RECA':'RECALADA','PSSG RECALADA':'RECALADA','KRISHNA':'KRISHNAPATNAM','GIZAN':'JIZAN','HON GAI':'HONGAI','TUTI':'TUTICORIN','LOMBOK':'SINGAPORE','LOMBOK STRAIT':'SINGAPORE','P LOUIS':'PORT LOUIS','P.LOUIS':'PORT LOUIS',
+    // porti ECSA: la nave e' gia' li' → ballast 0 (come SANTOS)
+    'ECSA':'SANTOS','S.BRASIL':'SANTOS','S BRASIL':'SANTOS','PRAIA MOLE':'SANTOS','ITAGUAI':'SANTOS','TUBARAO':'SANTOS','VITORIA':'SANTOS','PARANAGUA':'SANTOS','RIO GRANDE':'SANTOS','SEPETIBA':'SANTOS','SAO FRANCISCO':'SANTOS','SAO FRANCISCO DO SUL':'SANTOS','IMBITUBA':'SANTOS','ACU':'SANTOS','PONTA UBU':'SANTOS','ARATU':'SANTOS','PLATE':'RECALADA','UPRIVER':'RECALADA','UP RIVER':'RECALADA','ROSARIO':'RECALADA','SAN LORENZO':'RECALADA','BAHIA BLANCA':'RECALADA','NECOCHEA':'RECALADA','MONTEVIDEO':'RECALADA','NUEVA PALMIRA':'RECALADA' };
   function normPort(p){ p = String(p||'').toUpperCase().trim(); return ALIAS[p] || p; }
   P6.portNm = function(name){
     if (!name) return null;
@@ -11508,13 +11510,18 @@ setRoute();
   P6.equiv = function(v, ideasText){
     var offer = P6.parseOffer(ideasText != null ? ideasText : v.ideas);
     if (!offer) return { txt:'', title:'Nessuna offerta rilevata' };
-    if (offer.stated != null) {
-      // broker's own P6 equiv wins (Giancarlo 9 Sep 2026: column must match the message); our estimate goes in the tooltip
-      var mine = null; try { mine = P6.equivCalc(v, offer); } catch(e) {}
-      return { txt: fmtK(offer.stated), title: 'P6 equiv from the message' + (mine && mine.txt ? ' (our calc: ' + mine.txt + ')' : '') };
-    }
+    // Giancarlo 9 Sep 2026: for every ECSA FH offer the column is OUR calculation; the P6 stated by the broker goes in the tooltip (with the difference)
     var r = P6.equivCalc(v, offer);
-    if (r.txt) { r.txt = '<span class="p6est" title="estimated">' + r.txt + '*</span>'; r.title = 'Estimated (no P6 in the message): ' + r.title; }
+    if (r.txt) {
+      if (offer.stated != null) {
+        var diff = (parseFloat(r.txt) * 1000 - offer.stated) / 1000;
+        r.title += ' | broker says ' + fmtK(offer.stated) + ' (' + (diff >= 0 ? '+' : '') + diff.toFixed(2) + 'k)';
+        if (Math.abs(diff) >= 0.75) r.txt = '<span class="p6diff" title="differs from the broker P6 by ' + diff.toFixed(2) + 'k">' + r.txt + '</span>';
+      }
+      return r;
+    }
+    // no calc possible (missing specs / distance): fall back to the broker's P6, in italics
+    if (offer.stated != null) return { txt: '<span class="p6est">' + fmtK(offer.stated) + '</span>', title: 'From the message (our calc not possible: ' + r.title + ')' };
     return r;
   };
   P6.equivCalc = function(v, offer){
@@ -11578,7 +11585,7 @@ setRoute();
   // CSS
   var st = document.createElement('style');
   st.textContent = '.p6cell{font-weight:700;white-space:nowrap;text-align:center;cursor:default}' +
-    '.p6cell.p6warn{color:#D93025;font-weight:800}' + '.p6cell .p6est{font-weight:500;font-style:italic;opacity:.75}' +
+    '.p6cell.p6warn{color:#D93025;font-weight:800}' + '.p6cell .p6est{font-weight:500;font-style:italic;opacity:.75}' + '.p6cell .p6diff{color:#b45309;text-decoration:underline dotted}' +
     'th.p6-th{font-size:8.5px;white-space:nowrap;text-align:center !important;line-height:1.35}' +
     '.p6-set{display:inline-flex;align-items:center;gap:4px;margin-left:6px}' +
     '.p6-set label{font-size:9.5px;text-transform:uppercase;color:var(--text-mute);letter-spacing:.04em;font-weight:700}' +
