@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v54 -->
+<!-- build: 20260903-inbox-v55 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -11487,7 +11487,11 @@ setRoute();
     var scrub = null;
     if (/SCR(?:UB)?\s*4\s*OWN|SCRB4OWNS|SCRUB4OWNS|SCR4OWNS/.test(T)) scrub = 'owns';
     else if (/SCR(?:UB)?\s*4\s*CH|SCRUB4CHTR|SCR4CHTR/.test(T)) scrub = 'chtr';
-    return { rate: rate, bb: bb, port: port, scrub: scrub };
+    // P6 equiv stated by the broker in the message ("- 23.8K P6 EQUIV"): that is THE number for the column; our calc is only a fallback
+    var sm = T.match(/(?<![0-9.])([0-9]{2}(?:[.,][0-9]{1,2})?)\s*K?\s*P6\s*(?:EQUIV|EQ|E)?\b/);
+    var stated = sm ? parseFloat(sm[1].replace(',', '.')) * 1000 : null;
+    if (stated != null && !(stated > 5000 && stated < 60000)) stated = null;
+    return { rate: rate, bb: bb, port: port, scrub: scrub, stated: stated };
   };
   function originOf(v, offer, ideasText){
     var port = (offer && offer.port) || null;
@@ -11502,16 +11506,26 @@ setRoute();
     return (n/1000).toFixed(3);
   }
   P6.equiv = function(v, ideasText){
-    var sp = P6.specs[String(v.vessel||'').toUpperCase().trim()];
     var offer = P6.parseOffer(ideasText != null ? ideasText : v.ideas);
     if (!offer) return { txt:'', title:'Nessuna offerta rilevata' };
+    if (offer.stated != null) {
+      // broker's own P6 equiv wins (Giancarlo 9 Sep 2026: column must match the message); our estimate goes in the tooltip
+      var mine = null; try { mine = P6.equivCalc(v, offer); } catch(e) {}
+      return { txt: fmtK(offer.stated), title: 'P6 equiv from the message' + (mine && mine.txt ? ' (our calc: ' + mine.txt + ')' : '') };
+    }
+    var r = P6.equivCalc(v, offer);
+    if (r.txt) { r.txt = '<span class="p6est" title="estimated">' + r.txt + '*</span>'; r.title = 'Estimated (no P6 in the message): ' + r.title; }
+    return r;
+  };
+  P6.equivCalc = function(v, offer){
+    var sp = P6.specs[String(v.vessel||'').toUpperCase().trim()];
     if (!sp) return { txt:'', title:'Descrizione nave mancante (Vessel Data)' };
     var modes = modesOf(sp);
     if (!modes.length) return { txt:'', title:'Velocita/consumi mancanti' };
     var D, bb = offer.bb || 0;
     if (bb > 0) { D = 0; }
     else {
-      var o = originOf(v, offer, ideasText);
+      var o = originOf(v, offer, null);
       if (o.nm == null) return { txt:'', title:'Distanza mancante: ' + (o.port||'?') };
       D = o.nm;
     }
@@ -11564,7 +11578,7 @@ setRoute();
   // CSS
   var st = document.createElement('style');
   st.textContent = '.p6cell{font-weight:700;white-space:nowrap;text-align:center;cursor:default}' +
-    '.p6cell.p6warn{color:#D93025;font-weight:800}' +
+    '.p6cell.p6warn{color:#D93025;font-weight:800}' + '.p6cell .p6est{font-weight:500;font-style:italic;opacity:.75}' +
     'th.p6-th{font-size:8.5px;white-space:nowrap;text-align:center !important;line-height:1.35}' +
     '.p6-set{display:inline-flex;align-items:center;gap:4px;margin-left:6px}' +
     '.p6-set label{font-size:9.5px;text-transform:uppercase;color:var(--text-mute);letter-spacing:.04em;font-weight:700}' +
