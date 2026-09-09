@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v53 -->
+<!-- build: 20260903-inbox-v54 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -11449,7 +11449,18 @@ setRoute();
     var mgoT = (md.mgo!=null? md.mgo : 0.1)*tot;
     return { intake: intake, tot: tot, bunk: fuel*mainPrice + mgoT*P6.set.lsmgo };
   }
+  // TA / backhaul / period offers are not P6 (fronthaul) offers: skip them and look at the next segment (Giancarlo 9 Sep 2026: MEDI EOLIE "… ECSA TA")
+  var NOT_FH = /\bTA\b|TRANSATLANTIC|\bBH\b|BACKHAUL|\bRDLY\s+(?:SKAW|GIB|ADAM|PASS|CONT|MED|USG|USEC|UKC|NCSA|ARA|BREST|USHANT)|\b(?:SKAW|ADAM|USHANT|BREST)\s*-\s*(?:GIB|PASS)|\bPERIOD\b|\b\d+\s*(?:MOS|MONTHS?|YRS?|YEARS?)\b/;
   P6.parseOffer = function(text){
+    var segs = String(text||'').toUpperCase().split(/\s*\/\/\s*/);
+    for (var si = 0; si < segs.length; si++) {
+      if (NOT_FH.test(segs[si])) continue;
+      var o = P6.parseOffer1(segs[si]);
+      if (o) return o;
+    }
+    return null;
+  };
+  P6.parseOffer1 = function(text){
     var T = String(text||'').toUpperCase();
     var m = T.match(/(?:OFFERS?|GUIDE)\s+(?:USD\s*)?([0-9]{2}(?:[.,][0-9]+)?\s*K(?![A-Z])|[0-9]{4,6})/);
     if (!m) return null;
