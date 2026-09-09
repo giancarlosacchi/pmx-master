@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v52 -->
+<!-- build: 20260903-inbox-v53 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -4885,8 +4885,8 @@ function _daysAgo(iso) {
 function rollIdeasSeg(seg, age) {
   if (age <= 0) return seg;
   // Monday: offers older than today are always LAST (never YDAY — Friday's offers)
-  if (age === 1 && new Date(todayIso() + 'T00:00:00Z').getUTCDay() !== 1) return seg.replace(/^(\s*)YDAY\s+(OFFERS?|GUIDE|IDEA)\b/i, '$1LAST $2').replace(/^(\s*)(OFFERS?|GUIDE|IDEA)\b/i, '$1YDAY $2');
-  return seg.replace(/^(\s*)(?:YDAY\s+)?(OFFERS?|GUIDE|IDEA)\b/i, '$1LAST $2');
+  if (age === 1 && new Date(todayIso() + 'T00:00:00Z').getUTCDay() !== 1) return seg.replace(/^(\s*)YDAY\s+(OFFERS?|GUIDE|IDEA|SEEN|BID|HOLDING|AIMING|HEARD)\b/i, '$1LAST $2').replace(/^(\s*)(OFFERS?|GUIDE|IDEA|SEEN|BID|HOLDING|AIMING|HEARD)\b/i, '$1YDAY $2');
+  return seg.replace(/^(\s*)(?:YDAY\s+)?(OFFERS?|GUIDE|IDEA|SEEN|BID|HOLDING|AIMING|HEARD)\b/i, '$1LAST $2');
 }
 function fmtIdeas(text, updateDateIso) {
   if (!text) return '';
@@ -9215,7 +9215,7 @@ routes['vsl-descr'] = function() {
 // Stessa logica dell'Inbox navi: candidati da inbox_cargoes (bot Teams), un carico per riga,
 // ✓ aggiunge/aggiorna in ATL CGO / PAC CGO, ✕ scarta. Doppioni: stesso chrtrs + load + disch con laycan
 // sovrapposto → vale solo l'ultimo messaggio.
-window.__ibMode = window.__ibMode || 'vsl';
+window.__ibMode = window.__ibMode || (function(){ try { return localStorage.getItem('pmx_ib_mode') || 'vsl'; } catch(e) { return 'vsl'; } })();
 function inboxModeBar() {
   const m = window.__ibMode;
   return `<span class="ib-mode" style="display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-left:12px;vertical-align:5px;font-size:11.5px;font-weight:700;letter-spacing:0">
@@ -9223,7 +9223,7 @@ function inboxModeBar() {
     <button type="button" data-mode="cgo" style="padding:3px 10px;border:0;cursor:pointer;background:${m === 'cgo' ? 'var(--gold,#c9a227)' : 'transparent'};color:${m === 'cgo' ? '#fff' : 'var(--text-dim)'}">CGO</button></span>`;
 }
 function bindInboxModeBar() {
-  $$('.ib-mode button').forEach(b => b.onclick = () => { if (window.__ibMode === b.dataset.mode) return; window.__ibMode = b.dataset.mode; routes['inbox'](); });
+  $$('.ib-mode button').forEach(b => b.onclick = () => { if (window.__ibMode === b.dataset.mode) return; window.__ibMode = b.dataset.mode; try { localStorage.setItem('pmx_ib_mode', window.__ibMode); } catch(e) {} routes['inbox'](); });
 }
 function renderInboxCargo() {
   $$('#page-title .ib-mode').forEach(x => x.remove()); $('#page-title').insertAdjacentHTML('beforeend', inboxModeBar());
@@ -9513,6 +9513,8 @@ function renderInboxCargo() {
   window.__ibTimer = setInterval(() => { if (location.hash.startsWith('#/inbox') && window.__ibMode === 'cgo') sync(); else { clearInterval(window.__ibTimer); window.__ibTimer = null; } }, 30000);
 }
 routes['inbox'] = function() {
+  // role not known yet (page opened / reloaded directly on #/inbox): wait, do NOT bounce to ATL TNG — setRoute() runs again after login
+  if (CURRENT_USER_ROLE == null) { $('#content').innerHTML = '<div style="padding:24px;color:var(--text-mute)">Loading…</div>'; return; }
   if (CURRENT_USER_ROLE !== 'admin') { location.hash = '#/atl-tng'; return; }
   if (window.__ibMode === 'cgo') return renderInboxCargo();
   $$('#page-title .ib-mode').forEach(x => x.remove()); $('#page-title').insertAdjacentHTML('beforeend', inboxModeBar());
@@ -9771,7 +9773,7 @@ routes['inbox'] = function() {
         for (const k of ['dwt_blt', 'open_port', 'open_from', 'open_to', 'bunker', 'ows_brkr']) if (r[k]) p[k] = r[k];
         if (area) { p.area = area; p.basin = PAC_AREAS.has(area) ? 'PAC' : 'ATL'; }
         if (r.ls_brkr) p.ls_brkr = r.ls_brkr.toUpperCase();
-        if (r.ideas && r.ideas !== (r.__ideas0 || null)) p.ideas = r.ideas;
+        if (r.ideas && (r.ideas !== (r.__ideas0 || null) || r.__ideasFromList)) p.ideas = r.ideas;   // aged text from the list (LAST OFFERS…) is written back so it does not look like today's offer
         if (r.ex_our_cp === true) p.ex_our_cp = true;
         if (st === 'open' || !st) { p.status = null; p.subs = null; } else { p.status = st; p.subs = st === 'on_subs' ? 'S' : null; }
         if (ex) updVessel(ex.id, p);
@@ -9844,9 +9846,16 @@ routes['inbox'] = function() {
     let changed = false;
     for (const id of Object.keys(byId)) if (!ids.has(Number(id))) { delete byId[id]; changed = true; }
     for (const r of rows) if (!byId[r.id]) {
-      r.__ideas0 = r.ideas;
+      const ex = findV(r.vessel, r.dwt_blt);
       // fixed / subs message without position data: show the vessel as it is in the list, in its own area
-      if (kindOf(r) && !r.open_port) { const ex = findV(r.vessel, r.dwt_blt); if (ex) Object.assign(r, { dwt_blt: r.dwt_blt || ex.dwt_blt, open_port: ex.open_port, open_from: ex.open_from, open_to: ex.open_to, area: ex.area, basin: ex.basin, ows_brkr: r.ows_brkr || ex.ows_brkr, bunker: r.bunker || ex.bunker, ls_brkr: r.ls_brkr || ex.ls_brkr }); }
+      if (kindOf(r) && !r.open_port && ex) Object.assign(r, { dwt_blt: r.dwt_blt || ex.dwt_blt, open_port: ex.open_port, open_from: ex.open_from, open_to: ex.open_to, area: ex.area, basin: ex.basin, ows_brkr: r.ows_brkr || ex.ows_brkr, bunker: r.bunker || ex.bunker, ls_brkr: r.ls_brkr || ex.ls_brkr });
+      // message without any offer → the offer already in the list stays, aged (OFFERS → YDAY → LAST) as of today (Giancarlo 9 Sep 2026)
+      if (!r.ideas && ex && ex.ideas) { r.ideas = fmtIdeasPlain(ex.ideas, ex.update_date); r.__ideasFromList = true; }
+      // owner / bunker missing in the message → take them from the list
+      if (ex) { if (!r.ows_brkr && ex.ows_brkr) r.ows_brkr = ex.ows_brkr; if (!r.bunker && ex.bunker) r.bunker = ex.bunker; }
+      // a position for a vessel that is NOT in the list = fresh (Giancarlo 9 Sep 2026: NISSAKI, SDTR ALICE, ULTRA LYNX)
+      if (!kindOf(r) && !r.vsl_status && !ex && r.open_port) r.vsl_status = 'fresh';
+      r.__ideas0 = r.ideas;
       byId[r.id] = r; changed = true;
     }
     if (changed || !$('#ib-tbl table')) render();
@@ -9870,6 +9879,7 @@ async function pollInboxBadge() {
 [1000, 3000, 6000, 10000].forEach(ms => setTimeout(pollInboxBadge, ms));   // primi tentativi finche' il ruolo non e' noto
 setInterval(pollInboxBadge, 60000);
 routes['admin'] = function() {
+  if (CURRENT_USER_ROLE == null) { $('#content').innerHTML = '<div style="padding:24px;color:var(--text-mute)">Loading…</div>'; return; }
   // Defense in depth: even if a non-admin types #/admin in URL, redirect away
   if (CURRENT_USER_ROLE !== 'admin') {
     location.hash = '#/atl-tng';
