@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v56 -->
+<!-- build: 20260903-inbox-v57 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -11464,7 +11464,7 @@ setRoute();
   };
   P6.parseOffer1 = function(text){
     var T = String(text||'').toUpperCase();
-    var m = T.match(/(?:OFFERS?|GUIDE)\s+(?:USD\s*)?([0-9]{2}(?:[.,][0-9]+)?\s*K(?![A-Z])|[0-9]{4,6})/);
+    var m = T.match(/(?:OFFERS?|GUIDE|IDEAS?)\s+(?:USD\s*)?([0-9]{2}(?:[.,][0-9]+)?\s*K(?![A-Z])|[0-9]{4,6})/);
     if (!m) return null;
     var raw = m[1].replace(',', '.').trim();
     var rate = /K$/.test(raw) ? parseFloat(raw)*1000 : parseFloat(raw);
