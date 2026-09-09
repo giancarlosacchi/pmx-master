@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v59 -->
+<!-- build: 20260903-inbox-v60 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -203,7 +203,7 @@ html[data-palette="sage"] .count-pill { background: #8BC53D; color: #fff; }
 html[data-palette="navy"] {
   color-scheme: light;
   --pal-surface: #F9F9F9; --pal-dark: #092634; --pal-accent: #FF6E42; --pal-second: #004E72;
-  --bg-0: #F9F9F9; --bg-1: #092634; --bg-2: color-mix(in srgb, #F9F9F9 60%, #ffffff 40%); --bg-3: color-mix(in srgb, #F9F9F9 90%, #092634 10%);
+  --bg-0: #004E72; --bg-1: #092634; --bg-2: color-mix(in srgb, #F9F9F9 60%, #ffffff 40%); --bg-3: color-mix(in srgb, #F9F9F9 90%, #092634 10%);   /* sfondo dietro le schede: blu #004E72 (Giancarlo 9 set 2026) */
   --bg-hover: color-mix(in srgb, #FF6E42 10%, #F9F9F9); --line: color-mix(in srgb, #092634 18%, #F9F9F9); --line-soft: color-mix(in srgb, #092634 10%, #F9F9F9);
   --text: #092634; --text-dim: color-mix(in srgb, #092634 70%, #F9F9F9); --text-mute: color-mix(in srgb, #092634 50%, #F9F9F9);
   --gold: #FF6E42; --gold-soft: color-mix(in srgb, #FF6E42 14%, transparent); --cyan: #004E72;
@@ -261,7 +261,10 @@ html[data-palette] .sb-block .nav a.active svg { opacity: 1; }
 html[data-palette] tr.section-area td { background: var(--pal-dark) !important; color: #fff !important; box-shadow: inset 5px 0 0 var(--pal-accent) !important; }
 html[data-palette] tr.section-area .area-count { background: var(--pal-accent) !important; color: #fff !important; }
 html[data-palette] tr.section-half td { background: color-mix(in srgb, var(--pal-second) 16%, var(--pal-surface)) !important; color: color-mix(in srgb, var(--pal-second) 80%, var(--pal-dark)) !important; box-shadow: inset 5px 0 0 var(--pal-second) !important; }
-html[data-palette] table.grid thead th { background: color-mix(in srgb, var(--pal-second) 14%, var(--pal-surface)) !important; color: var(--pal-dark) !important; }
+/* striscia dei titoli colonna (VESSEL, DWT...) dello stesso colore delle strisce area (Giancarlo 9 set 2026) */
+html[data-palette] table.grid thead th { background: var(--pal-dark) !important; color: #fff !important; border-bottom-color: var(--pal-dark) !important; }
+html[data-palette] table.grid thead th.th-filter input { background: rgba(255,255,255,.92); color: var(--pal-dark); border-color: transparent; }
+html[data-palette] table.grid thead th.th-filter input::placeholder { color: color-mix(in srgb, var(--pal-dark) 60%, #ffffff); }
 html[data-palette] .topbar { border-bottom: 2px solid var(--pal-accent) !important; }
 html[data-palette] .page-title::after { background: var(--pal-accent); width: 40px; }
 html[data-palette] button.primary { background: var(--pal-accent) !important; border-color: var(--pal-accent) !important; color: #fff !important; }
