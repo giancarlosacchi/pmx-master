@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v62 -->
+<!-- build: 20260903-inbox-v63 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -272,7 +272,9 @@ html[data-palette] .page-title::after { background: var(--pal-accent); width: 40
 html[data-palette] button.primary { background: var(--pal-accent) !important; border-color: var(--pal-accent) !important; color: #fff !important; }
 html[data-palette] .stat-card { border-top: 3px solid var(--pal-second); }
 /* scheda: niente bordo chiaro attorno alla striscia dei titoli; il bordo alto si fonde con la striscia (Giancarlo 9 set 2026) */
-html[data-palette] .panel { border: 1px solid transparent; border-top: 3px solid var(--pal-dark); }
+html[data-palette] .panel, html[data-palette] .panel.panel-list { border: none !important; }
+html[data-palette] .panel table.grid thead th:first-child { border-top-left-radius: 14px !important; }
+html[data-palette] .panel table.grid thead th:last-child { border-top-right-radius: 14px !important; }
 html[data-palette] table.grid thead th { border-left: none !important; border-right: none !important; }
 html[data-palette] table.grid thead th.col-ows { border-right: none !important; }
 html[data-palette] .count-pill { background: var(--pal-accent) !important; }
