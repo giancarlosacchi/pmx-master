@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v61 -->
+<!-- build: 20260903-inbox-v62 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -270,7 +270,11 @@ html[data-palette] table.grid thead th.th-filter input::placeholder { color: col
 html[data-palette] .topbar { border-bottom: 2px solid var(--pal-accent) !important; }
 html[data-palette] .page-title::after { background: var(--pal-accent); width: 40px; }
 html[data-palette] button.primary { background: var(--pal-accent) !important; border-color: var(--pal-accent) !important; color: #fff !important; }
-html[data-palette] .stat-card, html[data-palette] .panel { border-top: 3px solid var(--pal-second); }
+html[data-palette] .stat-card { border-top: 3px solid var(--pal-second); }
+/* scheda: niente bordo chiaro attorno alla striscia dei titoli; il bordo alto si fonde con la striscia (Giancarlo 9 set 2026) */
+html[data-palette] .panel { border: 1px solid transparent; border-top: 3px solid var(--pal-dark); }
+html[data-palette] table.grid thead th { border-left: none !important; border-right: none !important; }
+html[data-palette] table.grid thead th.col-ows { border-right: none !important; }
 html[data-palette] .count-pill { background: var(--pal-accent) !important; }
 html[data-palette] .sidebar .brand-title { color: color-mix(in srgb, var(--pal-accent) 55%, #ffffff); }
 html[data-palette] .sidebar-footer { border-top-color: color-mix(in srgb, var(--pal-second) 60%, transparent); }
