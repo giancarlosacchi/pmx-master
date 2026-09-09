@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v57 -->
+<!-- build: 20260903-inbox-v58 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -11436,10 +11436,8 @@ setRoute();
       out.push({ name:'full', bk:+sp.full_bal_kts, bc:+sp.full_bal_cons, lk:+sp.full_lad_kts, lc:+sp.full_lad_cons, mgo: sp.full_mgo!=null? +sp.full_mgo : null });
     return out;
   }
-  function fixedCost(sp){
-    var age = sp.built ? (new Date().getFullYear() - (+sp.built)) : 0;
-    return 145000 + (age >= 15 ? 40000 : 0);
-  }
+  // costi fissi = spese portuali 65k+65k + misc 10k + extra 5k = 145k, uguali per tutte le navi (Giancarlo 9 set 2026: niente maggiorazione +40k per navi >= 15 anni, il suo calcolatore non la usa)
+  function fixedCost(sp){ return 145000; }
   function voy(sp, md, D, mainPrice, L1, L2){
     var intake = intakeOf(sp); if (intake == null) return null;
     var tb = D/md.bk/24*Mm, tl1 = (L1||9015)/md.lk/24*Mm, tl2 = (L2||2494)/md.lk/24*Mm;
