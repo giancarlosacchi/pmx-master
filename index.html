@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v63 -->
+<!-- build: 20260903-inbox-v64 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -1848,6 +1848,16 @@ table.grid tbody td.col-ideas {
 .tbl-wrap { overflow-x: hidden; }
 /* Click sul div .ideas-text: il testo va a capo, la riga cresce in altezza (click di nuovo per chiudere) */
 .ideas-text { cursor: pointer; }
+/* Inbox VSL/CGO: segmented control stile Apple (Giancarlo 9 set 2026) */
+.ib-seg { position: relative; display: inline-grid; grid-template-columns: 1fr 1fr; align-items: center; margin-left: 14px; vertical-align: 6px; padding: 3px; border-radius: 10px; background: color-mix(in srgb, var(--text) 9%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 6%, transparent); font-size: 11.5px; font-weight: 600; letter-spacing: .01em; user-select: none; }
+.ib-seg button { position: relative; z-index: 1; min-width: 58px; padding: 4px 12px; border: 0; background: transparent; color: var(--text-dim); font: inherit; font-weight: 600; cursor: pointer; border-radius: 8px; transition: color .18s ease; -webkit-tap-highlight-color: transparent; }
+.ib-seg button[aria-selected="true"] { color: var(--text); font-weight: 700; }
+.ib-seg button:focus-visible { outline: 2px solid var(--pal-accent, var(--gold, #c9a227)); outline-offset: 1px; }
+.ib-seg-thumb { position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px); border-radius: 8px; background: var(--bg-2, #fff); box-shadow: 0 1px 2px rgba(0,0,0,.18), 0 3px 8px rgba(0,0,0,.10), inset 0 0 0 .5px rgba(0,0,0,.04); transition: transform .22s cubic-bezier(.32,.72,0,1); }
+.ib-seg.is-cgo .ib-seg-thumb { transform: translateX(100%); }
+[data-theme="dark"] .ib-seg, html[data-palette] .ib-seg { background: rgba(120,120,128,.24); }
+[data-theme="dark"] .ib-seg-thumb { background: #636366; }
+[data-theme="dark"] .ib-seg button[aria-selected="true"] { color: #fff; }
 .ideas-text.open {
   white-space: normal;
   overflow: visible;
@@ -9236,12 +9246,17 @@ routes['vsl-descr'] = function() {
 window.__ibMode = window.__ibMode || (function(){ try { return localStorage.getItem('pmx_ib_mode') || 'vsl'; } catch(e) { return 'vsl'; } })();
 function inboxModeBar() {
   const m = window.__ibMode;
-  return `<span class="ib-mode" style="display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-left:12px;vertical-align:5px;font-size:11.5px;font-weight:700;letter-spacing:0">
-    <button type="button" data-mode="vsl" style="padding:3px 10px;border:0;cursor:pointer;background:${m === 'vsl' ? 'var(--gold,#c9a227)' : 'transparent'};color:${m === 'vsl' ? '#fff' : 'var(--text-dim)'}">VSL</button>
-    <button type="button" data-mode="cgo" style="padding:3px 10px;border:0;cursor:pointer;background:${m === 'cgo' ? 'var(--gold,#c9a227)' : 'transparent'};color:${m === 'cgo' ? '#fff' : 'var(--text-dim)'}">CGO</button></span>`;
+  // segmented control stile iOS: binario grigio, cursore bianco che scorre
+  return `<span class="ib-mode ib-seg ${m === 'cgo' ? 'is-cgo' : 'is-vsl'}" role="tablist" aria-label="Inbox mode">
+    <span class="ib-seg-thumb" aria-hidden="true"></span>
+    <button type="button" role="tab" data-mode="vsl" aria-selected="${m === 'vsl'}">VSL</button>
+    <button type="button" role="tab" data-mode="cgo" aria-selected="${m === 'cgo'}">CGO</button></span>`;
 }
 function bindInboxModeBar() {
-  $$('.ib-mode button').forEach(b => b.onclick = () => { if (window.__ibMode === b.dataset.mode) return; window.__ibMode = b.dataset.mode; try { localStorage.setItem('pmx_ib_mode', window.__ibMode); } catch(e) {} routes['inbox'](); });
+  $$('.ib-mode button').forEach(b => b.onclick = () => { if (window.__ibMode === b.dataset.mode) return; window.__ibMode = b.dataset.mode; try { localStorage.setItem('pmx_ib_mode', window.__ibMode); } catch(e) {}
+    // prima scorre il cursore (animazione), poi si ridisegna la pagina
+    const seg = b.closest('.ib-seg'); if (seg) { seg.classList.toggle('is-cgo', window.__ibMode === 'cgo'); seg.classList.toggle('is-vsl', window.__ibMode !== 'cgo'); seg.querySelectorAll('button').forEach(x => x.setAttribute('aria-selected', x.dataset.mode === window.__ibMode)); }
+    setTimeout(() => routes['inbox'](), 190); });
 }
 function renderInboxCargo() {
   $$('#page-title .ib-mode').forEach(x => x.remove()); $('#page-title').insertAdjacentHTML('beforeend', inboxModeBar());
