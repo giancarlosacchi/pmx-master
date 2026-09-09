@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v64 -->
+<!-- build: 20260903-inbox-v65 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -1974,8 +1974,20 @@ tr.row-area.dragging td { opacity: 0.35; }
   top: -8px;
   height: 8px;
 }
+/* il menu hover e' sostituito dalla tendina a click (.status-popup, stile calendario) — Giancarlo 9 set 2026 */
 .status-wrap:hover .status-menu,
-.status-menu:hover { display: block; }
+.status-menu:hover { display: none; }
+.status-popup { padding: 6px; width: 150px; }
+.status-popup .sp-title { font-size: 9.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-mute); padding: 4px 8px 6px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.status-popup .opt { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; border: 0; background: transparent; font: inherit; font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; cursor: pointer; border-radius: 6px; color: var(--text); text-align: left; }
+.status-popup .opt:hover { background: var(--bg-3); }
+.status-popup .opt .sp-dot { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--line); flex: 0 0 auto; }
+.status-popup .opt.fresh { color: var(--green); } .status-popup .opt.fresh .sp-dot { border-color: var(--green); }
+.status-popup .opt.off { color: var(--amber); } .status-popup .opt.off .sp-dot { border-color: var(--amber); }
+.status-popup .opt.subs { color: var(--rose); } .status-popup .opt.subs .sp-dot { border-color: var(--rose); }
+.status-popup .opt.open { color: var(--green); }
+.status-popup .opt.none { color: var(--text-mute); }
+.status-popup .opt.current { background: var(--gold-soft); } .status-popup .opt.current .sp-dot { background: currentColor; border-color: currentColor; }
 .status-menu .opt {
   display: block;
   padding: 5px 10px;
@@ -4102,6 +4114,35 @@ document.addEventListener('click', (e) => {
   if (document.querySelector('.dwt-popup')) return;
   openDwtRange(inp);
 });
+// Tendina STATUS a click (stessa grafica dei calendari): costruita dalle voci del .status-menu della riga,
+// il click su una voce rilancia il click sull'opzione originale cosi' ogni pagina tiene il suo handler.
+function openStatusPopup(chip) {
+  document.querySelectorAll('.dr-popup.status-popup').forEach(p => p.remove());
+  const wrap = chip.closest('.status-wrap'); const menu = wrap && wrap.querySelector('.status-menu'); if (!menu) return;
+  const popup = document.createElement('div');
+  popup.className = 'dr-popup status-popup open';
+  popup.innerHTML = '<div class="sp-title">Status</div>';
+  menu.querySelectorAll('.opt').forEach(o => {
+    const b = document.createElement('button'); b.type = 'button';
+    b.className = 'opt ' + o.className.replace(/\bopt\b/, '').trim();
+    b.innerHTML = '<span class="sp-dot"></span><span>' + o.textContent.trim() + '</span>';
+    b.onclick = (e) => { e.stopPropagation(); close(); o.click(); };
+    popup.appendChild(b);
+  });
+  document.body.appendChild(popup);
+  const r = chip.getBoundingClientRect(); const w = 150; const h = popup.offsetHeight || 170;
+  if (window.innerHeight - r.bottom - 8 < h && r.top > h + 8) popup.style.top = Math.max(8, r.top - h - 6) + 'px'; else popup.style.top = (r.bottom + 6) + 'px';
+  popup.style.left = Math.max(8, Math.min(r.left + r.width / 2 - w / 2, window.innerWidth - w - 8)) + 'px';
+  function close() { popup.remove(); document.removeEventListener('mousedown', onOutside, true); window.removeEventListener('scroll', close, true); window.removeEventListener('resize', close); }
+  function onOutside(e) { if (!popup.contains(e.target) && e.target !== chip) close(); }
+  setTimeout(() => { document.addEventListener('mousedown', onOutside, true); window.addEventListener('scroll', close, true); window.addEventListener('resize', close); }, 0);
+}
+document.addEventListener('click', (e) => {
+  const chip = e.target.closest('.status-wrap .status-chip');
+  if (!chip || !document.body.classList.contains('is-admin')) return;
+  e.stopPropagation(); e.preventDefault();
+  openStatusPopup(chip);
+}, true);
 function openFilterDateRange(anchor, currentFrom, currentTo, onApply) {
   // chiudi eventuale altro picker filter aperto
   document.querySelectorAll('.dr-popup.filter-popup').forEach(p => p.remove());
