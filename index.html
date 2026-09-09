@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v51 -->
+<!-- build: 20260903-inbox-v52 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -277,10 +277,10 @@ html[data-palette] .sidebar .sb-user { color: color-mix(in srgb, var(--pal-secon
   html[data-sb="rail"] .app { grid-template-columns: 84px 1fr; }
   html[data-sb="rail"] .main { grid-column: 2; transition: margin-left 320ms cubic-bezier(.4,0,.2,1) 80ms; }
   /* quando il pannello si apre la scheda a destra si STRINGE (margin-left), non viene coperta.
-     Le tabelle vengono "congelate" alla larghezza corrente (JS: body.sb-open + min-width) cosi' le colonne non ballano:
-     la scheda si accorcia da destra e taglia, senza rifare il layout delle righe. */
+     Le colonne fisse (1px nowrap) restano identiche: si stringe SOLO Ideas/Info (colonna elastica). */
   html[data-sb="rail"] .sidebar:hover ~ .main { margin-left: 176px; transition-delay: 0ms; }
   body.sb-open .tbl-wrap { overflow-x: hidden !important; }
+  body.sb-open .ideas-text { transition: none; }
   html[data-sb="rail"] .sidebar { position: fixed; left: 14px; top: calc(var(--topbar-h, 64px) + 14px); height: calc(100vh - var(--topbar-h, 64px) - 30px);
     width: 232px; margin: 0; padding: 10px 10px 8px; z-index: 150; box-sizing: border-box; overflow: hidden; border-radius: 16px;
     clip-path: inset(0 176px 0 0 round 16px);
@@ -11640,8 +11640,8 @@ document.addEventListener('click', function(e){
   function _tbH(){ var t=document.querySelector('.topbar'); if(t&&t.offsetHeight) document.documentElement.style.setProperty('--topbar-h', t.offsetHeight+'px'); }
   /* rail: congela le tabelle mentre il pannello e' aperto (niente reflow delle colonne) */
   (function(){ var sb=document.querySelector('.sidebar'); if(!sb) return; var t=null;
-    sb.addEventListener('mouseenter', function(){ if(document.documentElement.getAttribute('data-sb')!=='rail') return; clearTimeout(t); document.querySelectorAll('table.grid').forEach(function(tb){ if(!tb.style.minWidth) tb.style.minWidth=tb.getBoundingClientRect().width+'px'; }); document.body.classList.add('sb-open'); });
-    sb.addEventListener('mouseleave', function(){ clearTimeout(t); t=setTimeout(function(){ document.querySelectorAll('table.grid').forEach(function(tb){ tb.style.minWidth=''; }); document.body.classList.remove('sb-open'); }, 450); });
+    sb.addEventListener('mouseenter', function(){ if(document.documentElement.getAttribute('data-sb')!=='rail') return; clearTimeout(t); document.body.classList.add('sb-open'); });
+    sb.addEventListener('mouseleave', function(){ clearTimeout(t); t=setTimeout(function(){ document.body.classList.remove('sb-open'); }, 450); });
   })();
   var _pin=document.getElementById('sb-pin'); if(_pin) _pin.onclick=function(){ S.sb=(S.sb==='full')?'rail':'full'; apply(S); save(S); try{ var st=document.getElementById('set-sb'); if(st) st.querySelectorAll('button').forEach(function(b){ var on=b.getAttribute('data-v')===S.sb; b.style.background=on?'var(--gold)':'transparent'; b.style.color=on?'#fff':'var(--text-dim)'; b.style.borderColor=on?'var(--gold)':'var(--line)'; }); }catch(e){} };
   window.addEventListener('resize', _tbH); window.addEventListener('hashchange', function(){ setTimeout(_tbH,50); }); document.addEventListener('DOMContentLoaded', _tbH); setTimeout(_tbH,300); setTimeout(_tbH,1500);
