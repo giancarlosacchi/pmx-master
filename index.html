@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v58 -->
+<!-- build: 20260903-inbox-v59 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2422,6 +2422,11 @@ table.grid thead th { max-width: none !important; overflow: visible !important; 
 [data-theme="light"] table.grid td, [data-theme="light"] table.grid th { border-color: rgba(90,110,150,.16) !important; }
 [data-theme="light"] table.grid thead th { background: #eef1f5 !important; border-bottom-color: rgba(90,110,150,.24) !important; }
 #tbl table.grid thead[class*="area-"] th, #ca-tbl table.grid thead[class*="area-"] th, #vd-tbl table.grid thead[class*="area-"] th { background: var(--ac) !important; color: #fff !important; }
+/* Vsl Descr: tutto in una pagina, niente scroll orizzontale (Giancarlo 9 set 2026) */
+#vd-tbl { overflow-x: hidden !important; }
+#vd-tbl table.grid { table-layout: fixed !important; width: 100% !important; min-width: 0 !important; }
+#vd-tbl table.grid th, #vd-tbl table.grid td { width: auto !important; max-width: none !important; padding: 4px 6px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px; }
+#vd-tbl table.grid td:first-child, #vd-tbl table.grid th:first-child { padding-left: 10px !important; }
 [data-theme="dark"] #tbl table.grid thead[class*="area-"] th, [data-theme="dark"] #ca-tbl table.grid thead[class*="area-"] th { color: #0b1020 !important; }
 /* Celle filtro nella striscia colorata: sfumate nel colore area (vetro leggero, niente bordo netto) */
 #tbl table.grid thead[class*="area-"] th.th-filter input:not(.filter-active),
@@ -9174,7 +9179,7 @@ routes['vsl-descr'] = function() {
     const cnt = $('#vd-cnt'); if (cnt) cnt.textContent = rows.length + ' vessels';
     const F = x => x == null ? '' : x;
     const pair = (a, b) => a == null && b == null ? '' : `${F(a)} / ${F(b)}`;
-    const html = [`<table class="grid"><thead class="area-blue tint-fixed"><tr>
+    const html = [`<table class="grid"><colgroup><col style="width:14%"><col style="width:6%"><col style="width:5%"><col style="width:5.5%"><col style="width:6.5%"><col style="width:5%"><col style="width:4.5%"><col style="width:7%"><col style="width:7.5%"><col style="width:7%"><col style="width:7.5%"><col style="width:6.5%"><col style="width:6.5%"><col style="width:11.5%"></colgroup><thead class="area-blue tint-fixed"><tr>
       <th>Vessel</th><th>Dwt</th><th>Built</th><th>Draft</th><th>Cubic</th><th>TPC</th><th>Scrub</th>
       <th>Full kts B/L</th><th>Full cons B/L</th><th>Eco kts B/L</th><th>Eco cons B/L</th><th>MGO F/E</th><th>Port I/W</th><th>Updated</th>
     </tr></thead><tbody>`];
@@ -9189,7 +9194,7 @@ routes['vsl-descr'] = function() {
         <td>${pair(r.eco_bal_cons, r.eco_lad_cons)}</td>
         <td>${pair(r.full_mgo, r.eco_mgo)}</td>
         <td>${pair(r.port_idle, r.port_work)}</td>
-        <td class="dim">${(r.updated_at || '').slice(0, 10)} · ${r._src === 'manual' ? esc(String(r.updated_by || 'manual').split('@')[0]) : 'excel'}</td>
+        <td class="dim" title="${attr((r.updated_at || '').slice(0, 10) + ' · ' + (r._src === 'manual' ? String(r.updated_by || 'manual') : 'excel'))}">${(r.updated_at || '').slice(0, 10)} · ${r._src === 'manual' ? esc(String(r.updated_by || 'manual').split('@')[0].slice(0, 10)) : 'excel'}</td>
       </tr>`);
     }
     html.push('</tbody></table>');
