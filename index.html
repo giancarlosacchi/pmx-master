@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v44 -->
+<!-- build: 20260903-inbox-v45 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -273,14 +273,19 @@ html[data-palette] .sidebar .sb-user { color: color-mix(in srgb, var(--pal-secon
 
 /* ===== v42: sidebar "rail" — striscia con sole icone, si allarga quando il mouse si avvicina ===== */
 @media (min-width: 701px) {
-  html[data-sb="rail"] .app { grid-template-columns: 84px 1fr; }
+  /* v45: la sidebar sta NEL flusso (colonna auto): quando si apre SPOSTA il contenuto invece di coprirlo.
+     Altezza allineata alla scheda a destra: parte sotto la topbar (+14px come il contenuto) e finisce a 16px dal fondo come i pannelli. */
+  html[data-sb="rail"] .app { grid-template-columns: auto 1fr; }
   html[data-sb="rail"] .main { grid-column: 2; }
-  html[data-sb="rail"] .sidebar { position: fixed; left: 14px; top: 14px; height: calc(100vh - 28px); width: 70px; padding: 12px 6px 10px; z-index: 150; box-sizing: border-box;
-    overflow: hidden; border-right: 14px solid transparent; background-clip: padding-box; /* i 14px trasparenti = zona "vicino": allarga anche senza esserci sopra */
-    transition: width 180ms var(--ease-mac, ease), padding 180ms var(--ease-mac, ease), box-shadow 180ms ease; }
+  html[data-sb="rail"] .sidebar { position: relative; top: auto; width: 70px; box-sizing: border-box; padding: 12px 6px 10px;
+    margin: calc(var(--topbar-h, 64px) + 14px) 0 16px 14px; height: calc(100vh - var(--topbar-h, 64px) - 30px);
+    overflow: hidden; border-right: 14px solid transparent; background-clip: padding-box; /* i 14px trasparenti = zona "vicino": si apre anche senza esserci sopra */
+    transition: width 180ms var(--ease-mac, ease), padding 180ms var(--ease-mac, ease); }
   html[data-sb="rail"] .sidebar > * { flex-shrink: 0; overflow: hidden; white-space: nowrap; }
-  html[data-sb="rail"] .sidebar:hover { width: 226px; padding: 14px 10px 12px; overflow-y: auto; overflow-x: hidden; box-shadow: 0 24px 70px -24px rgba(0,0,0,.75); }
+  html[data-sb="rail"] .sidebar:hover { width: 226px; padding: 14px 10px 12px; overflow-y: auto; overflow-x: hidden; }
   html[data-sb="rail"] .sidebar .sidebar-footer { margin-top: auto; }
+  /* badge Inbox: chiusa = solo puntino verde, aperta = numero */
+  html[data-sb="rail"] .sidebar:not(:hover) .nav-badge { position: absolute; top: 5px; right: 6px; width: 7px; height: 7px; padding: 0 !important; margin: 0 !important; border-radius: 50%; font-size: 0 !important; line-height: 0; min-width: 0; box-shadow: 0 0 0 2px var(--bg-1); }
   /* stato chiuso */
   html[data-sb="rail"] .sidebar:not(:hover) .brand { justify-content: center; gap: 0; margin-bottom: 8px; padding: 0; }
   html[data-sb="rail"] .sidebar:not(:hover) .brand-title { display: none; }
@@ -11610,6 +11615,9 @@ document.addEventListener('click', function(e){
     if (r.getAttribute('data-theme') !== pal[6]) { r.setAttribute('data-theme', pal[6]); try { localStorage.setItem('lspmx_theme', pal[6]); } catch(e){} }
   }
   var S=load(); apply(S);
+  /* altezza topbar -> variabile CSS (la sidebar rail si allinea alla scheda a destra) */
+  function _tbH(){ var t=document.querySelector('.topbar'); if(t&&t.offsetHeight) document.documentElement.style.setProperty('--topbar-h', t.offsetHeight+'px'); }
+  window.addEventListener('resize', _tbH); window.addEventListener('hashchange', function(){ setTimeout(_tbH,50); }); document.addEventListener('DOMContentLoaded', _tbH); setTimeout(_tbH,300); setTimeout(_tbH,1500);
   try{ ['atl-tng','pac-tng','atl-cgo','pac-cgo','ecsa-list'].forEach(function(p){ localStorage.removeItem('cp-view-'+p); }); }catch(e){}
   document.addEventListener('input', function(e){ var gs=e.target && e.target.closest ? e.target.closest('.global-search') : null; if(gs) gs.classList.toggle('has-text', !!e.target.value); });
   window.getCopyFormat=function(){ return S.copy||'text'; };
