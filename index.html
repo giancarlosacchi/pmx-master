@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v46 -->
+<!-- build: 20260903-inbox-v47 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -271,21 +271,56 @@ html[data-palette] .sidebar .brand-title { color: color-mix(in srgb, var(--pal-a
 html[data-palette] .sidebar-footer { border-top-color: color-mix(in srgb, var(--pal-second) 60%, transparent); }
 html[data-palette] .sidebar .sb-user { color: color-mix(in srgb, var(--pal-second) 70%, #ffffff); }
 
-/* ===== v42: sidebar "rail" — striscia con sole icone, si allarga quando il mouse si avvicina ===== */
+/* ===== v47: sidebar "rail" — pattern navigation rail + drawer (Material/Linear):
+   la rail (56px) occupa sempre lo stesso spazio; al passaggio del mouse il pannello si apre SOPRA
+   il contenuto (nessun reflow delle righe). Le icone restano ferme nello stesso punto x sia chiusa che aperta.
+   Il bottone "pin" la fissa aperta (layout stabile, sidebar in flusso). ===== */
 @media (min-width: 701px) {
-  /* v45: la sidebar sta NEL flusso (colonna auto): quando si apre SPOSTA il contenuto invece di coprirlo.
-     Altezza allineata alla scheda a destra: parte sotto la topbar (+14px come il contenuto) e finisce a 16px dal fondo come i pannelli. */
-  html[data-sb="rail"] .app { grid-template-columns: auto 1fr; }
+  html[data-sb="rail"] .app { grid-template-columns: 84px 1fr; }
   html[data-sb="rail"] .main { grid-column: 2; }
-  html[data-sb="rail"] .sidebar { position: relative; top: auto; width: 70px; box-sizing: border-box; padding: 12px 6px 10px;
-    margin: calc(var(--topbar-h, 64px) + 14px) 0 16px 14px; height: calc(100vh - var(--topbar-h, 64px) - 30px);
-    overflow: hidden; border-right: 14px solid transparent; background-clip: padding-box; /* i 14px trasparenti = zona "vicino": si apre anche senza esserci sopra */
-    transition: width 180ms var(--ease-mac, ease), padding 180ms var(--ease-mac, ease); }
-  html[data-sb="rail"] .sidebar > * { flex-shrink: 0; overflow: hidden; white-space: nowrap; }
-  html[data-sb="rail"] .sidebar:hover { width: 226px; padding: 14px 10px 12px; overflow-y: auto; overflow-x: hidden; }
-  html[data-sb="rail"] .sidebar .sidebar-footer { margin-top: auto; }
-  /* badge Inbox: chiusa = solo puntino verde, aperta = numero */
-  html[data-sb="rail"] .sidebar:not(:hover) .nav-badge { position: absolute; top: 5px; right: 6px; width: 7px; height: 7px; padding: 0 !important; margin: 0 !important; border-radius: 50%; font-size: 0 !important; line-height: 0; min-width: 0; box-shadow: 0 0 0 2px var(--bg-1); }
+  html[data-sb="rail"] .sidebar { position: fixed; left: 14px; top: calc(var(--topbar-h, 64px) + 14px); height: calc(100vh - var(--topbar-h, 64px) - 30px);
+    width: 56px; margin: 0; padding: 10px 6px 8px; z-index: 150; box-sizing: border-box; overflow: hidden; border-radius: 16px;
+    /* fluido: easing morbido, piccolo ritardo in chiusura (niente sfarfallio passando in diagonale) e in apertura (hover intent) */
+    transition: width 280ms cubic-bezier(.22,.61,.36,1) 120ms, padding 280ms cubic-bezier(.22,.61,.36,1) 120ms, box-shadow 240ms ease 120ms; will-change: width; }
+  html[data-sb="rail"] .sidebar::after { content: ''; position: absolute; top: 0; bottom: 0; right: -14px; width: 14px; } /* hit-zone esterna */
+  html[data-sb="rail"] .sidebar:hover { width: 232px; padding: 10px 10px 8px; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin; transition-delay: 70ms;
+    box-shadow: 0 18px 48px -14px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.06); }
+  html[data-sb="rail"] .sidebar > * { flex-shrink: 0; white-space: nowrap; }
+  /* riga di navigazione: icona SEMPRE nella stessa posizione (padding-left fisso), etichetta a destra */
+  html[data-sb="rail"] .sidebar .brand { justify-content: flex-start; gap: 10px; margin: 0 0 8px; padding: 0 0 0 3px; height: 38px; }
+  html[data-sb="rail"] .sidebar .brand-logo { width: 34px; height: 34px; border-radius: 9px; flex: none; }
+  html[data-sb="rail"] .sidebar .brand-title { opacity: 0; transition: opacity 120ms ease; }
+  html[data-sb="rail"] .sidebar:hover .brand-title { opacity: 1; transition-delay: 160ms; }
+  html[data-sb="rail"] .sidebar .sb-block { padding: 3px 3px 4px; margin-bottom: 5px; border-radius: 10px; transition: padding 280ms cubic-bezier(.22,.61,.36,1) 120ms; }
+  html[data-sb="rail"] .sidebar:hover .sb-block { padding: 4px 6px 6px; transition-delay: 70ms; }
+  html[data-sb="rail"] .sidebar .nav { gap: 1px; }
+  html[data-sb="rail"] .sidebar .nav a { display: flex; align-items: center; gap: 10px; height: 30px; padding: 0 0 0 10px; border-left-width: 0; border-radius: 8px; position: relative; justify-content: flex-start; }
+  html[data-sb="rail"] .sidebar .nav a svg { width: 17px; height: 17px; flex: none; opacity: .9; }
+  html[data-sb="rail"] .sidebar .nav-label { opacity: 0; transform: translateX(-6px); transition: opacity 140ms ease 60ms, transform 220ms cubic-bezier(.22,.61,.36,1) 60ms; pointer-events: none; }
+  html[data-sb="rail"] .sidebar:hover .nav-label { opacity: 1; transform: none; transition-delay: 150ms; pointer-events: auto; }
+  /* titoli sezione: chiusa = linea colorata sottile, aperta = testo */
+  html[data-sb="rail"] .sidebar .nav-section { position: relative; height: 12px; margin: 1px 0 3px; font-size: 0; transition: height 200ms ease, margin 200ms ease; }
+  html[data-sb="rail"] .sidebar .nav-section::before { content: ''; position: absolute; left: 6px; right: 6px; top: 5px; height: 2px; border-radius: 99px; background: color-mix(in srgb, var(--sb-c, var(--gold)) 60%, transparent); transition: opacity 120ms ease; }
+  html[data-sb="rail"] .sidebar:hover .nav-section { font-size: 10px; height: 14px; margin: 3px 0 4px; padding-left: 4px; }
+  html[data-sb="rail"] .sidebar:hover .nav-section::before { opacity: 0; }
+  /* lettera identificativa (A/P/V/C/E/N/P) solo da chiusa */
+  html[data-sb="rail"] .sidebar .nav a[data-badge]::after { content: attr(data-badge); position: absolute; left: 20px; bottom: 3px; font-size: 7.5px; font-weight: 800; line-height: 1; padding: 1px 2.5px; border-radius: 3px; background: var(--sb-c, var(--gold)); color: #fff; letter-spacing: 0; transition: opacity 100ms ease; }
+  html[data-sb="rail"] .sidebar .nav a.active[data-badge]::after { background: #fff; color: var(--sb-c, var(--gold)); }
+  html[data-sb="rail"] .sidebar:hover .nav a[data-badge]::after { opacity: 0; }
+  /* badge Inbox: chiusa = puntino, aperta = numero */
+  html[data-sb="rail"] .sidebar:not(:hover) .nav-badge { position: absolute; top: 4px; left: 22px; width: 7px; height: 7px; padding: 0 !important; margin: 0 !important; border-radius: 50%; font-size: 0 !important; line-height: 0; min-width: 0; box-shadow: 0 0 0 2px var(--bg-1); }
+  html[data-sb="rail"] .sidebar .sidebar-footer { margin-top: auto; padding: 8px 0 0 6px; }
+  html[data-sb="rail"] .sidebar:not(:hover) .sidebar-footer .sb-user { font-size: 9px; }
+  html[data-sb="rail"] .sidebar .legend { display: none; }
+  /* pin: fissa la sidebar aperta */
+  .sb-pin { display: none; }
+  html[data-sb] .sb-pin { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 7px; border: 1px solid var(--line-soft); background: transparent; color: var(--text-mute); cursor: pointer; margin-left: auto; flex: none; }
+  .sb-pin:hover { color: var(--text); background: var(--bg-hover); }
+  .sb-pin svg { width: 14px; height: 14px; }
+  html[data-sb="rail"] .sidebar .sb-pin { opacity: 0; transition: opacity 120ms ease; }
+  html[data-sb="rail"] .sidebar:hover .sb-pin { opacity: 1; transition-delay: 90ms; }
+  html[data-sb="full"] .sb-pin svg { transform: rotate(180deg); }
+}
   /* stato chiuso */
   html[data-sb="rail"] .sidebar:not(:hover) .brand { justify-content: center; gap: 0; margin-bottom: 8px; padding: 0; }
   html[data-sb="rail"] .sidebar:not(:hover) .brand-title { display: none; }
@@ -2640,6 +2675,7 @@ body:not(.logged-in) .app { visibility: hidden; }
     <div>
       <div class="brand-title">PMX MASTER LIST</div>
     </div>
+    <button type="button" class="sb-pin" id="sb-pin" title="Pin sidebar open / collapse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
   </div>
   <div class="sb-block sb-vessels">
     <div class="nav-section">Atlantic</div>
@@ -11619,6 +11655,7 @@ document.addEventListener('click', function(e){
   var S=load(); apply(S);
   /* altezza topbar -> variabile CSS (la sidebar rail si allinea alla scheda a destra) */
   function _tbH(){ var t=document.querySelector('.topbar'); if(t&&t.offsetHeight) document.documentElement.style.setProperty('--topbar-h', t.offsetHeight+'px'); }
+  var _pin=document.getElementById('sb-pin'); if(_pin) _pin.onclick=function(){ S.sb=(S.sb==='full')?'rail':'full'; apply(S); save(S); try{ var st=document.getElementById('set-sb'); if(st) st.querySelectorAll('button').forEach(function(b){ var on=b.getAttribute('data-v')===S.sb; b.style.background=on?'var(--gold)':'transparent'; b.style.color=on?'#fff':'var(--text-dim)'; b.style.borderColor=on?'var(--gold)':'var(--line)'; }); }catch(e){} };
   window.addEventListener('resize', _tbH); window.addEventListener('hashchange', function(){ setTimeout(_tbH,50); }); document.addEventListener('DOMContentLoaded', _tbH); setTimeout(_tbH,300); setTimeout(_tbH,1500);
   try{ ['atl-tng','pac-tng','atl-cgo','pac-cgo','ecsa-list'].forEach(function(p){ localStorage.removeItem('cp-view-'+p); }); }catch(e){}
   document.addEventListener('input', function(e){ var gs=e.target && e.target.closest ? e.target.closest('.global-search') : null; if(gs) gs.classList.toggle('has-text', !!e.target.value); });
