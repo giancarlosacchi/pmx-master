@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v67 -->
+<!-- build: 20260903-inbox-v68 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -9634,14 +9634,14 @@ routes['inbox'] = function() {
   const AREAS = ['ECSA','NCSA','PG','RSEA','WCI','ECI','SEASIA','SCHINA','NCHINA','UKC','WMED','EMED','USG','USEC / ECCA'];
   const AREA_ORDER = [...ATL_TNG_AREAS, ...PAC_TNG_AREAS.filter(a => !ATL_TNG_AREAS.includes(a))];
   const PAC_AREAS = new Set(['SEASIA','SCHINA','NCHINA']);
-  const KIND_LBL = { subs: ['FXD', 'var(--red,#dc2626)'], remove: ['DEL', 'var(--red,#dc2626)'], unsubs: ['F/F', 'var(--blue,#2563eb)'] };
+  const KIND_LBL = { subs: ['FXD', 'var(--red,#dc2626)'], remove: ['IN HOUSE · DEL', 'var(--red,#dc2626)'], unsubs: ['F/F', 'var(--blue,#2563eb)'] };
   const byId = {};
   const F = {};
   const norm = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const dwtK = d => { const m = String(d || '').match(/^\s*(\d{2,3})/); return m ? Number(m[1]) : null; };
   const findV = (name, dwt) => (DATA.vessels || []).find(x => norm(x.vessel) === norm(name) && (dwt == null || dwtK(dwt) == null || dwtK(x.dwt_blt) == null || Math.abs(dwtK(x.dwt_blt) - dwtK(dwt)) <= 3));
   const plain = s => String(s || '').replace(/<[^>]+>/g, '');
-  const kindOf = r => { const k = r.kind && r.kind !== 'position' ? r.kind : ''; return k === 'remove' ? 'subs' : k; };   // 'gone' = on subs, mai cancellazione
+  const kindOf = r => (r.kind && r.kind !== 'position') ? r.kind : '';   // 'remove' = "in house": la nave va tolta dalla lista (Giancarlo 10 set 2026); 'gone' resta on subs (lo decide il parser)
   // 'fresh' vale solo il giorno del messaggio (come in lista: il giorno dopo decade)
   const stOf = r => { const s = r.vsl_status || (kindOf(r) === 'subs' ? 'on_subs' : kindOf(r) === 'unsubs' ? 'open' : ''); return (s === 'fresh' && (r.msg_time || '').slice(0, 10) !== todayIso()) ? '' : s; };
   const persist = (r, patch) => { Object.assign(r, patch); sb.from('inbox_candidates').update(patch).eq('id', r.id).then(() => {}); };
@@ -9654,7 +9654,7 @@ routes['inbox'] = function() {
     const ex = findV(r.vessel, r.dwt_blt);
     const t = (r.msg_time || '').slice(5, 16).replace('T', ' ');
     const tip = ex ? `In list: ${plain(ex.area || '')} ${plain(ex.open_port || '')} ${plain(fmtDateRange(ex.open_from, ex.open_to))}` : 'NOT in list';
-    const pill = (kind && kind !== 'subs' && kind !== 'remove') ? `<span class="ib-pill" style="background:${KIND_LBL[kind][1]}" title="${attr(ex ? 'In list' : 'NOT in list')}">${KIND_LBL[kind][0]}</span>` : '';   // FXD non serve: riga rosa + status "on subs"
+    const pill = (kind && kind !== 'subs') ? `<span class="ib-pill" style="background:${KIND_LBL[kind][1]}" title="${attr(ex ? 'In list' : 'NOT in list')}">${KIND_LBL[kind][0]}</span>` : '';   // FXD non serve: riga rosa + status "on subs"
     const flags = (r.scrbr_ftd ? `<span class="flags-label">SCRFTD</span>` : '') + (r.ex_our_cp ? `<span class="flags-label">EX OUR CP</span>` : '') + pill;
     const E = (f, extra) => `class="editable ${extra || ''} ib-ed" data-f="${f}"`;
     return `<tr class="${cls} row-area ${areaClass(r.area)} ${kind ? 'ib-' + kind : ''} ${st === 'on_subs' ? 'ib-subs' : ''} ${r.area ? '' : 'ib-noarea'}" data-row="${r.id}">
@@ -9938,7 +9938,8 @@ routes['inbox'] = function() {
       // fixed / subs message without position data: show the vessel as it is in the list, in its own area
       if (kindOf(r) && !r.open_port && ex) Object.assign(r, { dwt_blt: r.dwt_blt || ex.dwt_blt, open_port: ex.open_port, open_from: ex.open_from, open_to: ex.open_to, area: ex.area, basin: ex.basin, ows_brkr: r.ows_brkr || ex.ows_brkr, bunker: r.bunker || ex.bunker, ls_brkr: r.ls_brkr || ex.ls_brkr });
       // message without any offer → the offer already in the list stays, aged (OFFERS → YDAY → LAST) as of today (Giancarlo 9 Sep 2026)
-      if (!r.ideas && ex && ex.ideas) { r.ideas = fmtIdeasPlain(ex.ideas, ex.update_date); r.__ideasFromList = true; }
+      // (se l'offerta in lista e' gia' di ieri o prima, da oggi e' LAST: l'update_date della lista viene rimesso a oggi dall'approvazione e non puo' piu' invecchiarla — MARATHON 10 set)
+      if (!r.ideas && ex && ex.ideas) { const ageL = ex.update_date ? _daysAgo(ex.update_date) : 0; r.ideas = ageL >= 1 ? String(ex.ideas).split(/(\s*\/\/\s*)/).map(sg => sg.replace(/^(\s*)(?:YDAY\s+|LAST\s+)?(OFFERS?|GUIDE|IDEA|SEEN|BID|HOLDING|AIMING|HEARD)\b/i, '$1LAST $2')).join('') : ex.ideas; r.__ideasFromList = true; }
       // owner / bunker missing in the message → take them from the list
       if (ex) { if (!r.ows_brkr && ex.ows_brkr) r.ows_brkr = ex.ows_brkr; if (!r.bunker && ex.bunker) r.bunker = ex.bunker; }
       // a position for a vessel that is NOT in the list = fresh (Giancarlo 9 Sep 2026: NISSAKI, SDTR ALICE, ULTRA LYNX)
