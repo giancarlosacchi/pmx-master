@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v66 -->
+<!-- build: 20260903-inbox-v67 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2838,7 +2838,7 @@ async function bootAppAfterAuth(user, allowedRow) {
   //    scriveremmo i dati di cache (id 1..N) sopra le righe vere dei colleghi.
   if (window._cloudLoadFailed) {
     showReadOnlyBanner('Cloud not reachable — page is READ ONLY until you reload with a working connection.');
-  } else startCloudSync();
+  } else { startCloudSync(); setTimeout(purgeOldSubs, 4000); }
   // 4) Start realtime subscription (changes from other users propagate to us)
   startRealtimeSync();
   // 5) Snapshot orario per la version history (fire-and-forget)
@@ -5269,6 +5269,20 @@ function updVessel(id, patch) {
     autoUpdateRundowns();
   }
   return v;
+}
+// Regola Giancarlo 10 set 2026: le navi ON SUBS spariscono dalla lista dopo 2 giorni (data dell'ultimo aggiornamento).
+// Gira solo per l'admin, una volta per sessione, dopo il primo sync; le cancellazioni vanno in cloud come quelle manuali.
+function purgeOldSubs() {
+  try {
+    if (CURRENT_USER_ROLE !== 'admin' || window._restoring || window._cloudLoadFailed) return;
+    const cut = new Date(); cut.setUTCDate(cut.getUTCDate() - 2); const cutIso = cut.toISOString().slice(0, 10);
+    const last = v => { const a = String(v.update_date || '').slice(0, 10), b = String(v.updated_at || '').slice(0, 10); return a > b ? a : b; };
+    const old = (DATA.vessels || []).filter(v => v.status === 'on_subs' && last(v) && last(v) <= cutIso);
+    if (!old.length) return;
+    old.forEach(v => delVessel(v.id));
+    if (typeof cloudToast === 'function') cloudToast('Removed ' + old.length + ' vessel' + (old.length > 1 ? 's' : '') + ' on subs for 2+ days: ' + old.map(v => v.vessel).join(', '), { kind: 'info', duration: 7000 });
+    try { setRoute(); } catch (e) {}
+  } catch (e) { console.warn('purgeOldSubs:', e); }
 }
 function delVessel(id) {
   const v = DATA.vessels.find(x=>x.id===id);
