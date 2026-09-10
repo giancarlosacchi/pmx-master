@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v69 -->
+<!-- build: 20260903-inbox-v70 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -9349,7 +9349,16 @@ function renderInboxCargo() {
   const msgDay = r => (r.msg_time || '').slice(0, 10);
   const kindOf = r => r.kind && r.kind !== 'cargo' ? r.kind : '';
   const stOf = r => { const s = r.cgo_status || (kindOf(r) === 'subs' ? 'on_subs' : kindOf(r) === 'unsubs' ? 'open' : ''); return (s === 'fresh' && msgDay(r) !== todayIso()) ? '' : s; };
-  const findC = r => (DATA.cargoes || []).find(c => norm(c.chrtrs) === norm(r.chrtrs) && w1(c.load_port) === w1(r.load_port) && overlap(c.laycan_from, c.laycan_to, r.laycan_from, r.laycan_to));
+  // v70: stesso carico se stesso charterer e (stesso porto di carico | stessa sezione + stesso scarico | stessa sezione) con laycan che si toccano (+-5 gg);
+  // oppure stessa rotta identica e messaggio "amended/revised/corrected" entro 35 gg (CARGILL USEC/SEASIA end oct → end sep)
+  const shift = (d, n) => { if (!d) return d; const x = new Date(d); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+  const near = (c, r) => overlap(shift(c.laycan_from, -5), shift(c.laycan_to || c.laycan_from, 5), r.laycan_from, r.laycan_to);
+  const gapDays = (a, b) => (a && b) ? Math.abs((Date.parse(a) - Date.parse(b)) / 86400000) : 0;
+  const findC = r => { const L = (DATA.cargoes || []).filter(c => norm(c.chrtrs) === norm(r.chrtrs));
+    return L.find(c => w1(c.load_port) === w1(r.load_port) && overlap(c.laycan_from, c.laycan_to, r.laycan_from, r.laycan_to))
+        || L.find(c => c.section && c.section === r.section && w1(c.disch_port) === w1(r.disch_port) && near(c, r))
+        || L.find(c => c.section && c.section === r.section && near(c, r))
+        || L.find(c => w1(c.load_port) === w1(r.load_port) && w1(c.disch_port) === w1(r.disch_port) && gapDays(c.laycan_from, r.laycan_from) <= 35 && /\b(?:amend|revis|correct|updat)/i.test(String(r.raw || ''))); };
   const persist = (r, patch) => { Object.assign(r, patch); sb.from('inbox_cargoes').update(patch).eq('id', r.id).then(() => {}); };
   const plain = s => String(s || '').replace(/<[^>]+>/g, '');
 
@@ -9643,7 +9652,10 @@ routes['inbox'] = function() {
   const F = {};
   const norm = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const dwtK = d => { const m = String(d || '').match(/^\s*(\d{2,3})/); return m ? Number(m[1]) : null; };
-  const findV = (name, dwt) => (DATA.vessels || []).find(x => norm(x.vessel) === norm(name) && (dwt == null || dwtK(dwt) == null || dwtK(x.dwt_blt) == null || Math.abs(dwtK(x.dwt_blt) - dwtK(dwt)) <= 3));
+  // v70: nome con refuso ("ALTANTICA STAR" vs "ATLANTICA STAR") = stessa nave se distanza Damerau <= 1 (>= 8 lettere) e dwt compatibile
+  const dam1 = (a, b) => { if (a === b) return true; const la = a.length, lb = b.length; if (Math.abs(la - lb) > 1 || Math.min(la, lb) < 8) return false; if (la === lb) { let d = []; for (let i = 0; i < la; i++) if (a[i] !== b[i]) d.push(i); if (d.length === 1) return true; if (d.length === 2 && d[1] === d[0] + 1 && a[d[0]] === b[d[1]] && a[d[1]] === b[d[0]]) return true; return false; } const [S, L] = la < lb ? [a, b] : [b, a]; let i = 0, j = 0, skip = 0; while (i < S.length && j < L.length) { if (S[i] === L[j]) { i++; j++; } else { if (skip++) return false; j++; } } return true; };
+  const dwtOk = (x, dwt) => dwt == null || dwtK(dwt) == null || dwtK(x.dwt_blt) == null || Math.abs(dwtK(x.dwt_blt) - dwtK(dwt)) <= 3;
+  const findV = (name, dwt) => (DATA.vessels || []).find(x => norm(x.vessel) === norm(name) && dwtOk(x, dwt)) || (DATA.vessels || []).find(x => dam1(norm(x.vessel), norm(name)) && dwtOk(x, dwt));
   const plain = s => String(s || '').replace(/<[^>]+>/g, '');
   const kindOf = r => (r.kind && r.kind !== 'position') ? r.kind : '';   // 'remove' = "in house": la nave va tolta dalla lista (Giancarlo 10 set 2026); 'gone' resta on subs (lo decide il parser)
   // 'fresh' vale solo il giorno del messaggio (come in lista: il giorno dopo decade)
