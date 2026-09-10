@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v68 -->
+<!-- build: 20260903-inbox-v69 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -5528,10 +5528,12 @@ function renderMasterTable(rows, cbCols, basin) {
   const predefinedOrdered = canonicalAreaOrder.filter(a => byArea[a]);
   const extraOrdered = Object.keys(byArea).filter(a => !canonicalAreaOrder.includes(a)).sort((a, b) => areaMinRowOrder[a] - areaMinRowOrder[b]);
   const ordered = [...predefinedOrdered, ...extraOrdered];
-  // Comparator: ordina per row_order ASC (= ordine nel Sheet), fallback su open_from
+  // Comparator (v69): SEMPRE cronologico per data open (open_from, poi open_to); row_order solo a parita' di date
   const cmpVessel = (a, b) => {
+    const d = makeDateRangeCmp('open_from', 'open_to')(a, b);
+    if (d) return d;
     if (a.row_order != null && b.row_order != null) return a.row_order - b.row_order;
-    return makeDateRangeCmp('open_from', 'open_to')(a, b);
+    return 0;
   };
   for (const area of ordered) {
     byArea[area].sort(cmpVessel);
@@ -6418,9 +6420,11 @@ function renderCargoList(basin) {
       </tr></thead><tbody>`];
     // Comparator: laycan_from ASC, a parità laycan_to ASC (finestra più corta prima)
     // Comparator: row_order ASC (= ordine Sheet), fallback laycan
-    const cmpCgo = (a, b) => {
+    const cmpCgo = (a, b) => {   // v69: cronologico per laycan; row_order solo a parita'
+      const d = makeDateRangeCmp('laycan_from', 'laycan_to')(a, b);
+      if (d) return d;
       if (a.row_order != null && b.row_order != null) return a.row_order - b.row_order;
-      return makeDateRangeCmp('laycan_from', 'laycan_to')(a, b);
+      return 0;
     };
     for (const sec of [...ordered, ...otherSecs]) {
       bySec[sec].sort(cmpCgo);
