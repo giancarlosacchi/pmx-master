@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v65 -->
+<!-- build: 20260903-inbox-v66 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -330,7 +330,7 @@ html[data-palette] .sidebar .sb-user { color: color-mix(in srgb, var(--pal-secon
   html[data-sb="rail"] .sidebar .legend { display: none; }
   /* pin: fissa la sidebar aperta */
   .sb-pin { display: none; }
-  html[data-sb] .sb-pin { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 7px; border: 1px solid var(--line-soft); background: transparent; color: var(--text-mute); cursor: pointer; margin-left: auto; flex: none; }
+  html[data-sb] .sb-pin { display: none; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 7px; border: 1px solid var(--line-soft); background: transparent; color: var(--text-mute); cursor: pointer; margin-left: auto; flex: none; }
   .sb-pin:hover { color: var(--text); background: var(--bg-hover); }
   .sb-pin svg { width: 14px; height: 14px; }
   html[data-sb="full"] .sb-pin svg { transform: rotate(180deg); }
@@ -11746,7 +11746,7 @@ document.addEventListener('click', function(e){
     r.removeAttribute('data-app-bg');   // resta solo lo sfondo 'paper' (vivid/soft rimossi)
     var pal=PALETTES.find(function(p){ return p[0]===s.palette; }) || PALETTES[0];
     if (pal[0]==='paper') r.removeAttribute('data-palette'); else r.setAttribute('data-palette', pal[0]);
-    r.setAttribute('data-sb', s.sb==='full' ? 'full' : 'rail');
+    r.setAttribute('data-sb', 'full');   // barra laterale SEMPRE fissa e aperta (Giancarlo 10 set 2026: niente rail che si restringe)
     if (r.getAttribute('data-theme') !== pal[6]) { r.setAttribute('data-theme', pal[6]); try { localStorage.setItem('lspmx_theme', pal[6]); } catch(e){} }
   }
   var S=load(); apply(S);
@@ -11771,8 +11771,6 @@ document.addEventListener('click', function(e){
       '<div id="set-pal" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:18px">'+PALETTES.map(function(p){ return '<button type="button" data-v="'+p[0]+'" style="'+BTN+';display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:12px;text-align:left"><span style="width:30px;height:26px;border-radius:8px;flex:none;background:linear-gradient(90deg,'+p[2]+' 0 25%,'+p[3]+' 25% 50%,'+p[4]+' 50% 75%,'+p[5]+' 75% 100%);box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)"></span><span>'+p[1]+'</span></button>'; }).join('')+'</div>'+
       '<div style="margin-bottom:18px"><div style="display:flex;justify-content:space-between;color:var(--text-mute);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px"><span>Glass opacity</span><span id="set-op-v"></span></div><input id="set-op" type="range" min="30" max="100" step="5" style="width:100%"></div>'+
       '<div style="margin-bottom:18px"><div style="display:flex;justify-content:space-between;color:var(--text-mute);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px"><span>Blur</span><span id="set-bl-v"></span></div><input id="set-bl" type="range" min="0" max="60" step="2" style="width:100%"></div>'+
-      '<div style="color:var(--text-mute);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px">Sidebar</div>'+
-      seg('set-sb',[['rail','Compact (expands on hover)'],['full','Always open']])+
       '<div style="color:var(--text-mute);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px">Copy format (multi-select)</div>'+
       seg('set-copy',[['text','Text'],['image','Screenshot']])+
       '<button type="button" id="set-reset" style="'+BTN+';width:100%">Reset to default</button>';
@@ -11796,7 +11794,7 @@ document.addEventListener('click', function(e){
     el.querySelector('#set-pal').querySelectorAll('button').forEach(function(b){ b.onclick=function(){ S.palette=b.getAttribute('data-v'); apply(S); save(S); mark(); }; });
     /* il toggle giorno/notte non serve piu': lo decide la palette */
     el.querySelector('#set-copy').querySelectorAll('button').forEach(function(b){ b.onclick=function(){ S.copy=b.getAttribute('data-v'); save(S); mark(); }; });
-    el.querySelector('#set-sb').querySelectorAll('button').forEach(function(b){ b.onclick=function(){ S.sb=b.getAttribute('data-v'); apply(S); save(S); mark(); }; });
+    { var _ss=el.querySelector('#set-sb'); if(_ss) _ss.querySelectorAll('button').forEach(function(b){ b.onclick=function(){ S.sb=b.getAttribute('data-v'); apply(S); save(S); mark(); }; }); }
     el.querySelector('#set-reset').onclick=function(){ S=Object.assign({},DEF); apply(S); save(S); mark(); };
     mark();
   };
