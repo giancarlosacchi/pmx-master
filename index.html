@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v71 -->
+<!-- build: 20260903-inbox-v72 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -9995,6 +9995,23 @@ async function pollInboxBadge() {
 }
 [1000, 3000, 6000, 10000].forEach(ms => setTimeout(pollInboxBadge, ms));   // primi tentativi finche' il ruolo non e' noto
 setInterval(pollInboxBadge, 60000);
+// v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
+// di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
+(function buildWatch() {
+  const cur = 'BUILD_MARKER: 20260903-inbox-v72'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  let warned = false;
+  const check = async () => {
+    try {
+      const t = await (await fetch(location.pathname + '?v=' + Date.now(), { cache: 'no-store' })).text();
+      const nv = (t.match(/build: ([\w-]+)/) || [])[1];
+      if (!nv || nv === cur) return;
+      const editing = document.querySelector('td.editing, input:focus, textarea:focus, [contenteditable]:focus');
+      if (!editing) { cloudToast('New version ' + nv + ' — reloading…', { kind: 'info', duration: 2500 }); setTimeout(() => location.reload(), 2600); }
+      else if (!warned) { warned = true; cloudToast('New version available — reload the page when you are done.', { kind: 'info', duration: 8000 }); }
+    } catch (e) {}
+  };
+  setInterval(check, 5 * 60 * 1000);
+})();
 routes['admin'] = function() {
   if (CURRENT_USER_ROLE == null) { $('#content').innerHTML = '<div style="padding:24px;color:var(--text-mute)">Loading…</div>'; return; }
   // Defense in depth: even if a non-admin types #/admin in URL, redirect away
