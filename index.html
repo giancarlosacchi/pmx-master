@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v70 -->
+<!-- build: 20260903-inbox-v71 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -9557,6 +9557,17 @@ function renderInboxCargo() {
       const area = r.area || r.section.replace(/\s+(?:FH|TA)$/, '');
       const patch = { chrtrs: r.chrtrs, section: r.section, area, basin, update_date: upd };
       for (const k of ['laycan_from', 'laycan_to', 'load_port', 'disch_port', 'cgo', 'size', 'notes']) if (r[k]) patch[k] = r[k];   // vuoto in Inbox → resta il valore in lista
+      // v71: nuovo messaggio SENZA offerta → il bid/idea gia' in lista resta (invecchiato YDAY → LAST), le note nuove si aggiungono (REACHY 11 set: "YDAY BID PERSEAS 75K SPORE 17750" non va perso)
+      if (ex && ex.notes) {
+        const isOff = t => /\b(?:BID|BIDS|IDEA|IDEAS|OFFERS?|GUIDE|HOLDING|TARGET|LAST DONE)\b/i.test(t) && /\d/.test(t);
+        const oldSegs = String(ex.notes).split(/\s*\/\/\s*/).filter(Boolean), newSegs = String(r.notes || '').split(/\s*\/\/\s*/).filter(Boolean);
+        if (!newSegs.some(isOff) && oldSegs.some(isOff)) {
+          const age = ex.update_date ? _daysAgo(ex.update_date) : 0;
+          const roll = t => age >= 1 ? t.replace(/^(\s*)(?:YDAY\s+|LAST\s+)?(BID|BIDS|IDEA|IDEAS|OFFERS?|GUIDE|HOLDING|TARGET)\b/i, '$1LAST $2').replace(/^(\s*)YDAY\s+(\d)/i, '$1LAST $2') : t;
+          const keep = oldSegs.filter(isOff).map(roll);
+          patch.notes = [...keep, ...newSegs.filter(n => !keep.includes(n))].join(' // ');
+        }
+      }
       if (r.ls_brkr) patch.ls_brkr = r.ls_brkr.toUpperCase();
       if (st === 'open') patch.status = null; else if (st) patch.status = st;
       { const cl = await sb.from('inbox_cargoes').update({ status: 'approved' }).eq('id', r.id).eq('status', 'pending').select('id');
@@ -9653,7 +9664,8 @@ routes['inbox'] = function() {
   const norm = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   const dwtK = d => { const m = String(d || '').match(/^\s*(\d{2,3})/); return m ? Number(m[1]) : null; };
   // v70: nome con refuso ("ALTANTICA STAR" vs "ATLANTICA STAR") = stessa nave se distanza Damerau <= 1 (>= 8 lettere) e dwt compatibile
-  const dam1 = (a, b) => { if (a === b) return true; const la = a.length, lb = b.length; if (Math.abs(la - lb) > 1 || Math.min(la, lb) < 8) return false; if (la === lb) { let d = []; for (let i = 0; i < la; i++) if (a[i] !== b[i]) d.push(i); if (d.length === 1) return true; if (d.length === 2 && d[1] === d[0] + 1 && a[d[0]] === b[d[1]] && a[d[1]] === b[d[0]]) return true; return false; } const [S, L] = la < lb ? [a, b] : [b, a]; let i = 0, j = 0, skip = 0; while (i < S.length && j < L.length) { if (S[i] === L[j]) { i++; j++; } else { if (skip++) return false; j++; } } return true; };
+  // v71: solo lettere (XIN HAI TONG 802 ≠ 808), stessa lunghezza (ANASTASIA ≠ ANASTASIA K): una lettera diversa o due lettere scambiate
+  const dam1 = (a, b) => { if (a === b) return true; const la = a.length, lb = b.length; if (la !== lb || la < 8) return false; if (a.replace(/\D/g, '') !== b.replace(/\D/g, '')) return false; let d = []; for (let i = 0; i < la; i++) if (a[i] !== b[i]) d.push(i); if (d.some(i => /\d/.test(a[i]) || /\d/.test(b[i]))) return false; if (d.length === 1) return true; if (d.length === 2 && d[1] === d[0] + 1 && a[d[0]] === b[d[1]] && a[d[1]] === b[d[0]]) return true; return false; };
   const dwtOk = (x, dwt) => dwt == null || dwtK(dwt) == null || dwtK(x.dwt_blt) == null || Math.abs(dwtK(x.dwt_blt) - dwtK(dwt)) <= 3;
   const findV = (name, dwt) => (DATA.vessels || []).find(x => norm(x.vessel) === norm(name) && dwtOk(x, dwt)) || (DATA.vessels || []).find(x => dam1(norm(x.vessel), norm(name)) && dwtOk(x, dwt));
   const plain = s => String(s || '').replace(/<[^>]+>/g, '');
