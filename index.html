@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v72 -->
+<!-- build: 20260903-inbox-v73 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -9903,9 +9903,19 @@ routes['inbox'] = function() {
           const isPer = t => /\b(?:\d+\s*)?(?:MOS|MONS|MONTHS|PERIOD|YRS?|YEARS?)\b|%\s*(?:BKI|CURVE)|CURVE VALUE|\bMIN\s*\d+\s*\/\s*(?:ABT|MAX)\s*\d+/i.test(t);
           const segs = t => String(t || '').split(/\s*\/\/\s*/).filter(Boolean);
           const newSegs = segs(r.ideas), oldSegs = ex ? segs(ex.ideas) : [];
+          const isStale = t => /^\s*(?:YDAY|LAST)\b/i.test(t);
+          const numOf = t => (String(t).match(/\bUSD\s*(\d+)/i) || [])[1] || null;
           if (ex && oldSegs.length && newSegs.every(isPer) && oldSegs.some(x => !isPer(x))) {
             const keep = oldSegs.filter(x => !isPer(x));
             patch.ideas = [...keep, ...newSegs.filter(n => !keep.includes(n))].join(' // ');
+          } else if (ex && oldSegs.length && newSegs.every(isStale) && oldSegs.some(o => !isStale(o) && !(numOf(o) && newSegs.some(n => numOf(n) === numOf(o))))) {
+            // v73: il messaggio nuovo ripete solo l'offerta vecchia ("last offer 27k…" → YDAY) e in lista c'e' un'offerta ancora valida diversa (es. period 117% + 250GBB): quella resta davanti (AQUAVITA JOURNEY 11 set)
+            const keep = oldSegs.filter(o => !isStale(o) && !(numOf(o) && newSegs.some(n => numOf(n) === numOf(o))));
+            patch.ideas = [...keep, ...newSegs.filter(n => !keep.includes(n))].join(' // ');
+          } else if (ex && oldSegs.length && newSegs.some(x => !isPer(x)) && !newSegs.some(isPer) && oldSegs.some(o => isPer(o) && !isStale(o))) {
+            // v73: offerta viaggio nuova, in lista c'e' anche un'offerta period valida → la period resta dopo (regola 4 set: la period si aggiunge, non sostituisce)
+            const keepP = oldSegs.filter(o => isPer(o) && !isStale(o));
+            patch.ideas = [...newSegs, ...keepP.filter(n => !newSegs.includes(n))].join(' // ');
           } else patch.ideas = r.ideas;
         }                                                          // se il messaggio non aveva offerte, le ideas esistenti restano
         if (r.ls_brkr) patch.ls_brkr = r.ls_brkr.toUpperCase();
@@ -9972,6 +9982,8 @@ routes['inbox'] = function() {
       if (ex) { if (!r.ows_brkr && ex.ows_brkr) r.ows_brkr = ex.ows_brkr; if (!r.bunker && ex.bunker) r.bunker = ex.bunker; }
       // a position for a vessel that is NOT in the list = fresh (Giancarlo 9 Sep 2026: NISSAKI, SDTR ALICE, ULTRA LYNX)
       if (!kindOf(r) && !r.vsl_status && !ex && r.open_port) r.vsl_status = 'fresh';
+      // v73: vessel added to the list TODAY (by hand or from an earlier candidate of the same day) and still without status = still fresh (RC ARTEMIS / SINCERE SMART 11 Sep)
+      if (!kindOf(r) && !r.vsl_status && ex && !ex.status && r.open_port && String(ex.created_at || '').slice(0, 10) === todayIso() && (r.msg_time || '').slice(0, 10) === todayIso()) r.vsl_status = 'fresh';
       r.__ideas0 = r.ideas;
       byId[r.id] = r; changed = true;
     }
@@ -9998,7 +10010,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v72'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v73'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
