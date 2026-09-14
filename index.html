@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v73 -->
+<!-- build: 20260903-inbox-v74 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -9586,7 +9586,10 @@ function renderInboxCargo() {
       const at = data && data.at ? new Date(data.at) : null;
       const age = at ? (Date.now() - at.getTime()) / 1000 : Infinity;
       const pollS = Math.max(0, Number((data && data.info && data.info.poll_ms) || 0) / 1000);
-      if (age < Math.max(150, pollS * 2 + 90)) { live.textContent = '● live'; live.style.color = 'var(--green,#2a9d5c)'; live.title = 'Teams reader running (last beat ' + Math.round(age) + 's ago)'; }
+      const info = (data && data.info) || {}; const tickAge = info.tick_at ? (Date.now() - new Date(info.tick_at).getTime()) / 1000 : null; const ib = info.inbox || {};
+      if (age < Math.max(150, pollS * 2 + 90) && tickAge != null && tickAge > 300) { live.textContent = '● stalled'; live.style.color = 'var(--orange,#d97706)'; live.title = 'Bot alive but Teams has not been read for ' + Math.round(tickAge / 60) + ' min (Teams web slow/hung?)'; }
+      else if (age < Math.max(150, pollS * 2 + 90) && ib.fail > 0) { live.textContent = '● live (inbox stuck)'; live.style.color = 'var(--orange,#d97706)'; live.title = 'Teams is read, but the Inbox upload is failing (' + ib.fail + 'x): ' + (ib.last_err || ''); }
+      else if (age < Math.max(150, pollS * 2 + 90)) { live.textContent = '● live'; live.style.color = 'var(--green,#2a9d5c)'; live.title = 'Teams reader running (last beat ' + Math.round(age) + 's ago)'; }
       else { const seen = at ? at.toLocaleString('en-GB', { timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'never'; live.textContent = '● offline'; live.style.color = 'var(--red)'; live.title = 'Teams reader not running (last seen ' + seen + ')'; }
     } catch (e) { live.textContent = '● unknown'; live.style.color = 'var(--text-mute)'; live.title = String(e.message || e); }
   };
@@ -9937,7 +9940,10 @@ routes['inbox'] = function() {
       const at = data && data.at ? new Date(data.at) : null;
       const age = at ? (Date.now() - at.getTime()) / 1000 : Infinity;
       const pollS = Math.max(0, Number((data && data.info && data.info.poll_ms) || 0) / 1000);
-      if (age < Math.max(150, pollS * 2 + 90)) { live.textContent = '● live'; live.style.color = 'var(--green,#2a9d5c)'; live.title = 'Teams reader running (last beat ' + Math.round(age) + 's ago)'; }
+      const info = (data && data.info) || {}; const tickAge = info.tick_at ? (Date.now() - new Date(info.tick_at).getTime()) / 1000 : null; const ib = info.inbox || {};
+      if (age < Math.max(150, pollS * 2 + 90) && tickAge != null && tickAge > 300) { live.textContent = '● stalled'; live.style.color = 'var(--orange,#d97706)'; live.title = 'Bot alive but Teams has not been read for ' + Math.round(tickAge / 60) + ' min (Teams web slow/hung?)'; }
+      else if (age < Math.max(150, pollS * 2 + 90) && ib.fail > 0) { live.textContent = '● live (inbox stuck)'; live.style.color = 'var(--orange,#d97706)'; live.title = 'Teams is read, but the Inbox upload is failing (' + ib.fail + 'x): ' + (ib.last_err || ''); }
+      else if (age < Math.max(150, pollS * 2 + 90)) { live.textContent = '● live'; live.style.color = 'var(--green,#2a9d5c)'; live.title = 'Teams reader running (last beat ' + Math.round(age) + 's ago)'; }
       else { const seen = at ? at.toLocaleString('en-GB', { timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'never'; live.textContent = '● offline'; live.style.color = 'var(--red)'; live.title = 'Teams reader not running — last seen ' + seen; }
     } catch (e) { live.textContent = '● unknown'; live.style.color = 'var(--text-mute)'; live.title = String(e.message || e); }
   };
@@ -10010,7 +10016,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v73'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v74'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
