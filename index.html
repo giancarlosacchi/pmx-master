@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v74 -->
+<!-- build: 20260903-inbox-v75 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -9602,6 +9602,8 @@ function renderInboxCargo() {
     const { data, error } = await sb.from('inbox_cargoes').select('*').eq('status', 'pending').order('msg_time', { ascending: false }).order('id', { ascending: false });
     if (error) { if (!$('#ib-tbl table') && !$('#ib-empty')) $('#ib-tbl').innerHTML = '<div style="padding:16px;color:var(--red)">' + esc(error.message) + '</div>'; return; }
     let rows = data || [];
+    if (window.__ibSeenDayC !== todayIso()) { try { const d0 = new Date(Date.now() - 12 * 86400e3).toISOString(); const sc = await sb.from('inbox_cargoes').select('chrtrs,load_port').gte('msg_time', d0).lt('msg_time', todayIso() + 'T00:00:00').limit(5000); window.__ibSeenC = new Set((sc.data || []).map(x => norm(x.chrtrs) + '|' + w1(x.load_port))); window.__ibSeenDayC = todayIso(); } catch (e) { window.__ibSeenC = window.__ibSeenC || new Set(); } }
+    const seenBeforeC = r => (window.__ibSeenC || new Set()).has(norm(r.chrtrs) + '|' + w1(r.load_port));
     { // doppioni: stesso chrtrs + load + disch, laycan sovrapposto → solo l'ultimo messaggio; il piu' nuovo eredita i campi vuoti
       const keep = [], old = [], fills = [];
       const FILL = ['laycan_from', 'laycan_to', 'load_port', 'disch_port', 'cgo', 'size', 'notes', 'section', 'area', 'basin'];
@@ -9620,7 +9622,10 @@ function renderInboxCargo() {
     const ids = new Set(rows.map(r => r.id));
     let changed = false;
     for (const id of Object.keys(byId)) if (!ids.has(Number(id))) { delete byId[id]; changed = true; }
-    for (const r of rows) { const prev = byId[r.id]; if (!prev || JSON.stringify(prev) !== JSON.stringify(r)) { byId[r.id] = r; changed = true; } }
+    for (const r of rows) {
+      // v75: a cargo that is NOT in the list yet (or added today) = fresh, like vessels (Giancarlo 14 Sep: BUNGE NCSA/ADAM-BARCA, LTE TROMBETAS)
+      if (!kindOf(r) && !r.cgo_status && r.chrtrs && msgDay(r) === todayIso() && !seenBeforeC(r)) { const ex = findC(r); if (!ex || (!ex.status && String(ex.created_at || '').slice(0, 10) === todayIso())) r.cgo_status = 'fresh'; }
+      const prev = byId[r.id]; if (!prev || JSON.stringify(prev) !== JSON.stringify(r)) { byId[r.id] = r; changed = true; } }
     if (changed || !$('#ib-tbl table')) render();
   };
   sync(true);
@@ -9956,6 +9961,9 @@ routes['inbox'] = function() {
     const { data, error } = await sb.from('inbox_candidates').select('*').eq('status', 'pending').order('msg_time', { ascending: false }).order('id', { ascending: false });
     if (error) { if (!$('#ib-tbl table') && !$('#ib-empty')) $('#ib-tbl').innerHTML = '<div style="padding:16px;color:var(--red)">' + esc(error.message) + '</div>'; return; }
     let rows = data || [];
+    // v75: vessels already seen in the Inbox before today (any status) are NOT fresh even if their list row was re-created today (GEORGE H 14 Sep)
+    if (window.__ibSeenDay !== todayIso()) { try { const d0 = new Date(Date.now() - 12 * 86400e3).toISOString(); const sv = await sb.from('inbox_candidates').select('vessel').gte('msg_time', d0).lt('msg_time', todayIso() + 'T00:00:00').limit(5000); window.__ibSeenV = new Set((sv.data || []).map(x => norm(x.vessel))); window.__ibSeenDay = todayIso(); } catch (e) { window.__ibSeenV = window.__ibSeenV || new Set(); } }
+    const seenBefore = r => (window.__ibSeenV || new Set()).has(norm(r.vessel));
     { const byKey = new Map(), keep = [], old = [], fills = [];
       // stessa nave piu' volte (qualunque kind): vale SOLO l'ultimo messaggio (righe gia' ordinate dalla piu' recente).
       // Se l'ultimo e' un cambio stato (subs/remove) senza porto/dwt, eredita i dati dalla posizione precedente.
@@ -9989,7 +9997,7 @@ routes['inbox'] = function() {
       // a position for a vessel that is NOT in the list = fresh (Giancarlo 9 Sep 2026: NISSAKI, SDTR ALICE, ULTRA LYNX)
       if (!kindOf(r) && !r.vsl_status && !ex && r.open_port) r.vsl_status = 'fresh';
       // v73: vessel added to the list TODAY (by hand or from an earlier candidate of the same day) and still without status = still fresh (RC ARTEMIS / SINCERE SMART 11 Sep)
-      if (!kindOf(r) && !r.vsl_status && ex && !ex.status && r.open_port && String(ex.created_at || '').slice(0, 10) === todayIso() && (r.msg_time || '').slice(0, 10) === todayIso()) r.vsl_status = 'fresh';
+      if (!kindOf(r) && !r.vsl_status && ex && !ex.status && r.open_port && String(ex.created_at || '').slice(0, 10) === todayIso() && (r.msg_time || '').slice(0, 10) === todayIso() && !seenBefore(r)) r.vsl_status = 'fresh';
       r.__ideas0 = r.ideas;
       byId[r.id] = r; changed = true;
     }
@@ -10016,7 +10024,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v74'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v75'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
