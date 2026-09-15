@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v75 -->
+<!-- build: 20260903-inbox-v76 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -5283,6 +5283,38 @@ function purgeOldSubs() {
     if (typeof cloudToast === 'function') cloudToast('Removed ' + old.length + ' vessel' + (old.length > 1 ? 's' : '') + ' on subs for 2+ days: ' + old.map(v => v.vessel).join(', '), { kind: 'info', duration: 7000 });
     try { setRoute(); } catch (e) {}
   } catch (e) { console.warn('purgeOldSubs:', e); }
+  setTimeout(purgeStale, 1500);
+}
+// Regola Giancarlo 15 set 2026: tutto cio' che non e' aggiornato da piu' di 5 giorni LAVORATIVI (lun-ven) sparisce:
+// navi e carichi in lista (ultimo aggiornamento < data limite) e candidate Inbox ancora pending (data messaggio < limite).
+// Gira solo per l'admin, una volta al giorno (per browser), dopo purgeOldSubs; le cancellazioni vanno in cloud come quelle manuali.
+function businessDaysAgoIso(n) {
+  const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Rome' }));
+  let k = 0; while (k < n) { d.setDate(d.getDate() - 1); const w = d.getDay(); if (w !== 0 && w !== 6) k++; }
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+async function purgeStale() {
+  try {
+    if (CURRENT_USER_ROLE !== 'admin' || window._restoring || window._cloudLoadFailed) return;
+    const today = todayIso(); let doneKey = null; try { doneKey = localStorage.getItem('purgeStaleDone'); } catch (e) {}
+    if (doneKey === today) return;
+    const cutIso = businessDaysAgoIso(5);
+    const last = v => { const a = String(v.update_date || '').slice(0, 10), b = String(v.updated_at || '').slice(0, 10); return a > b ? a : b; };
+    const oldV = (DATA.vessels || []).filter(v => last(v) && last(v) < cutIso);
+    const oldC = (DATA.cargoes || []).filter(c => last(c) && last(c) < cutIso);
+    oldV.forEach(v => delVessel(v.id)); oldC.forEach(c => delCargo(c.id));
+    let nIb = 0;
+    try {
+      const a = await sb.from('inbox_candidates').update({ status: 'rejected' }).eq('status', 'pending').lt('msg_time', cutIso).select('id');
+      const b = await sb.from('inbox_cargoes').update({ status: 'rejected' }).eq('status', 'pending').lt('msg_time', cutIso).select('id');
+      nIb = ((a && a.data) || []).length + ((b && b.data) || []).length;
+    } catch (e) { console.warn('purgeStale inbox:', e); }
+    try { localStorage.setItem('purgeStaleDone', today); } catch (e) {}
+    if (oldV.length || oldC.length || nIb) {
+      if (typeof cloudToast === 'function') cloudToast('Removed ' + oldV.length + ' vessel(s), ' + oldC.length + ' cargo(es) and ' + nIb + ' Inbox item(s) not updated for 5+ working days (before ' + cutIso + ')', { kind: 'info', duration: 9000 });
+      try { setRoute(); } catch (e) {}
+    }
+  } catch (e) { console.warn('purgeStale:', e); }
 }
 function delVessel(id) {
   const v = DATA.vessels.find(x=>x.id===id);
@@ -10024,7 +10056,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v75'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v76'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
