@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v85 -->
+<!-- build: 20260903-inbox-v86 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -5323,7 +5323,7 @@ function purgeOldSubs() {
   try {
     if (CURRENT_USER_ROLE !== 'admin' || window._restoring || window._cloudLoadFailed) return;
     const cut = new Date(); cut.setUTCDate(cut.getUTCDate() - 2); const cutIso = cut.toISOString().slice(0, 10);
-    const last = v => { const a = String(v.update_date || '').slice(0, 10), b = String(v.updated_at || '').slice(0, 10); return a > b ? a : b; };
+    const last = v => String(v.update_date || v.updated_at || '').slice(0, 10);   // v86: conta SOLO la data di update (updated_at cambia anche per YDAY/flag/stato e teneva in vita righe dell'8 set)
     const old = (DATA.vessels || []).filter(v => v.status === 'on_subs' && last(v) && last(v) <= cutIso);
     if (!old.length) return;
     old.forEach(v => delVessel(v.id));
@@ -5346,7 +5346,7 @@ async function purgeStale() {
     const today = todayIso(); let doneKey = null; try { doneKey = localStorage.getItem('purgeStaleDone'); } catch (e) {}
     if (doneKey === today) return;
     const cutIso = businessDaysAgoIso(5);
-    const last = v => { const a = String(v.update_date || '').slice(0, 10), b = String(v.updated_at || '').slice(0, 10); return a > b ? a : b; };
+    const last = v => String(v.update_date || v.updated_at || '').slice(0, 10);   // v86: conta SOLO la data di update (updated_at cambia anche per YDAY/flag/stato e teneva in vita righe dell'8 set)
     const oldV = (DATA.vessels || []).filter(v => last(v) && last(v) < cutIso);
     const oldC = (DATA.cargoes || []).filter(c => last(c) && last(c) < cutIso);
     oldV.forEach(v => delVessel(v.id)); oldC.forEach(c => delCargo(c.id));
@@ -10451,7 +10451,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v85'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v86'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
