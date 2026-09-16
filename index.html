@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v91 -->
+<!-- build: 20260903-inbox-v92 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -9109,7 +9109,10 @@ const DEFAULT_FIXTURES_TSV = `13/08/26	ZHENG RUN	VC	CONSTANTA ANCH	ROTTERDAM ANC
 27/11/24	Glory V	VC	Yuzhny, Ukraine	Rotterdam	63150	19.80		Louis Dreyfus Company Suisse S.A. (4789)	Spark Ocean Shipping Pte Ltd (9972)
 01/11/24	Arrow Lady	VC	Novorossiysk, Russia	Jakarta and Surabaya	69300	35.60	wheat	Louis Dreyfus Company Suisse S.A. (4789)	AIMS Shipping Corporation (8699)	14/11/24	20/11/24
 22/10/24	Sentosa 66	VC	Odessa, Ukraine	Mina Zayed	62950	35.50	wheat or barley	Louis Dreyfus Company Suisse S.A. (4789)	Jah Line International Co., Limited (9995)	13/11/24	18/11/24`;
-const DEFAULT_FIXTURES = DEFAULT_FIXTURES_TSV.trim().split('\n').map((l, i) => { const c = l.split('\t').map(x => x.trim()); const d = s => { const m = s.match(/^(\d{2})\/(\d{2})\/(\d{2})$/); return m ? '20' + m[3] + '-' + m[2] + '-' + m[1] : ''; }; return { id: 'fx-' + i, cp_date: d(c[0]), vessel: c[1], type: c[2], load: c[3], disch: c[4], qty: c[5], rate: c[6], cargo: c[7], charterer: c[8], owner: c[9], lc_from: d(c[10] || ''), lc_to: d(c[11] || '') }; });
+// nomi corti per charterer/owner (Giancarlo 16 set): via il numero tra parentesi in coda, gruppi noti → sigla
+const FX_SHORT = [[/^bunge\b/i, 'BUNGE'], [/louis\s*dreyfus|\bLDC\b/i, 'LDC'], [/^reachy\b/i, 'REACHY'], [/^hanson\b/i, 'CARRIERS'], [/^prima\s+corp/i, 'PRIMACORP'], [/^fujian\b/i, 'FUJIAN'], [/^sea\s*trade\b/i, 'SEA TRADE'], [/^national\s+navigation/i, 'NNC'], [/^omicron\b/i, 'OMICRON'], [/^kanakia\b/i, 'KANAKIA'], [/^magna\s+marine/i, 'MAGNA MARINE'], [/^cargill\b/i, 'CARGILL'], [/^olam\b/i, 'OLAM'], [/norden\b/i, 'NORDEN'], [/^harmony\s+bulkers/i, 'HARMONY'], [/^aquavita\b/i, 'AQUAVITA']];
+function fxShort(v) { v = String(v || '').replace(/\s*\(\s*\d+\s*\)\s*$/, '').trim(); for (const [re, short] of FX_SHORT) if (re.test(v)) return short; return v; }
+const DEFAULT_FIXTURES = DEFAULT_FIXTURES_TSV.trim().split('\n').map((l, i) => { const c = l.split('\t').map(x => x.trim()); c[8] = fxShort(c[8]); c[9] = fxShort(c[9]); const d = s => { const m = s.match(/^(\d{2})\/(\d{2})\/(\d{2})$/); return m ? '20' + m[3] + '-' + m[2] + '-' + m[1] : ''; }; return { id: 'fx-' + i, cp_date: d(c[0]), vessel: c[1], type: c[2], load: c[3], disch: c[4], qty: c[5], rate: c[6], cargo: c[7], charterer: c[8], owner: c[9], lc_from: d(c[10] || ''), lc_to: d(c[11] || '') }; });
 const AGENT_AREAS = ['BSEA', 'EMED', 'WMED', 'CONT', 'UKC', 'BALTIC', 'ECSA', 'NCSA', 'USG', 'USEC', 'WAFR', 'SAFR', 'RSEA', 'PG', 'INDIA', 'SEASIA', 'FEAST', 'NOPAC', 'AUSSIE'];
 const fmtDmy = iso => { const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? m[3] + '/' + m[2] + '/' + m[1].slice(2) : (iso || ''); };
 const fmtNum = (v, dec) => { const n = Number(String(v || '').replace(/,/g, '')); return v === '' || v == null || !isFinite(n) ? '' : n.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec }); };
@@ -9124,7 +9127,7 @@ const DIRS = {
   },
   fixtures: {
     key: 'fixtures', label: 'fixture', defaults: DEFAULT_FIXTURES, sortDefault: ['cp_date', 'desc'],
-    cols: [['cp_date', 'CP date', 84, { date: true }], ['vessel', 'Vessel', 150, { required: true, cls: 'ag-company', upper: true }], ['type', 'Type', 50, { list: 'fx-types', upper: true }], ['load', 'Load port / origin', 150], ['disch', 'Discharge port / destination', 190], ['qty', 'Qty (MT)', 90, { num: 2 }], ['rate', 'Rate (USD/MT)', 90, { num: 2 }], ['cargo', 'Cargo', 130], ['charterer', 'Charterer', 220], ['owner', 'Owner', 240], ['lc_from', 'Laycan start', 84, { date: true }], ['lc_to', 'Laycan end', 84, { date: true }]],
+    cols: [['cp_date', 'CP date', 84, { date: true }], ['vessel', 'Vessel', 150, { required: true, cls: 'ag-company', upper: true }], ['type', 'Type', 50, { list: 'fx-types', upper: true }], ['load', 'Load port / origin', 150], ['disch', 'Discharge port / destination', 190], ['qty', 'Qty (MT)', 90, { num: 2 }], ['rate', 'Rate (USD/MT)', 90, { num: 2 }], ['cargo', 'Cargo', 130], ['charterer', 'Charterer', 150, { short: true }], ['owner', 'Owner', 200, { short: true }], ['lc_from', 'Laycan start', 84, { date: true }], ['lc_to', 'Laycan end', 84, { date: true }]],
     sortKey: (a, k) => (k === 'qty' || k === 'rate') ? (Number(a[k]) || -1) : String(a[k] || '').toLowerCase(),
     text: a => [fmtDmy(a.cp_date), a.vessel, a.type, [a.load, a.disch].filter(Boolean).join(' / '), a.qty ? fmtNum(a.qty, 0) + ' MT' : '', a.rate ? 'USD ' + fmtNum(a.rate, 2) : '', a.cargo, a.charterer, a.owner, (a.lc_from || a.lc_to) ? 'L/C ' + fmtDmy(a.lc_from) + '-' + fmtDmy(a.lc_to) : ''].filter(Boolean).join(' | '),
     blank: () => ({ cp_date: todayIso(), vessel: '', type: 'VC', load: '', disch: '', qty: '', rate: '', cargo: '', charterer: '', owner: '', lc_from: '', lc_to: '' }),
@@ -9196,7 +9199,7 @@ function renderDirectory(name) {
     else if (e.target.closest('.ag-cancel')) { const list = getDir(name); const a = list.find(x => x.id === id); if (a && !req.some(k => a[k])) saveDir(name, list.filter(x => x.id !== id)); setEdit(null); draw(); }
     else if (e.target.closest('.ag-save')) {
       const list = getDir(name); const a = list.find(x => x.id === id); if (!a) return;
-      tr.querySelectorAll('.ag-in').forEach(i => { const o = (cfg.cols.find(c => c[0] === i.dataset.col) || [])[3] || {}; let v = i.value.trim(); if (o.upper) v = v.toUpperCase(); if (o.num != null) v = v.replace(/,/g, ''); if (o.link === 'web') v = agentUrl(v); a[i.dataset.col] = v; });
+      tr.querySelectorAll('.ag-in').forEach(i => { const o = (cfg.cols.find(c => c[0] === i.dataset.col) || [])[3] || {}; let v = i.value.trim(); if (o.upper) v = v.toUpperCase(); if (o.num != null) v = v.replace(/,/g, ''); if (o.link === 'web') v = agentUrl(v); if (o.short) v = fxShort(v); a[i.dataset.col] = v; });
       if (req.some(k => !a[k])) { cloudToast(cap + ': ' + req.map(k => cfg.cols.find(c => c[0] === k)[1]).join(', ') + ' required', { kind: 'error', duration: 2500 }); return; }
       saveDir(name, list); setEdit(null); draw();
     }
@@ -10724,7 +10727,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v91'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v92'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
