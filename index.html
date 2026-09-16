@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v76 -->
+<!-- build: 20260903-inbox-v77 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2082,6 +2082,20 @@ tr.status-subs .status-menu .opt { text-decoration: none; }
   opacity: .55; margin: 0; z-index: 2;
 }
 #vf-results th.th-filter input, #cf-results th.th-filter input { padding-right: 24px; }
+/* BSEA List (16 set 2026): navi candidate Ukr/Russia a sinistra, carichi BSEA a destra */
+.bsea-layout { grid-template-columns: minmax(0, 1fr) minmax(420px, 34%); }
+@media (max-width: 1500px) { .bsea-layout { grid-template-columns: 1fr; } }
+.bsea-cgo-col { display: flex; flex-direction: column; min-height: 0; }
+.bsea-cgo-col .panel { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.bsea-cgo-col .tbl-wrap { flex: 1; overflow: auto; }
+.bsea-cgo-col table.grid { font-size: 11.5px; }
+.bsea-cgo-col table.grid th { font-size: 9.5px; }
+.bsea-cgo-col .ideas-text { font-size: 11px; }
+.bsea-panel-title { display: flex; align-items: center; gap: 10px; padding: 8px 12px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-dim); border-bottom: 1px solid var(--line); }
+.bsea-panel-title .count-pill { margin-left: auto; }
+.ecsa-list-col .flag-ok { display: inline-block; min-width: 30px; text-align: center; padding: 1px 6px; border-radius: 999px; border: 1px solid var(--line); font-size: 10px; font-weight: 700; cursor: pointer; opacity: .45; user-select: none; }
+.ecsa-list-col .flag-ok.on { opacity: 1; background: #2D8A4F; color: #fff; border-color: #2D8A4F; }
+.ecsa-list-col tr.bsea-ballast td[data-col="eta"] { color: #C0392B; font-weight: 700; }
 /* ECSA List: X nascondi-colonna come nei finder */
 .ecsa-list-col th { position: relative; }
 .ecsa-list-col .col-hide-btn {
@@ -2092,6 +2106,8 @@ tr.status-subs .status-menu .opt { text-decoration: none; }
 .ecsa-list-col .col-hide-btn:hover { opacity: 1; }
 .ecsa-list-col thead.area-green .col-hide-btn { color: rgba(255,255,255,.8); }
 .ecsa-list-col thead.area-green .col-hide-btn:hover { color: #fff; border-color: #fff; }
+.ecsa-list-col thead.area-blue .col-hide-btn { color: rgba(255,255,255,.8); }
+.ecsa-list-col thead.area-blue .col-hide-btn:hover { color: #fff; border-color: #fff; }
 table.grid tr:hover .row-hide-btn,
 table.grid th:hover .col-hide-btn { opacity: .7; }
 #vf-results .col-hide-btn:hover, #cf-results .col-hide-btn:hover { opacity: 1; }
@@ -2725,6 +2741,7 @@ body:not(.logged-in) .app { visibility: hidden; }
     <nav class="nav">
       <a data-route="rundown-ecsa" data-badge="E"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v6h6"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/></svg><span class="nav-label">ECSA</span></a>
       <a data-route="rundown-natl" data-badge="N"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v6h6"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/></svg><span class="nav-label">N.ATL</span></a>
+      <a data-route="rundown-bsea" data-badge="B"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v6h6"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/></svg><span class="nav-label">BSEA</span></a>
       <a data-route="rundown-pac" data-badge="P"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v6h6"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/></svg><span class="nav-label">PACIFIC</span></a>
     </nav>
   </div>
@@ -2732,6 +2749,7 @@ body:not(.logged-in) .app { visibility: hidden; }
     <div class="nav-section">Tools</div>
     <nav class="nav">
       <a data-route="ecsa-list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18"/></svg><span class="nav-label">ECSA List</span></a>
+      <a data-route="bsea-list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><span class="nav-label">BSEA List</span></a>
       <a data-route="inbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg><span class="nav-label">Inbox</span></a>
       <a data-route="calc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h2M14 11h2M8 15h2M14 15h2"/></svg><span class="nav-label">Calc DOP/APS</span></a>
       <a data-route="distances"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg><span class="nav-label">Distances</span></a>
@@ -3074,7 +3092,7 @@ async function migrateLocalToCloud(local) {
   }
   // Rundowns
   if (local.rundowns) {
-    for (const key of ['ecsa','natl','pac']) {
+    for (const key of ['ecsa','natl','pac','bsea']) {
       const text = local.rundowns[key];
       if (text != null) {
         const { error } = await sb.from('rundowns').upsert({ key, text });
@@ -6362,6 +6380,273 @@ routes['ecsa-list'] = function() {
   refresh();
 };
 
+// ============== BSEA LIST (Tools) — 16 set 2026 ==============
+// Replica del foglio "BSEA": UKR/RUSSIA CANDIDATES SPOT ONW. Navi EMED / BSEA (ETA = porto di apertura) + navi WMED
+// in ballast verso il Mar Nero (ETA BSEA = apertura + 6 giorni, in rosso), ordinate per data. A destra i carichi EMED / BSEA.
+// UKR OK / RUS OK = i flag ukr_trader / rus_trader della nave (condivisi con la lista ATL TNG).
+const BSEA_OFFSETS = { 'EMED / BSEA': 0, 'WMED': 6 };
+function _bseaAreaOf(v) {
+  const a = String(v.area || '').trim().toUpperCase().replace(/\s*\/\s*/g, ' / ');
+  if (a === 'EMED' || a === 'BSEA' || a === 'EMED / BSEA') return 'EMED / BSEA';
+  if (a === 'WMED' || a === 'MED') return 'WMED';
+  return null;
+}
+function buildBseaEntries() {
+  const entries = [];
+  for (const v of DATA.vessels.filter(x => x.basin === 'ATL')) {
+    const area = _bseaAreaOf(v);
+    if (!area) continue;
+    const offset = BSEA_OFFSETS[area];
+    entries.push({ v, area, offset, adjFrom: _shiftIsoDate(v.open_from, offset), adjTo: _shiftIsoDate(v.open_to, offset), eta: offset > 0 ? 'BSEA' : (v.open_port || 'BSEA') });
+  }
+  entries.sort((a, b) => {
+    const fA = a.adjFrom || '9999-12-31', fB = b.adjFrom || '9999-12-31';
+    if (fA !== fB) return fA.localeCompare(fB);
+    return (a.adjTo || '9999-12-31').localeCompare(b.adjTo || '9999-12-31');
+  });
+  return entries;
+}
+function bseaCargoes() {
+  return DATA.cargoes.filter(c => c.basin === 'ATL' && (String(c.section || '').toUpperCase().replace(/\s*\/\s*/g, ' / ') === 'EMED / BSEA' || /^(EMED|BSEA)$/i.test(String(c.area || ''))))
+    .sort((a, b) => String(a.laycan_from || '9999').localeCompare(String(b.laycan_from || '9999')));
+}
+// Testo da incollare (come "Copy" della ECSA list): una riga per nave, poi i carichi
+function generateBseaListText() {
+  const tc = (x) => String(x || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+  const lines = ['UKR/RUSSIA CANDIDATES SPOT ONW', ''];
+  for (const e of buildBseaEntries()) {
+    const v = e.v;
+    if (v.status === 'on_subs') continue;
+    let line = `Mv ${tc(v.vessel)} ${v.dwt_blt || ''}`;
+    if (e.offset > 0) line += ` Eta Bsea ${_fmtRangeLower(e.adjFrom, e.adjTo)} - ${tc(v.open_port || '')} ${_fmtRangeLower(v.open_from, v.open_to)}`;
+    else line += ` ${tc(v.open_port || '')} ${_fmtRangeLower(v.open_from, v.open_to)}`;
+    const flags = [v.ukr_trader ? 'Ukr ok' : '', v.rus_trader ? 'Rus ok' : ''].filter(Boolean).join(' / ');
+    if (flags) line += ` (${flags})`;
+    if (v.ideas) line += ` - ${String(v.ideas).trim()}`;
+    if (v.ows_brkr) line += ` - ${tc(v.ows_brkr)}`;
+    lines.push(line.replace(/\s+/g, ' ').trim());
+  }
+  const cg = bseaCargoes().filter(c => c.status !== 'on_subs');
+  if (cg.length) { lines.push('', 'BSEA CGOS'); for (const c of cg) lines.push((c.copy_text || buildCargoCopyText(c)).replace(/\s+/g, ' ').trim()); }
+  return lines.join('\n');
+}
+function renderBseaRow(entry) {
+  const v = entry.v;
+  const cls = (!v.status ? '' : v.status === 'on_subs' ? 'status-subs' : v.status === 'off_mkt' ? 'status-off' : 'status-fresh') + (entry.offset > 0 ? ' bsea-ballast' : '');
+  const statusCls = !v.status ? 'none' : v.status === 'on_subs' ? 'subs' : v.status === 'off_mkt' ? 'off' : 'fresh';
+  const statusLabel = !v.status ? '—' : v.status === 'on_subs' ? 'on subs' : v.status === 'off_mkt' ? 'off mrkt' : 'fresh';
+  const E = (f) => `data-kind="v" data-id="${v.id}" data-field="${f}" class="editable" title="Double-click to edit"`;
+  let ideasDisplay = v.ideas || '';
+  if (entry.offset > 0) { const prefix = ((v.open_port || '') + ' ' + _fmtRangeLower(v.open_from, v.open_to)).trim(); ideasDisplay = prefix + (ideasDisplay ? ' - ' + ideasDisplay : ''); }
+  const ok = (k, label) => `<span class="flag-ok ${v[k] ? 'on' : ''}" data-id="${v.id}" data-col="${k}" title="${label}: click to toggle">${v[k] ? 'OK' : '—'}</span>`;
+  return `<tr class="${cls}" data-sel-id="${v.id}" data-sel-kind="v" data-sel-from="${entry.adjFrom||''}" data-sel-to="${entry.adjTo||''}" data-sel-area="${esc(entry.area||'')}">
+    <td data-col="vessel" ${E('vessel')}><b>${esc(v.vessel)}</b></td>
+    <td data-col="dwt_blt" ${E('dwt_blt')} class="editable dim">${esc(v.dwt_blt || '')}</td>
+    <td data-col="eta" title="${entry.offset > 0 ? 'Ballasting from ' + esc(v.open_port || 'WMED') + ' (+' + entry.offset + ' days)' : ''}">${esc(entry.eta || '')}</td>
+    <td data-col="dates" data-kind="v" data-id="${v.id}" data-field="open_from" class="editable" title="Double-click to edit (open from)">${fmtDateRange(entry.adjFrom, entry.adjTo)}</td>
+    <td data-col="ideas" ${E('ideas')} class="col-ideas editable"><div class="ideas-text">${fmtIdeas(ideasDisplay, v.update_date)}</div></td>
+    <td data-col="ukr">${ok('ukr_trader', 'Ukraine OK')}</td>
+    <td data-col="rus">${ok('rus_trader', 'Russia OK')}</td>
+    <td data-col="ows_brkr" ${E('ows_brkr')} class="editable dim">${esc(v.ows_brkr || '')}</td>
+    <td data-col="bunker" ${E('bunker')} class="editable dim">${esc(v.bunker || '')}</td>
+    <td data-col="ls_brkr" ${E('ls_brkr')} class="editable dim">${esc(v.ls_brkr || '')}</td>
+    <td data-col="update_date" ${E('update_date')} class="editable dim">${fmtUpdate(v.update_date)}</td>
+    <td data-col="status"><div class="status-wrap">
+      <span class="status-chip ${statusCls}" data-id="${v.id}">${statusLabel}</span>
+      <div class="status-menu">
+        <div class="opt fresh ${v.status==='fresh'?'current':''}" data-id="${v.id}" data-status="fresh">Fresh</div>
+        <div class="opt off ${v.status==='off_mkt'?'current':''}" data-id="${v.id}" data-status="off_mkt">Off mrkt</div>
+        <div class="opt subs ${v.status==='on_subs'?'current':''}" data-id="${v.id}" data-status="on_subs">On subs</div>
+        <div class="opt none ${!v.status?'current':''}" data-id="${v.id}" data-status="">Empty</div>
+      </div>
+    </div></td>
+  </tr>`;
+}
+routes['bsea-list'] = function() {
+  $('#topbar-actions').innerHTML = `<div class="global-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="f-q" placeholder="Search vessel, ideas, owner…" /></div>
+    <button class="primary" id="bsea-copy" title="Copy the BSEA list as text (Teams / mail)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy list</button>`;
+  $('#content').innerHTML = `
+    <div class="ecsa-layout bsea-layout">
+      <div class="ecsa-list-col">
+        <div class="panel">
+          <div class="filters">
+            ${renderAreaDropdown('bsea-list', ['EMED / BSEA','WMED'], 'Area')}
+            <div class="group"><label>Status</label>
+              <select id="f-status"><option value="">All</option><option value="fresh">Fresh</option><option value="off_mkt">Off mkt</option><option value="on_subs">On subs</option></select></div>
+            <div class="group"><label>Trader</label>
+              <select id="f-trader"><option value="">All</option><option value="ukr_trader">Ukraine OK</option><option value="rus_trader">Russia OK</option><option value="none">Not flagged</option></select></div>
+            <button class="filter-clear-all" type="button" title="Clear all filters">✕ Clear filters</button>
+            <span class="count-pill cnt-with-tooltip" id="cnt">—</span>
+          </div>
+          <div class="tbl-wrap" id="tbl"></div>
+        </div>
+      </div>
+      <div class="bsea-cgo-col">
+        <div class="panel">
+          <div class="bsea-panel-title">BSEA cargoes <span class="count-pill" id="bsea-cgo-cnt">—</span></div>
+          <div class="tbl-wrap" id="bsea-cgo-tbl"></div>
+        </div>
+      </div>
+    </div>`;
+  const hiddenCols = new Set(JSON.parse(localStorage.getItem('pmx-bsea-hidecols') || '[]'));
+  const saveCols = () => { try { localStorage.setItem('pmx-bsea-hidecols', JSON.stringify([...hiddenCols])); } catch(e){} };
+  const refreshCargo = () => {
+    const rows = bseaCargoes();
+    $('#bsea-cgo-cnt').textContent = `${rows.length}`;
+    const E = (c, f) => `data-kind="c" data-id="${c.id}" data-field="${f}" class="editable" title="Double-click to edit"`;
+    const html = [`<table class="grid"><thead class="area-blue tint-fixed"><tr><th>Acct</th><th>Dates</th><th>Load</th><th>Disch</th><th>Cgo</th><th>Size</th><th class="col-ideas">Notes</th><th>Upd</th></tr></thead><tbody>`];
+    for (const c of rows) {
+      const cls = c.status==='on_subs'?'status-subs':c.status==='off_mkt'?'status-off':c.status==='fresh'?'status-fresh':'';
+      html.push(`<tr class="${cls}" data-sel-id="${c.id}" data-sel-kind="c">
+        <td ${E(c,'chrtrs')}><b>${esc(c.chrtrs || '')}</b></td>
+        <td data-kind="c" data-id="${c.id}" data-field="laycan_from" class="editable" title="Double-click to edit (laycan from)">${fmtDateRange(c.laycan_from, c.laycan_to)}</td>
+        <td ${E(c,'load_port')}>${esc(c.load_port || '')}</td>
+        <td ${E(c,'disch_port')}>${esc(c.disch_port || '')}</td>
+        <td ${E(c,'cgo')}>${esc(c.cgo || '')}</td>
+        <td ${E(c,'size')} class="editable dim">${esc(c.size || '')}</td>
+        <td ${E(c,'notes')} class="editable col-ideas"><div class="ideas-text">${fmtIdeas(c.notes || '', c.update_date)}</div></td>
+        <td ${E(c,'update_date')} class="editable dim">${fmtUpdate(c.update_date || c.date)}</td>
+      </tr>`);
+    }
+    if (!rows.length) html.push('<tr><td colspan="8" class="muted" style="padding:14px">No BSEA cargoes in list</td></tr>');
+    html.push('</tbody></table>');
+    $('#bsea-cgo-tbl').innerHTML = html.join('');
+  };
+  const refresh = () => {
+    const q = $('#f-q').value.toLowerCase();
+    const selAreas = getSelectedAreas('bsea-list');
+    const status = $('#f-status').value, trader = $('#f-trader').value;
+    const F = getFilter('bsea-list');
+    let entries = buildBseaEntries();
+    if (selAreas.size > 0) entries = entries.filter(e => selAreas.has(e.area));
+    if (status) entries = entries.filter(e => e.v.status === status);
+    if (trader === 'none') entries = entries.filter(e => !e.v.ukr_trader && !e.v.rus_trader); else if (trader) entries = entries.filter(e => !!e.v[trader]);
+    if (q) entries = entries.filter(e => (e.v.vessel||'').toLowerCase().includes(q) || (e.v.ideas||'').toLowerCase().includes(q) || (e.v.ows_brkr||'').toLowerCase().includes(q) || (e.v.open_port||'').toLowerCase().includes(q));
+    entries = entries.filter(e => {
+      const v = e.v;
+      if (F.vessel && !matchText(v.vessel, F.vessel)) return false;
+      if (F.dwt_blt && !matchDwt(v.dwt_blt, F.dwt_blt)) return false;
+      if (F.eta && !matchText(e.eta || '', F.eta)) return false;
+      if (F.dates_from) { if (!e.adjFrom || !e.adjTo) return false; const ft = F.dates_to || F.dates_from; if (e.adjFrom > ft || e.adjTo < F.dates_from) return false; }
+      if (F.ideas && !matchText(v.ideas, F.ideas)) return false;
+      if (F.ows_brkr && !matchText(v.ows_brkr, F.ows_brkr)) return false;
+      if (F.bunker && !matchText(v.bunker, F.bunker)) return false;
+      if (F.ls_brkr && !matchText(v.ls_brkr, F.ls_brkr)) return false;
+      if (F.update_from) { if (!v.update_date) return false; const ft = F.update_to || F.update_from; if (v.update_date < F.update_from || v.update_date > ft) return false; }
+      if (F.status && !matchText(v.status, F.status)) return false;
+      return true;
+    });
+    $('#cnt').textContent = `${entries.length} vessels`;
+    const bucketCounts = {};
+    for (const e of entries) { const b = bucketFor(e.adjFrom); bucketCounts[b] = (bucketCounts[b] || 0) + 1; }
+    const cntEl = $('#cnt'); const bk = Object.keys(bucketCounts).sort(bucketSort);
+    if (cntEl) { if (bk.length && entries.length) cntEl.dataset.tooltip = bk.map(k => `${k}: ${bucketCounts[k]}`).join('\n'); else cntEl.removeAttribute('data-tooltip'); }
+    const colBtn = (k) => `<button class="col-hide-btn" data-col="${k}" title="Hide column">×</button>`;
+    const banner = hiddenCols.size > 0 ? `<div class="hidden-banner show"><span>Hidden: <b>${hiddenCols.size}</b> columns</span><button id="bsea-show-all">Show all</button></div>` : '';
+    const html = [banner + `<table class="grid"><thead class="area-blue tint-fixed"><tr>
+      <th data-col="vessel" class="th-filter"><input data-col="vessel" placeholder="Vessel" value="${attr(F.vessel||'')}">${colBtn('vessel')}</th>
+      <th data-col="dwt_blt" class="th-filter"><input data-col="dwt_blt" placeholder="DWT" value="${attr(F.dwt_blt||'')}">${colBtn('dwt_blt')}</th>
+      <th data-col="eta" class="th-filter"><input data-col="eta" placeholder="ETA" value="${attr(F.eta||'')}">${colBtn('eta')}</th>
+      <th data-col="dates" class="th-filter"><input class="filter-date-range" type="text" readonly data-col="dates" placeholder="Dates" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.dates_from, F.dates_to))}">${colBtn('dates')}</th>
+      <th data-col="ideas" class="th-filter col-ideas"><input data-col="ideas" placeholder="Pref TA or FH / Ideas" value="${attr(F.ideas||'')}">${colBtn('ideas')}</th>
+      <th data-col="ukr" title="Ukraine OK">UKR${colBtn('ukr')}</th>
+      <th data-col="rus" title="Russia OK">RUS${colBtn('rus')}</th>
+      <th data-col="ows_brkr" class="th-filter"><input data-col="ows_brkr" placeholder="Ows" value="${attr(F.ows_brkr||'')}">${colBtn('ows_brkr')}</th>
+      <th data-col="bunker" class="th-filter"><input data-col="bunker" placeholder="Bunker" value="${attr(F.bunker||'')}">${colBtn('bunker')}</th>
+      <th data-col="ls_brkr" class="th-filter"><input data-col="ls_brkr" placeholder="LS" value="${attr(F.ls_brkr||'')}">${colBtn('ls_brkr')}</th>
+      <th data-col="update_date" class="th-filter"><input class="filter-date-range" type="text" readonly data-col="update_date" placeholder="Update" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.update_from, F.update_to))}">${colBtn('update_date')}</th>
+      <th data-col="status" class="th-filter"><input data-col="status" placeholder="Status" value="${attr(F.status||'')}">${colBtn('status')}</th>
+    </tr></thead><tbody>`];
+    let lastBucket = null;
+    for (const e of entries) {
+      const b = bucketFor(e.adjFrom);
+      if (b !== lastBucket) { html.push(`<tr class="section-half area-blue"><td colspan="12">${esc(b)}<span class="half-count">(&thinsp;${bucketCounts[b] || 0}&thinsp;)</span></td></tr>`); lastBucket = b; }
+      html.push(renderBseaRow(e));
+    }
+    if (!entries.length) html.push('<tr><td colspan="12" class="muted" style="padding:14px">No vessels in EMED / BSEA or WMED</td></tr>');
+    html.push('</tbody></table>');
+    $('#tbl').innerHTML = html.join('');
+    $$('#tbl [data-col]').forEach(el => { if (el.tagName !== 'INPUT') el.style.display = hiddenCols.has(el.dataset.col) ? 'none' : ''; });
+    $$('#tbl .col-hide-btn').forEach(b => b.onclick = (e) => { e.stopPropagation(); hiddenCols.add(b.dataset.col); saveCols(); refresh(); });
+    const showAll = document.getElementById('bsea-show-all'); if (showAll) showAll.onclick = () => { hiddenCols.clear(); saveCols(); refresh(); };
+    $$('#tbl .flag-ok').forEach(c => c.onclick = (e) => { e.stopPropagation(); const id = rowId(c.dataset.id); const col = c.dataset.col; const v = DATA.vessels.find(x => x.id === id); if (!v) return; const nv = v[col] ? 0 : 1; updVessel(id, { [col]: nv }); c.classList.toggle('on', !!nv); c.textContent = nv ? 'OK' : '—'; });
+    $$('#tbl .status-menu .opt').forEach(o => o.onclick = (e) => { e.stopPropagation(); const id = rowId(o.dataset.id); const next = o.dataset.status; updVessel(id, { status: next, subs: next === 'on_subs' ? 'S' : '' }); refresh(); });
+    $$('#tbl thead th.th-filter input').forEach(inp => {
+      if (inp.value) inp.classList.add('filter-active');
+      if (inp.classList.contains('filter-date-range')) {
+        const col = inp.dataset.col; const F2 = getFilter('bsea-list');
+        const fromK = col === 'dates' ? 'dates_from' : 'update_from', toK = col === 'dates' ? 'dates_to' : 'update_to';
+        inp.onclick = () => openFilterDateRange(inp, F2[fromK], F2[toK], (from, to) => { F2[fromK] = from; F2[toK] = to; refresh(); });
+        return;
+      }
+      inp.oninput = debounce((e) => { const col = inp.dataset.col; const selStart = e.target.selectionStart; setFilter('bsea-list', col, e.target.value); refresh(); restoreFilterFocus('#tbl', col, selStart); }, 250);
+    });
+    refreshCargo();
+  };
+  bindAreaDropdown('bsea-list', ['EMED / BSEA','WMED'], refresh);
+  $('#f-status').onchange = refresh; $('#f-trader').onchange = refresh;
+  $('#f-q').oninput = debounce(refresh, 200);
+  $('#bsea-copy').onclick = () => { copyToClipboard(generateBseaListText()); const b = $('#bsea-copy'); const old = b.innerHTML; b.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied!`; setTimeout(() => b.innerHTML = old, 1300); };
+  refresh();
+};
+
+// ============== BLACK SEA RUNDOWN (16 set 2026) — stesso schema del N.ATL: solo cose aggiornate OGGI ==============
+function generateBseaRundown(refIso) {
+  const tIso = refIso || new Date().toISOString().slice(0,10);
+  const cgo = [];
+  for (const c of DATA.cargoes.filter(c => c.basin === 'ATL')) {
+    if (c.status === 'on_subs' || c.status === 'off_mkt') continue;
+    const subsU = String(c.subs || '').trim().toUpperCase();
+    if (subsU === 'S' || subsU === 'Y' || subsU === 'X') continue;
+    if (c.date !== tIso && c.update_date !== tIso) continue;
+    const sec = String(c.section || '').toUpperCase().replace(/\s*\/\s*/g, ' / ');
+    if (sec !== 'EMED / BSEA' && !/^(EMED|BSEA)$/i.test(String(c.area || ''))) continue;
+    cgo.push(c.copy_text || buildCargoCopyText(c));
+  }
+  const navi = { bsea: [], wmed: [] };
+  for (const v of DATA.vessels.filter(v => v.basin === 'ATL')) {
+    if (v.status === 'off_mkt' || v.status === 'on_subs') continue;
+    const subsU = String(v.subs || '').trim().toUpperCase();
+    if (subsU === 'S' || subsU === 'Y' || subsU === 'X') continue;
+    if (v.update_date !== tIso) continue;
+    const ideas = String(v.ideas || '').trim();
+    if (/\*\s*$/.test(ideas)) continue;
+    const area = _bseaAreaOf(v);
+    if (!area) continue;
+    const dwtRaw = v.dwt_blt || '', openPort = v.open_port || '';
+    const dateStr = buildDateRangeR_(v.open_from, v.open_to);
+    const owner = v.ows_brkr || '';
+    const left = transformCopyTextR_('Mv ' + v.vessel + ' ' + dwtRaw + ' ' + openPort + ' ' + dateStr);
+    let line = left;
+    if (/^(YDAY\s+|LAST\s+)?OFFERS?\s+USD/i.test(ideas)) {
+      const offers = ideas.split(/\s*\/\/\s*/).map(s => s.trim()).filter(Boolean);
+      const parts = [];
+      offers.forEach((off, idx) => {
+        if (idx > 0 && !isValidOfferPartR_(off)) return;
+        if (/\bFOR\s+\d+(\s*\/\s*\d+)?\s+DAYS?\b/i.test(off)) return;
+        let r2 = transformOfferTextR_(off);
+        r2 = removeOpenPortDopR_(r2, openPort);
+        if (idx === 0) { if (!/^(yday\s+|last\s+)?offer\b/.test(r2)) r2 = 'offer usd ' + r2; }
+        else r2 = r2.replace(/^(yday\s+|last\s+)?offer\s+usd\s+/, '').replace(/^(yday\s+|last\s+)?offer\s+/, '');
+        parts.push(r2);
+      });
+      if (parts.length) line = left + ' / ' + parts.join(' / ');
+    } else if (ideas) line = left + ' - ' + ideas.toLowerCase();
+    const flags = [v.ukr_trader ? 'ukr ok' : '', v.rus_trader ? 'rus ok' : ''].filter(Boolean).join('/');
+    if (flags) line += ' (' + flags + ')';
+    if (owner) line += ' - ' + owner.toLowerCase();
+    const item = { line, eta: extractDateSortKeyR_(dateStr) };
+    (area === 'WMED' ? navi.wmed : navi.bsea).push(item);
+  }
+  navi.bsea.sort((a, b) => a.eta - b.eta); navi.wmed.sort((a, b) => a.eta - b.eta);
+  const lines = ['BLACK SEA RUNDOWN', '', 'FIXTURES', "<<INSERT TODAY'S FIXTURES HERE>>", ''];
+  const section = (title, items, isCargo) => { if (!items || !items.length) return; lines.push(title); items.forEach(it => lines.push(isCargo ? transformCargoTextR_(it) : it.line)); lines.push(''); };
+  section('BSEA CGOS', cgo, true);
+  section('EMED / BSEA TONNAGE', navi.bsea, false);
+  section('WMED BALLASTERS', navi.wmed, false);
+  return lines.join('\n');
+}
+
 // ============== CARGOES ATL/PAC ==============
 function renderCargoList(basin) {
   const _pg = basin === 'ATL' ? 'atl-cgo' : 'pac-cgo';
@@ -8047,6 +8332,7 @@ function autoUpdateRundowns() {
     if (typeof generateEcsaRundown === 'function') DATA.rundowns.ecsa = generateEcsaRundown(today);
     if (typeof generateNatlRundown === 'function') DATA.rundowns.natl = generateNatlRundown(today);
     if (typeof generatePacRundown === 'function')  DATA.rundowns.pac  = generatePacRundown(today);
+    if (typeof generateBseaRundown === 'function') DATA.rundowns.bsea = generateBseaRundown(today);
     saveData(DATA);
     // Se l'utente è su una pagina rundown, aggiorna anche il textarea visibile
     const hash = location.hash.replace(/^#\//, '');
@@ -8545,6 +8831,7 @@ function renderRundown(key, title) {
 routes['rundown-ecsa'] = () => renderRundown('ecsa', 'ECSA Rundown');
 routes['rundown-natl'] = () => renderRundown('natl', 'N. Atlantic Rundown');
 routes['rundown-pac']  = () => renderRundown('pac',  'Pacific Rundown');
+routes['rundown-bsea'] = () => renderRundown('bsea', 'Black Sea Rundown');
 
 // ============== CALC DOP / APS (formule reali) ==============
 let calcTab = 'aps2dop';
@@ -10056,7 +10343,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v76'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v77'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
