@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v80 -->
+<!-- build: 20260903-inbox-v81 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -9738,7 +9738,10 @@ function renderInboxCargo() {
   const near = (c, r) => overlap(shift(c.laycan_from, -5), shift(c.laycan_to || c.laycan_from, 5), r.laycan_from, r.laycan_to);
   const gapDays = (a, b) => (a && b) ? Math.abs((Date.parse(a) - Date.parse(b)) / 86400000) : 0;
   const findC = r => { const L = (DATA.cargoes || []).filter(c => norm(c.chrtrs) === norm(r.chrtrs));
-    return L.find(c => w1(c.load_port) === w1(r.load_port) && overlap(c.laycan_from, c.laycan_to, r.laycan_from, r.laycan_to))
+    // stesso carico solo se anche scarico/sezione sono compatibili: COFCO ECSA/S-J 5-12 OCT non e' COFCO ECSA/SPAIN 1 OCT ONW (16 set)
+    const sameDisch = c => !c.disch_port || !r.disch_port || w1(c.disch_port) === w1(r.disch_port);
+    const sameSec = c => !c.section || !r.section || c.section === r.section;
+    return L.find(c => w1(c.load_port) === w1(r.load_port) && overlap(c.laycan_from, c.laycan_to, r.laycan_from, r.laycan_to) && sameDisch(c) && sameSec(c))
         || L.find(c => c.section && c.section === r.section && w1(c.disch_port) === w1(r.disch_port) && near(c, r))
         || L.find(c => c.section && c.section === r.section && near(c, r))
         || L.find(c => w1(c.load_port) === w1(r.load_port) && w1(c.disch_port) === w1(r.disch_port) && gapDays(c.laycan_from, r.laycan_from) <= 35 && /\b(?:amend|revis|correct|updat)/i.test(String(r.raw || ''))); };
@@ -10407,7 +10410,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v80'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v81'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
