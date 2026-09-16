@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v81 -->
+<!-- build: 20260903-inbox-v82 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2100,6 +2100,7 @@ tr.status-subs .status-menu .opt { text-decoration: none; }
 /* colonne strette quanto la cella piu' larga (width:1px + nowrap), tutto lo spazio che avanza va a Notes */
 .bsea-cgo-col #ca-tbl th:not(.col-ideas), .bsea-cgo-col #ca-tbl td:not(.col-ideas) { width: 1px !important; max-width: none !important; white-space: nowrap; }
 .bsea-cgo-col #ca-tbl th.th-filter { min-width: 0 !important; }
+.bsea-cgo-col #ca-tbl .col-del { display: none !important; }   /* niente cestino: si cancella dalla ATL CGO */
 .bsea-cgo-col #ca-tbl th.th-filter input { width: 100%; min-width: 48px; }
 .bsea-cgo-col #ca-tbl .col-ideas { width: 100% !important; min-width: 220px !important; max-width: none !important; white-space: normal; }
 .bsea-cgo-col #ca-tbl .col-ideas .ideas-text { white-space: normal; overflow: visible; text-overflow: clip; max-width: none; }
@@ -10410,7 +10411,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v81'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v82'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
