@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v93 -->
+<!-- build: 20260903-inbox-v94 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -9161,7 +9161,7 @@ function renderDirectory(name) {
   </thead><tbody id="ag-body"></tbody></table></div></div>
   <datalist id="ag-areas">${AGENT_AREAS.map(a => `<option value="${a}">`).join('')}</datalist><datalist id="fx-types"><option value="VC"><option value="TC"></datalist>`;
   const body = $('#ag-body');
-  const show = (a, k, o) => { const v = a[k]; if (o.date) return fmtDmy(v); if (o.num != null) return fmtNum(v, o.num); return v == null ? '' : (o.upper ? String(v).toUpperCase() : String(v)); };   // v93: Fixtures tutto maiuscolo
+  const show = (a, k, o) => { let v = a[k]; if (o.date) return fmtDmy(v); if (o.num != null) return fmtNum(v, o.num); if (v == null) return ''; if (o.short) v = fxShort(v); return o.upper ? String(v).toUpperCase() : String(v); };   // v93: Fixtures tutto maiuscolo; v94: nomi corti anche su dati gia' in cache
   const visible = () => {
     const list = getDir(name).slice();
     const o = Object.fromEntries(cfg.cols.map(c => [c[0], c[3] || {}]));
@@ -10727,7 +10727,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v93'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v94'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
