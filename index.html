@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v95 -->
+<!-- build: 20260903-inbox-v96 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -6814,6 +6814,11 @@ function generateBseaRundown(refIso) {
     const flags = [v.ukr_trader ? 'ukr ok' : '', v.rus_trader ? 'rus ok' : ''].filter(Boolean).join('/');
     if (flags) line += ' (' + flags + ')';
     if (owner) line += ' - ' + owner.toLowerCase();
+    if (area === 'RSEA') {   // v96 (Giancarlo 16 set): "Mv nissaki 81/13 yanbu 17 sep - eta bsea 23 sep - quadra"
+      const etaIso = _shiftIsoDate(v.open_from || v.open_to, BSEA_OFFSETS.RSEA);
+      const etaTxt = etaIso ? buildDateRangeR_(etaIso, etaIso) : '';
+      if (etaTxt) line = line.replace(/^(.*?)( \/ | - )/, (m, l, sep) => l + ' - eta bsea ' + etaTxt + sep) ; if (etaTxt && !/ eta bsea /.test(line)) line += ' - eta bsea ' + etaTxt;
+    }
     const item = { line, eta: extractDateSortKeyR_(dateStr) };
     (area === 'RSEA' ? navi.rsea : navi.bsea).push(item);
   }
@@ -6823,7 +6828,8 @@ function generateBseaRundown(refIso) {
   section('BSEA CGOS', cgo, true);
   section('EMED / BSEA TONNAGE', navi.bsea, false);
   section('RSEA BALLASTERS', navi.rsea, false);
-  return lines.join('\n');
+  // v96: mesi sempre abbreviati (sep, oct, nov…) in tutto il Black Sea Rundown
+  return lines.join('\n').replace(/\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)(?:uary|ruary|ch|il|e|y|ust|tember|ober|ember)\b/gi, (m, a) => a);
 }
 
 // ============== CARGOES ATL/PAC ==============
@@ -10727,7 +10733,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v95'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v96'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
