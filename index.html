@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v94 -->
+<!-- build: 20260903-inbox-v95 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -6519,11 +6519,11 @@ routes['ecsa-list'] = function() {
 // Replica del foglio "BSEA": UKR/RUSSIA CANDIDATES SPOT ONW. Navi EMED / BSEA (ETA = porto di apertura) + navi WMED
 // in ballast verso il Mar Nero (ETA BSEA = apertura + 6 giorni, in rosso), ordinate per data. A destra i carichi EMED / BSEA.
 // UKR OK / RUS OK = i flag ukr_trader / rus_trader della nave (condivisi con la lista ATL TNG).
-const BSEA_OFFSETS = { 'EMED / BSEA': 0, 'WMED': 6 };
+const BSEA_OFFSETS = { 'EMED / BSEA': 0, 'RSEA': 6 };   // v95 (Giancarlo 16 set): EMED/BSEA + ballasters da RSEA (Yanbu/Jeddah/Aqaba → Bosforo via Suez ~6 gg); WMED tolta
 function _bseaAreaOf(v) {
   const a = String(v.area || '').trim().toUpperCase().replace(/\s*\/\s*/g, ' / ');
   if (a === 'EMED' || a === 'BSEA' || a === 'EMED / BSEA') return 'EMED / BSEA';
-  if (a === 'WMED' || a === 'MED') return 'WMED';
+  if (a === 'RSEA') return 'RSEA';
   return null;
 }
 function buildBseaEntries() {
@@ -6579,7 +6579,7 @@ function renderBseaRow(entry) {
   return `<tr class="${cls}" data-sel-id="${v.id}" data-sel-kind="v" data-sel-from="${entry.adjFrom||''}" data-sel-to="${entry.adjTo||''}" data-sel-area="${esc(entry.area||'')}">
     <td data-col="vessel" ${E('vessel')}><b>${esc(v.vessel)}</b></td>
     <td data-col="dwt_blt" ${E('dwt_blt')} class="editable dim">${esc(v.dwt_blt || '')}</td>
-    <td data-col="eta" title="${entry.offset > 0 ? 'Ballasting from ' + esc(v.open_port || 'WMED') + ' (+' + entry.offset + ' days)' : ''}">${esc(entry.eta || '')}</td>
+    <td data-col="eta" title="${entry.offset > 0 ? 'Ballasting from ' + esc(v.open_port || 'RSEA') + ' (+' + entry.offset + ' days)' : ''}">${esc(entry.eta || '')}</td>
     <td data-col="dates" data-kind="v" data-id="${v.id}" data-field="open_from" class="editable" title="Double-click to edit (open from)">${fmtDateRange(entry.adjFrom, entry.adjTo)}</td>
     <td data-col="ideas" ${E('ideas')} class="col-ideas editable"><div class="ideas-text">${fmtIdeas(ideasDisplay, v.update_date)}</div></td>
     <td data-col="trader" class="tr-cell">${trCell}</td>
@@ -6606,7 +6606,7 @@ routes['bsea-list'] = function() {
       <div class="ecsa-list-col">
         <div class="panel">
           <div class="filters">
-            ${renderAreaDropdown('bsea-list', ['EMED / BSEA','WMED'], 'Area')}
+            ${renderAreaDropdown('bsea-list', ['EMED / BSEA','RSEA'], 'Area')}
             <div class="group"><label>Status</label>
               <select id="f-status"><option value="">All</option><option value="fresh">Fresh</option><option value="off_mkt">Off mkt</option><option value="on_subs">On subs</option></select></div>
             <div class="group"><label>Trader</label>
@@ -6727,7 +6727,7 @@ routes['bsea-list'] = function() {
       if (b !== lastBucket) { html.push(`<tr class="section-half area-blue"><td colspan="11">${esc(b)}<span class="half-count">(&thinsp;${bucketCounts[b] || 0}&thinsp;)</span></td></tr>`); lastBucket = b; }
       html.push(renderBseaRow(e));
     }
-    if (!entries.length) html.push('<tr><td colspan="11" class="muted" style="padding:14px">No vessels in EMED / BSEA or WMED</td></tr>');
+    if (!entries.length) html.push('<tr><td colspan="11" class="muted" style="padding:14px">No vessels in EMED / BSEA or RSEA</td></tr>');
     html.push('</tbody></table>');
     $('#tbl').innerHTML = html.join('');
     $$('#tbl [data-col]').forEach(el => { if (el.tagName !== 'INPUT') el.style.display = hiddenCols.has(el.dataset.col) ? 'none' : ''; });
@@ -6749,7 +6749,7 @@ routes['bsea-list'] = function() {
     });
     refreshCargo();
   };
-  bindAreaDropdown('bsea-list', ['EMED / BSEA','WMED'], refresh);
+  bindAreaDropdown('bsea-list', ['EMED / BSEA','RSEA'], refresh);
   $('#f-status').onchange = refresh; $('#f-trader').onchange = refresh;
   $('#f-q').oninput = debounce(refresh, 200);
   $('#bsea-cgo-clear').onclick = () => { const F = getFilter('bsea-cgo'); for (const k of Object.keys(F)) delete F[k]; refreshCargo(); };
@@ -6782,7 +6782,7 @@ function generateBseaRundown(refIso) {
     if (sec !== 'EMED / BSEA' && !/^(EMED|BSEA)$/i.test(String(c.area || ''))) continue;
     cgo.push(c.copy_text || buildCargoCopyText(c));
   }
-  const navi = { bsea: [], wmed: [] };
+  const navi = { bsea: [], rsea: [] };
   for (const v of DATA.vessels.filter(v => v.basin === 'ATL')) {
     if (v.status === 'off_mkt' || v.status === 'on_subs') continue;
     const subsU = String(v.subs || '').trim().toUpperCase();
@@ -6815,14 +6815,14 @@ function generateBseaRundown(refIso) {
     if (flags) line += ' (' + flags + ')';
     if (owner) line += ' - ' + owner.toLowerCase();
     const item = { line, eta: extractDateSortKeyR_(dateStr) };
-    (area === 'WMED' ? navi.wmed : navi.bsea).push(item);
+    (area === 'RSEA' ? navi.rsea : navi.bsea).push(item);
   }
-  navi.bsea.sort((a, b) => a.eta - b.eta); navi.wmed.sort((a, b) => a.eta - b.eta);
+  navi.bsea.sort((a, b) => a.eta - b.eta); navi.rsea.sort((a, b) => a.eta - b.eta);
   const lines = ['BLACK SEA RUNDOWN', '', 'FIXTURES', "<<INSERT TODAY'S FIXTURES HERE>>", ''];
   const section = (title, items, isCargo) => { if (!items || !items.length) return; lines.push(title); items.forEach(it => lines.push(isCargo ? transformCargoTextR_(it) : it.line)); lines.push(''); };
   section('BSEA CGOS', cgo, true);
   section('EMED / BSEA TONNAGE', navi.bsea, false);
-  section('WMED BALLASTERS', navi.wmed, false);
+  section('RSEA BALLASTERS', navi.rsea, false);
   return lines.join('\n');
 }
 
@@ -10727,7 +10727,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v94'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v95'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
