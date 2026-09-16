@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v83 -->
+<!-- build: 20260903-inbox-v84 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -9967,6 +9967,7 @@ function renderInboxCargo() {
       { const cl = await sb.from('inbox_cargoes').update({ status: 'approved' }).eq('id', r.id).eq('status', 'pending').select('id');
         if (cl.error) { handleErr('inbox approve')(cl); return; }
         if (!cl.data || !cl.data.length) { cloudToast('Already handled by a colleague.', { kind: 'info', duration: 3000 }); delete byId[r.id]; render(); return; } }
+      if (!ex && !patch.status) patch.status = 'fresh';   // carico nuovo (non era in lista) = FRESH (Giancarlo 16 set: LDC PGUA-TARRAGONA)
       if (ex) updCargo(ex.id, patch); else addCargo({ date: todayIso(), ...patch });
       delete byId[r.id]; render();
     }
@@ -10325,6 +10326,7 @@ routes['inbox'] = function() {
         else if (st) { patch.status = st; if (st === 'on_subs') patch.subs = 'S'; }
         if (r.scrbr_ftd === true) patch.scrbr_ftd = true;
         if (r.ex_our_cp === true) patch.ex_our_cp = true;
+        if (!ex && !patch.status) patch.status = 'fresh';   // nave nuova (non era in lista) = FRESH (Giancarlo 16 set)
         if (ex) updVessel(ex.id, patch); else addVessel({ ...patch });
       }
       delete byId[r.id]; render();
@@ -10418,7 +10420,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v83'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v84'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
