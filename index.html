@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v77 -->
+<!-- build: 20260903-inbox-v78 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2082,17 +2082,21 @@ tr.status-subs .status-menu .opt { text-decoration: none; }
   opacity: .55; margin: 0; z-index: 2;
 }
 #vf-results th.th-filter input, #cf-results th.th-filter input { padding-right: 24px; }
-/* BSEA List (16 set 2026): navi candidate Ukr/Russia a sinistra, carichi BSEA a destra */
-.bsea-layout { grid-template-columns: minmax(0, 1fr) minmax(420px, 34%); }
-@media (max-width: 1500px) { .bsea-layout { grid-template-columns: 1fr; } }
-.bsea-cgo-col { display: flex; flex-direction: column; min-height: 0; }
+/* BSEA List (16 set 2026): navi candidate Ukr/Russia sopra, carichi BSEA sotto (piena larghezza, stile ATL CGO) */
+.bsea-layout { display: flex; flex-direction: column; gap: 12px; flex: 1; min-height: 0; overflow: hidden; }
+.bsea-layout .ecsa-list-col { flex: 1 1 58%; min-height: 0; }
+.bsea-cgo-col { flex: 0 1 42%; display: flex; flex-direction: column; min-height: 120px; }
 .bsea-cgo-col .panel { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .bsea-cgo-col .tbl-wrap { flex: 1; overflow: auto; }
-.bsea-cgo-col table.grid { font-size: 11.5px; }
-.bsea-cgo-col table.grid th { font-size: 9.5px; }
-.bsea-cgo-col .ideas-text { font-size: 11px; }
+.bsea-cgo-col table.grid { table-layout: auto !important; width: 100%; font-size: 11.5px; }
+.bsea-cgo-col table.grid th:not(.col-ideas), .bsea-cgo-col table.grid td:not(.col-ideas) { width: 1px !important; max-width: none !important; white-space: nowrap; }
+.bsea-cgo-col table.grid th.col-ideas, .bsea-cgo-col table.grid td.col-ideas { width: 100% !important; max-width: 0 !important; min-width: 0 !important; white-space: normal; }
+.bsea-cgo-col table.grid td.col-ideas .ideas-text { width: 100%; min-width: 0; max-width: 100%; }
+.bsea-cgo-col table.grid td.col-c-chrtrs, .bsea-cgo-col table.grid th.col-c-chrtrs { width: 1px !important; max-width: none !important; overflow: visible; }
+.bsea-cgo-col table.grid thead th { font-size: 9.5px; }
 .bsea-panel-title { display: flex; align-items: center; gap: 10px; padding: 8px 12px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-dim); border-bottom: 1px solid var(--line); }
-.bsea-panel-title .count-pill { margin-left: auto; }
+.bsea-panel-title .count-pill { margin-left: 6px; }
+.bsea-panel-title .filter-clear-all { margin-left: auto; }
 .ecsa-list-col .flag-ok { display: inline-block; min-width: 30px; text-align: center; padding: 1px 6px; border-radius: 999px; border: 1px solid var(--line); font-size: 10px; font-weight: 700; cursor: pointer; opacity: .45; user-select: none; }
 .ecsa-list-col .flag-ok.on { opacity: 1; background: #2D8A4F; color: #fff; border-color: #2D8A4F; }
 .ecsa-list-col tr.bsea-ballast td[data-col="eta"] { color: #C0392B; font-weight: 700; }
@@ -5387,6 +5391,8 @@ const PAGES = {
   'atl-tng':   ['ATL TNG', 'Atlantic Master List — panamax position'],
   'pac-tng':   ['PAC TNG', 'Pacific Master List — panamax position'],
   'ecsa-list': ['ECSA List', ''],
+  'bsea-list': ['BSEA List', 'Ukr/Russia candidates spot onw + BSEA cargoes'],
+  'rundown-bsea': ['BSEA', 'Black Sea Rundown'],
   'inbox':     ['Inbox', 'Posizioni estratte da Teams — approva o scarta'],
   'vsl-descr': ['Vsl Descr', ''],
   'atl-cgo':   ['ATL CGO', 'Atlantic Cargoes'],
@@ -6483,34 +6489,63 @@ routes['bsea-list'] = function() {
       </div>
       <div class="bsea-cgo-col">
         <div class="panel">
-          <div class="bsea-panel-title">BSEA cargoes <span class="count-pill" id="bsea-cgo-cnt">—</span></div>
+          <div class="bsea-panel-title">BSEA cargoes <span class="count-pill" id="bsea-cgo-cnt">—</span><button class="filter-clear-all" type="button" id="bsea-cgo-clear" title="Clear cargo filters">✕ Clear filters</button></div>
           <div class="tbl-wrap" id="bsea-cgo-tbl"></div>
         </div>
       </div>
+
     </div>`;
   const hiddenCols = new Set(JSON.parse(localStorage.getItem('pmx-bsea-hidecols') || '[]'));
   const saveCols = () => { try { localStorage.setItem('pmx-bsea-hidecols', JSON.stringify([...hiddenCols])); } catch(e){} };
   const refreshCargo = () => {
-    const rows = bseaCargoes();
+    const F = getFilter('bsea-cgo');
+    let rows = bseaCargoes().filter(c => {
+      if (F.chrtrs && !matchText(c.chrtrs, F.chrtrs)) return false;
+      if (F.dates_from) { if (!c.laycan_from || !c.laycan_to) return false; const ft = F.dates_to || F.dates_from; if (c.laycan_from > ft || c.laycan_to < F.dates_from) return false; }
+      if (F.load_port && !matchText(c.load_port, F.load_port)) return false;
+      if (F.disch_port && !matchText(c.disch_port, F.disch_port)) return false;
+      if (F.cgo && !matchText(c.cgo, F.cgo)) return false;
+      if (F.size && !matchText(c.size, F.size)) return false;
+      if (F.notes && !matchText(c.notes, F.notes)) return false;
+      if (F.ls_brkr && !matchText(c.ls_brkr, F.ls_brkr)) return false;
+      if (F.update_from) { const u = c.update_date || c.date; if (!u) return false; const ft = F.update_to || F.update_from; if (u < F.update_from || u > ft) return false; }
+      if (F.status && !matchText(c.status, F.status)) return false;
+      return true;
+    });
     $('#bsea-cgo-cnt').textContent = `${rows.length}`;
-    const E = (c, f) => `data-kind="c" data-id="${c.id}" data-field="${f}" class="editable" title="Double-click to edit"`;
-    const html = [`<table class="grid"><thead class="area-blue tint-fixed"><tr><th>Acct</th><th>Dates</th><th>Load</th><th>Disch</th><th>Cgo</th><th>Size</th><th class="col-ideas">Notes</th><th>Upd</th></tr></thead><tbody>`];
+    const html = [`<table class="grid"><thead class="area-blue tint-fixed"><tr>
+        <th class="th-filter col-c-chrtrs"><input data-col="chrtrs" placeholder="Chrtrs" value="${attr(F.chrtrs||'')}"></th>
+        <th class="th-filter col-c-dates"><input class="filter-date-range" type="text" readonly data-col="dates" placeholder="Dates" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.dates_from, F.dates_to))}"></th>
+        <th class="th-filter col-c-port"><input data-col="load_port" placeholder="Load" value="${attr(F.load_port||'')}"></th>
+        <th class="th-filter col-c-port"><input data-col="disch_port" placeholder="Disch" value="${attr(F.disch_port||'')}"></th>
+        <th class="th-filter col-c-cgo"><input data-col="cgo" placeholder="Cgo" value="${attr(F.cgo||'')}"></th>
+        <th class="th-filter col-c-size"><input data-col="size" placeholder="Size" value="${attr(F.size||'')}"></th>
+        <th class="th-filter col-ideas"><input data-col="notes" placeholder="Notes / Rates" value="${attr(F.notes||'')}"></th>
+        <th class="th-filter col-lsbrkr"><input data-col="ls_brkr" placeholder="LS" value="${attr(F.ls_brkr||'')}"></th>
+        <th class="th-filter col-c-update"><input class="filter-date-range" type="text" readonly data-col="update_date" placeholder="Update" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.update_from, F.update_to))}"></th>
+        <th class="th-filter col-c-stato"><input data-col="status" placeholder="Status" value="${attr(F.status||'')}"></th>
+        <th class="col-del"></th>
+      </tr></thead><tbody>`];
+    let lastB = null;
     for (const c of rows) {
-      const cls = c.status==='on_subs'?'status-subs':c.status==='off_mkt'?'status-off':c.status==='fresh'?'status-fresh':'';
-      html.push(`<tr class="${cls}" data-sel-id="${c.id}" data-sel-kind="c">
-        <td ${E(c,'chrtrs')}><b>${esc(c.chrtrs || '')}</b></td>
-        <td data-kind="c" data-id="${c.id}" data-field="laycan_from" class="editable" title="Double-click to edit (laycan from)">${fmtDateRange(c.laycan_from, c.laycan_to)}</td>
-        <td ${E(c,'load_port')}>${esc(c.load_port || '')}</td>
-        <td ${E(c,'disch_port')}>${esc(c.disch_port || '')}</td>
-        <td ${E(c,'cgo')}>${esc(c.cgo || '')}</td>
-        <td ${E(c,'size')} class="editable dim">${esc(c.size || '')}</td>
-        <td ${E(c,'notes')} class="editable col-ideas"><div class="ideas-text">${fmtIdeas(c.notes || '', c.update_date)}</div></td>
-        <td ${E(c,'update_date')} class="editable dim">${fmtUpdate(c.update_date || c.date)}</td>
-      </tr>`);
+      const bk = bucketFor(c.laycan_from);
+      if (bk !== lastB) { html.push(`<tr class="section-half area-blue"><td colspan="11">${esc(bk)}</td></tr>`); lastB = bk; }
+      html.push(renderCgoRow(c));
     }
-    if (!rows.length) html.push('<tr><td colspan="8" class="muted" style="padding:14px">No BSEA cargoes in list</td></tr>');
+    if (!rows.length) html.push('<tr><td colspan="11" class="muted" style="padding:14px">No BSEA cargoes in list</td></tr>');
     html.push('</tbody></table>');
     $('#bsea-cgo-tbl').innerHTML = html.join('');
+    $$('#bsea-cgo-tbl .status-menu .opt').forEach(o => o.onclick = (e) => { e.stopPropagation(); const id = Number(o.dataset.cid); const next = o.dataset.status; updCargo(id, { status: next, subs: next === 'on_subs' ? 'S' : '' }); refreshCargo(); });
+    $$('#bsea-cgo-tbl thead th.th-filter input').forEach(inp => {
+      if (inp.value) inp.classList.add('filter-active');
+      if (inp.classList.contains('filter-date-range')) {
+        const col = inp.dataset.col; const F2 = getFilter('bsea-cgo');
+        const fromK = col === 'dates' ? 'dates_from' : 'update_from', toK = col === 'dates' ? 'dates_to' : 'update_to';
+        inp.onclick = () => openFilterDateRange(inp, F2[fromK], F2[toK], (from, to) => { F2[fromK] = from; F2[toK] = to; refreshCargo(); });
+        return;
+      }
+      inp.oninput = debounce((e) => { const col = inp.dataset.col; const selStart = e.target.selectionStart; setFilter('bsea-cgo', col, e.target.value); refreshCargo(); restoreFilterFocus('#bsea-cgo-tbl', col, selStart); }, 250);
+    });
   };
   const refresh = () => {
     const q = $('#f-q').value.toLowerCase();
@@ -6586,6 +6621,7 @@ routes['bsea-list'] = function() {
   bindAreaDropdown('bsea-list', ['EMED / BSEA','WMED'], refresh);
   $('#f-status').onchange = refresh; $('#f-trader').onchange = refresh;
   $('#f-q').oninput = debounce(refresh, 200);
+  $('#bsea-cgo-clear').onclick = () => { const F = getFilter('bsea-cgo'); for (const k of Object.keys(F)) delete F[k]; refreshCargo(); };
   $('#bsea-copy').onclick = () => { copyToClipboard(generateBseaListText()); const b = $('#bsea-copy'); const old = b.innerHTML; b.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied!`; setTimeout(() => b.innerHTML = old, 1300); };
   refresh();
 };
@@ -10343,7 +10379,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v77'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v78'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
@@ -11482,6 +11518,7 @@ setRoute();
     const cur = curRoute();
     const F = (typeof getFilter === 'function') ? getFilter(cur) : null;
     if (F) for (const k in F) delete F[k];
+    if (cur === 'bsea-list' && typeof getFilter === 'function') { const G = getFilter('bsea-cgo'); for (const k in G) delete G[k]; }   // BSEA List: anche i filtri del pannello carichi
     if (cur === 'vsl' || cur === 'cgo'){
       if (typeof FINDER_STATE !== 'undefined') FINDER_STATE[cur] = { area:'', from:'', to:'', q:'' };
     } else {
@@ -11499,7 +11536,7 @@ setRoute();
   function clearColumn(inp){
     const col = inp.dataset.col;
     const cur = curRoute();
-    const F = (typeof getFilter === 'function') ? getFilter(cur) : null;
+    const F = (typeof getFilter === 'function') ? getFilter(inp.closest('#bsea-cgo-tbl') ? 'bsea-cgo' : cur) : null;
     if (F){
       if (col === 'dates') { delete F.dates_from; delete F.dates_to; }
       else if (col === 'update_date') { delete F.update_from; delete F.update_to; }
