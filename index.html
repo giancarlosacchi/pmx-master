@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v82 -->
+<!-- build: 20260903-inbox-v83 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2116,6 +2116,11 @@ tr.status-subs .status-menu .opt { text-decoration: none; }
 .bsea-panel-title .bsea-stack-btn:hover { color: var(--text); border-color: var(--text-dim); }
 .ecsa-list-col .flag-ok { display: inline-block; min-width: 30px; text-align: center; padding: 1px 6px; border-radius: 999px; border: 1px solid var(--line); font-size: 10px; font-weight: 700; cursor: pointer; opacity: .45; user-select: none; }
 .ecsa-list-col .flag-ok.on { opacity: 1; background: #2D8A4F; color: #fff; border-color: #2D8A4F; }
+.ecsa-list-col td.tr-cell { cursor: pointer; min-width: 52px; }
+.ecsa-list-col td.tr-cell .tr-label { font-weight: 700; font-size: 10.5px; letter-spacing: .03em; color: #2D8A4F; display: inline-block; min-width: 40px; }
+.ecsa-list-col td.tr-cell .tr-edit { display: none; gap: 4px; }
+.ecsa-list-col td.tr-cell.editing .tr-label { display: none; }
+.ecsa-list-col td.tr-cell.editing .tr-edit { display: inline-flex; }
 .ecsa-list-col tr.bsea-ballast td[data-col="eta"] { color: #C0392B; font-weight: 700; }
 /* ECSA List: X nascondi-colonna come nei finder */
 .ecsa-list-col th { position: relative; }
@@ -6461,15 +6466,16 @@ function renderBseaRow(entry) {
   const E = (f) => `data-kind="v" data-id="${v.id}" data-field="${f}" class="editable" title="Double-click to edit"`;
   let ideasDisplay = v.ideas || '';
   if (entry.offset > 0) { const prefix = ((v.open_port || '') + ' ' + _fmtRangeLower(v.open_from, v.open_to)).trim(); ideasDisplay = prefix + (ideasDisplay ? ' - ' + ideasDisplay : ''); }
-  const ok = (k, label) => `<span class="flag-ok ${v[k] ? 'on' : ''}" data-id="${v.id}" data-col="${k}" title="${label}: click to toggle">${v[k] ? 'OK' : '—'}</span>`;
+  // una sola colonna TRADER: vuota, "UKR", "RUS" o "RUS, UKR"; click sulla cella → chip per cambiare
+  const trLabel = [v.rus_trader ? 'RUS' : '', v.ukr_trader ? 'UKR' : ''].filter(Boolean).join(', ');
+  const trCell = `<span class="tr-label" data-id="${v.id}" title="Click to edit Ukraine / Russia OK">${trLabel || '&nbsp;'}</span><span class="tr-edit"><span class="flag-ok ${v.rus_trader ? 'on' : ''}" data-id="${v.id}" data-col="rus_trader" title="Russia OK">RUS</span><span class="flag-ok ${v.ukr_trader ? 'on' : ''}" data-id="${v.id}" data-col="ukr_trader" title="Ukraine OK">UKR</span></span>`;
   return `<tr class="${cls}" data-sel-id="${v.id}" data-sel-kind="v" data-sel-from="${entry.adjFrom||''}" data-sel-to="${entry.adjTo||''}" data-sel-area="${esc(entry.area||'')}">
     <td data-col="vessel" ${E('vessel')}><b>${esc(v.vessel)}</b></td>
     <td data-col="dwt_blt" ${E('dwt_blt')} class="editable dim">${esc(v.dwt_blt || '')}</td>
     <td data-col="eta" title="${entry.offset > 0 ? 'Ballasting from ' + esc(v.open_port || 'WMED') + ' (+' + entry.offset + ' days)' : ''}">${esc(entry.eta || '')}</td>
     <td data-col="dates" data-kind="v" data-id="${v.id}" data-field="open_from" class="editable" title="Double-click to edit (open from)">${fmtDateRange(entry.adjFrom, entry.adjTo)}</td>
     <td data-col="ideas" ${E('ideas')} class="col-ideas editable"><div class="ideas-text">${fmtIdeas(ideasDisplay, v.update_date)}</div></td>
-    <td data-col="ukr">${ok('ukr_trader', 'Ukraine OK')}</td>
-    <td data-col="rus">${ok('rus_trader', 'Russia OK')}</td>
+    <td data-col="trader" class="tr-cell">${trCell}</td>
     <td data-col="ows_brkr" ${E('ows_brkr')} class="editable dim">${esc(v.ows_brkr || '')}</td>
     <td data-col="bunker" ${E('bunker')} class="editable dim">${esc(v.bunker || '')}</td>
     <td data-col="ls_brkr" ${E('ls_brkr')} class="editable dim">${esc(v.ls_brkr || '')}</td>
@@ -6601,8 +6607,7 @@ routes['bsea-list'] = function() {
       <th data-col="eta" class="th-filter"><input data-col="eta" placeholder="ETA" value="${attr(F.eta||'')}">${colBtn('eta')}</th>
       <th data-col="dates" class="th-filter"><input class="filter-date-range" type="text" readonly data-col="dates" placeholder="Dates" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.dates_from, F.dates_to))}">${colBtn('dates')}</th>
       <th data-col="ideas" class="th-filter col-ideas"><input data-col="ideas" placeholder="Pref TA or FH / Ideas" value="${attr(F.ideas||'')}">${colBtn('ideas')}</th>
-      <th data-col="ukr" title="Ukraine OK">UKR${colBtn('ukr')}</th>
-      <th data-col="rus" title="Russia OK">RUS${colBtn('rus')}</th>
+      <th data-col="trader" title="Ukraine / Russia OK">TRADER${colBtn('trader')}</th>
       <th data-col="ows_brkr" class="th-filter"><input data-col="ows_brkr" placeholder="Ows" value="${attr(F.ows_brkr||'')}">${colBtn('ows_brkr')}</th>
       <th data-col="bunker" class="th-filter"><input data-col="bunker" placeholder="Bunker" value="${attr(F.bunker||'')}">${colBtn('bunker')}</th>
       <th data-col="ls_brkr" class="th-filter"><input data-col="ls_brkr" placeholder="LS" value="${attr(F.ls_brkr||'')}">${colBtn('ls_brkr')}</th>
@@ -6612,16 +6617,18 @@ routes['bsea-list'] = function() {
     let lastBucket = null;
     for (const e of entries) {
       const b = bucketFor(e.adjFrom);
-      if (b !== lastBucket) { html.push(`<tr class="section-half area-blue"><td colspan="12">${esc(b)}<span class="half-count">(&thinsp;${bucketCounts[b] || 0}&thinsp;)</span></td></tr>`); lastBucket = b; }
+      if (b !== lastBucket) { html.push(`<tr class="section-half area-blue"><td colspan="11">${esc(b)}<span class="half-count">(&thinsp;${bucketCounts[b] || 0}&thinsp;)</span></td></tr>`); lastBucket = b; }
       html.push(renderBseaRow(e));
     }
-    if (!entries.length) html.push('<tr><td colspan="12" class="muted" style="padding:14px">No vessels in EMED / BSEA or WMED</td></tr>');
+    if (!entries.length) html.push('<tr><td colspan="11" class="muted" style="padding:14px">No vessels in EMED / BSEA or WMED</td></tr>');
     html.push('</tbody></table>');
     $('#tbl').innerHTML = html.join('');
     $$('#tbl [data-col]').forEach(el => { if (el.tagName !== 'INPUT') el.style.display = hiddenCols.has(el.dataset.col) ? 'none' : ''; });
     $$('#tbl .col-hide-btn').forEach(b => b.onclick = (e) => { e.stopPropagation(); hiddenCols.add(b.dataset.col); saveCols(); refresh(); });
     const showAll = document.getElementById('bsea-show-all'); if (showAll) showAll.onclick = () => { hiddenCols.clear(); saveCols(); refresh(); };
-    $$('#tbl .flag-ok').forEach(c => c.onclick = (e) => { e.stopPropagation(); const id = rowId(c.dataset.id); const col = c.dataset.col; const v = DATA.vessels.find(x => x.id === id); if (!v) return; const nv = v[col] ? 0 : 1; updVessel(id, { [col]: nv }); c.classList.toggle('on', !!nv); c.textContent = nv ? 'OK' : '—'; });
+    $$('#tbl td.tr-cell').forEach(td => td.onclick = (e) => { if (e.target.closest('.flag-ok')) return; e.stopPropagation(); $$('#tbl td.tr-cell.editing').forEach(x => { if (x !== td) x.classList.remove('editing'); }); td.classList.toggle('editing'); });
+    $$('#tbl .flag-ok').forEach(c => c.onclick = (e) => { e.stopPropagation(); const id = rowId(c.dataset.id); const col = c.dataset.col; const v = DATA.vessels.find(x => x.id === id); if (!v) return; const nv = v[col] ? 0 : 1; updVessel(id, { [col]: nv }); c.classList.toggle('on', !!nv);
+      const lab = c.closest('td').querySelector('.tr-label'); if (lab) lab.innerHTML = [v.rus_trader ? 'RUS' : '', v.ukr_trader ? 'UKR' : ''].filter(Boolean).join(', ') || '&nbsp;'; });
     $$('#tbl .status-menu .opt').forEach(o => o.onclick = (e) => { e.stopPropagation(); const id = rowId(o.dataset.id); const next = o.dataset.status; updVessel(id, { status: next, subs: next === 'on_subs' ? 'S' : '' }); refresh(); });
     $$('#tbl thead th.th-filter input').forEach(inp => {
       if (inp.value) inp.classList.add('filter-active');
@@ -10411,7 +10418,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v82'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v83'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
