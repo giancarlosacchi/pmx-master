@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v96 -->
+<!-- build: 20260903-inbox-v97 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -927,7 +927,9 @@ pre.rundown { white-space: pre-wrap; font-family: inherit;
 .ag-tbl .ag-f:focus, .ag-tbl .ag-in:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold-soft); }
 .ag-tbl .ag-company { font-weight: 600; color: var(--text); }
 .ag-tbl .ag-area { font-weight: 700; color: var(--gold); letter-spacing: .03em; }
-.ag-tbl .ag-address, .ag-tbl .ag-notes { white-space: pre-line; color: var(--text-dim); max-width: 340px; }
+.ag-tbl .ag-address, .ag-tbl .ag-notes { white-space: pre-line; color: var(--text-dim); }
+.ag-tbl .ag-address { max-width: 420px; }
+.ag-tbl .ag-notes { max-width: 220px; }
 .ag-tbl a { color: var(--text); text-decoration: none; border-bottom: 1px dotted var(--line); }
 .ag-tbl a:hover { color: var(--gold); border-bottom-color: var(--gold); }
 .ag-tbl .ag-empty { color: var(--text-mute); opacity: .5; }
@@ -9125,10 +9127,10 @@ const fmtNum = (v, dec) => { const n = Number(String(v || '').replace(/,/g, ''))
 const DIRS = {
   agents: {
     key: 'agents', label: 'agent', defaults: DEFAULT_AGENTS, sortDefault: ['area', 'asc'],
-    cols: [['area', 'Area', 70, { list: 'ag-areas', upper: true }], ['port', 'Port', 110], ['company', 'Company', 200, { required: true, cls: 'ag-company' }], ['address', 'Address', 320, { multi: true, cls: 'ag-address' }], ['email', 'Email', 180, { link: 'mailto' }], ['phone', 'Telephone', 130, { link: 'tel' }], ['fax', 'Fax', 120, { link: 'tel' }], ['website', 'Website', 150, { link: 'web' }], ['notes', 'Notes', 200, { multi: true, cls: 'ag-notes' }]],
+    cols: [['area', 'Area', 70, { list: 'ag-areas', upper: true }], ['port', 'Port', 110], ['company', 'Company', 200, { required: true, cls: 'ag-company' }], ['address', 'Address', 320, { multi: true, cls: 'ag-address', fill: true }], ['email', 'Email', 180, { link: 'mailto' }], ['phone', 'Telephone', 130, { link: 'tel' }], ['website', 'Website', 150, { link: 'web' }], ['notes', 'Notes', 60, { multi: true, cls: 'ag-notes' }]],   // v97: niente Fax; Notes stretta (Address assorbe lo spazio)
     sortKey: (a, k) => String(a[k] || '').toLowerCase(),
-    text: a => { const L = [a.company || '']; if (a.address) L.push(a.address); if (a.email) L.push('Email: ' + a.email); if (a.phone) L.push('Telephone: ' + a.phone); if (a.fax) L.push('Fax: ' + a.fax); if (a.website) L.push('Website: ' + agentUrl(a.website)); if (a.notes) L.push('Notes: ' + a.notes); return L.join('\n'); },
-    blank: F => ({ area: String(F.area || '').toUpperCase(), port: '', company: '', address: '', email: '', phone: '', fax: '', website: '', notes: '' }),
+    text: a => { const L = [a.company || '']; if (a.address) L.push(a.address); if (a.email) L.push('Email: ' + a.email); if (a.phone) L.push('Telephone: ' + a.phone); if (a.website) L.push('Website: ' + agentUrl(a.website)); if (a.notes) L.push('Notes: ' + a.notes); return L.join('\n'); },
+    blank: F => ({ area: String(F.area || '').toUpperCase(), port: '', company: '', address: '', email: '', phone: '', website: '', notes: '' }),
     empty: 'No agents yet — click “Add agent”.',
   },
   fixtures: {
@@ -9162,7 +9164,7 @@ function renderDirectory(name) {
     <button id="dir-copy" title="Copy the visible rows as text (Teams / mail)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy</button>`;
   const arrow = k => st.col === k ? (st.dir === 'asc' ? ' ▲' : ' ▼') : '';
   $('#content').innerHTML = `<div class="panel"><div class="tbl-wrap"><table id="ag-tbl" class="ag-tbl"><thead>
-    <tr>${cfg.cols.map(([k, l, w]) => `<th style="min-width:${w}px" class="dir-sort" data-col="${k}" title="Sort">${l}<span class="dir-arrow">${arrow(k)}</span></th>`).join('')}<th class="ag-act"><span class="dir-count"></span></th></tr>
+    <tr>${cfg.cols.map(([k, l, w, o = {}]) => `<th style="min-width:${w}px${o.fill ? ';width:99%' : ''}" class="dir-sort" data-col="${k}" title="Sort">${l}<span class="dir-arrow">${arrow(k)}</span></th>`).join('')}<th class="ag-act"><span class="dir-count"></span></th></tr>
     <tr class="ag-filters">${cfg.cols.map(([k, l]) => `<td><input class="ag-f" data-col="${k}" placeholder="Filter…" value="${esc(F[k] || '')}"></td>`).join('')}<td class="ag-act"><button class="ag-clear" title="Clear filters">✕</button></td></tr>
   </thead><tbody id="ag-body"></tbody></table></div></div>
   <datalist id="ag-areas">${AGENT_AREAS.map(a => `<option value="${a}">`).join('')}</datalist><datalist id="fx-types"><option value="VC"><option value="TC"></datalist>`;
@@ -10733,7 +10735,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v96'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v97'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
