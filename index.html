@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v86 -->
+<!-- build: 20260903-inbox-v87 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -3972,6 +3972,34 @@ const FINDER_STATE = {
 };
 function getFilter(page) { return COL_FILTERS[page] ??= {}; }
 function setFilter(page, col, value) { getFilter(page)[col] = value; }
+// v87 (Giancarlo 16 set): filtri, ricerche dei finder e scroll sopravvivono a un reload della pagina (nuova versione, risveglio,
+// cambio finestra verso WhatsApp e ritorno). Stato salvato in sessionStorage (per scheda) e ripristinato all'avvio.
+const UI_STATE_KEY = 'pmx-ui-state';
+function saveUiState() {
+  try {
+    const fs = {};
+    for (const k of ['vsl', 'cgo']) { const s = FINDER_STATE[k] || {}; fs[k] = { area: s.area || '', from: s.from || '', to: s.to || '', q: s.q || '', hidden: s.hidden ? [...s.hidden] : [], excl: s.excl ? [...s.excl] : [] }; }
+    const route = location.hash.replace(/^#\//, '') || 'atl-tng';
+    const wrap = document.querySelector('.tbl-wrap');
+    sessionStorage.setItem(UI_STATE_KEY, JSON.stringify({ t: Date.now(), route, filters: COL_FILTERS, finder: fs, y: window.scrollY || 0, top: wrap ? wrap.scrollTop : 0, left: wrap ? wrap.scrollLeft : 0 }));
+  } catch (e) {}
+}
+(function restoreUiState() {
+  try {
+    const raw = sessionStorage.getItem(UI_STATE_KEY); if (!raw) return;
+    const st = JSON.parse(raw); if (!st || Date.now() - (st.t || 0) > 12 * 3600 * 1000) return;
+    for (const p of Object.keys(st.filters || {})) { const F = getFilter(p); for (const k of Object.keys(F)) delete F[k]; Object.assign(F, st.filters[p]); }
+    for (const k of ['vsl', 'cgo']) { const s = (st.finder || {})[k]; if (!s) continue; const T = FINDER_STATE[k]; T.area = s.area || ''; T.from = s.from || ''; T.to = s.to || ''; T.q = s.q || ''; if (s.hidden && s.hidden.length) T.hidden = new Set(s.hidden); if (s.excl && s.excl.length) T.excl = new Set(s.excl); }
+    window.__uiRestoreScroll = { route: st.route, y: st.y || 0, top: st.top || 0, left: st.left || 0, until: Date.now() + 8000 };
+  } catch (e) {}
+})();
+(function hookUiState() {
+  let tm = null; const soon = () => { clearTimeout(tm); tm = setTimeout(saveUiState, 300); };
+  document.addEventListener('input', soon, true); document.addEventListener('change', soon, true); document.addEventListener('click', soon, true);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveUiState(); });
+  window.addEventListener('pagehide', saveUiState); window.addEventListener('beforeunload', saveUiState); window.addEventListener('blur', saveUiState);
+  window.addEventListener('scroll', soon, { passive: true }); document.addEventListener('scroll', soon, { passive: true, capture: true });
+})();
 
 
 
@@ -5489,6 +5517,8 @@ function setRoute() {
   else document.body.classList.remove('no-anim');
   fn();
   _lastRoute = route;
+  { const rs = window.__uiRestoreScroll;   // v87: dopo un reload torna dove si era (stessa route)
+    if (rs) { if (Date.now() > rs.until) delete window.__uiRestoreScroll; else if (rs.route === route) { const ap = () => { try { window.scrollTo(0, rs.y); const w = document.querySelector('.tbl-wrap'); if (w) { w.scrollTop = rs.top; w.scrollLeft = rs.left; } } catch (e) {} }; ap(); requestAnimationFrame(ap); setTimeout(ap, 80); setTimeout(ap, 400); } } }
   // Aggiorna subito gli indicatori di scroll fade e la sticky bar dell'area
   requestAnimationFrame(() => {
     try { checkAllScrollFades(); } catch(e) {}
@@ -10451,7 +10481,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v86'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v87'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
