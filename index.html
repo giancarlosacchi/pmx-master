@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v78 -->
+<!-- build: 20260903-inbox-v79 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2082,21 +2082,34 @@ tr.status-subs .status-menu .opt { text-decoration: none; }
   opacity: .55; margin: 0; z-index: 2;
 }
 #vf-results th.th-filter input, #cf-results th.th-filter input { padding-right: 24px; }
-/* BSEA List (16 set 2026): navi candidate Ukr/Russia sopra, carichi BSEA sotto (piena larghezza, stile ATL CGO) */
-.bsea-layout { display: flex; flex-direction: column; gap: 12px; flex: 1; min-height: 0; overflow: hidden; }
-.bsea-layout .ecsa-list-col { flex: 1 1 58%; min-height: 0; }
-.bsea-cgo-col { flex: 0 1 42%; display: flex; flex-direction: column; min-height: 120px; }
+/* BSEA List (16 set 2026): navi candidate Ukr/Russia a sinistra, carichi BSEA a destra (stile ATL CGO, id ca-tbl = stessa striscia colorata).
+   Divisore trascinabile (larghezza salvata), pannello carichi con scorrimento orizzontale proprio: niente colonne tagliate.
+   Sotto i 1400px (o con il bottone "Stack") le due liste vanno una sotto l'altra. */
+.bsea-layout { display: grid; grid-template-columns: minmax(0, 1fr) 6px minmax(0, var(--bsea-cgo-w, 46%)); gap: 0 8px; flex: 1; min-height: 0; overflow: hidden; }
+.bsea-layout.stacked { display: flex; flex-direction: column; gap: 12px; }
+.bsea-layout.stacked .bsea-divider { display: none; }
+.bsea-layout.stacked .ecsa-list-col { flex: 1 1 58%; min-height: 0; }
+.bsea-layout.stacked .bsea-cgo-col { flex: 0 1 42%; min-height: 120px; }
+@media (max-width: 1400px) { .bsea-layout:not(.force-side) { display: flex; flex-direction: column; gap: 12px; } .bsea-layout:not(.force-side) .bsea-divider { display: none; } .bsea-layout:not(.force-side) .bsea-cgo-col { flex: 0 1 42%; min-height: 120px; } }
+.bsea-divider { cursor: col-resize; border-radius: 3px; background: color-mix(in srgb, var(--line) 60%, transparent); align-self: stretch; }
+.bsea-divider:hover, .bsea-divider.dragging { background: #1A73E8; }
+.bsea-cgo-col { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
 .bsea-cgo-col .panel { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .bsea-cgo-col .tbl-wrap { flex: 1; overflow: auto; }
-.bsea-cgo-col table.grid { table-layout: auto !important; width: 100%; font-size: 11.5px; }
-.bsea-cgo-col table.grid th:not(.col-ideas), .bsea-cgo-col table.grid td:not(.col-ideas) { width: 1px !important; max-width: none !important; white-space: nowrap; }
-.bsea-cgo-col table.grid th.col-ideas, .bsea-cgo-col table.grid td.col-ideas { width: 100% !important; max-width: 0 !important; min-width: 0 !important; white-space: normal; }
-.bsea-cgo-col table.grid td.col-ideas .ideas-text { width: 100%; min-width: 0; max-width: 100%; }
-.bsea-cgo-col table.grid td.col-c-chrtrs, .bsea-cgo-col table.grid th.col-c-chrtrs { width: 1px !important; max-width: none !important; overflow: visible; }
-.bsea-cgo-col table.grid thead th { font-size: 9.5px; }
+.bsea-cgo-col #ca-tbl table.grid { table-layout: auto !important; width: max-content; min-width: 100%; font-size: 11.5px; }
+.bsea-cgo-col #ca-tbl th:not(.col-ideas), .bsea-cgo-col #ca-tbl td:not(.col-ideas) { width: auto !important; max-width: none !important; white-space: nowrap; }
+.bsea-cgo-col #ca-tbl .col-ideas { width: auto !important; min-width: 240px !important; max-width: 420px !important; white-space: normal; }
+.bsea-cgo-col #ca-tbl .col-ideas .ideas-text { white-space: normal; overflow: visible; text-overflow: clip; max-width: none; }
+.bsea-cgo-col #ca-tbl table.grid td.col-c-chrtrs, .bsea-cgo-col #ca-tbl table.grid th.col-c-chrtrs { width: auto !important; max-width: none !important; overflow: visible; }
+.bsea-cgo-col #ca-tbl table.grid thead th { font-size: 9.5px; padding-top: 7px; padding-bottom: 7px; }
+.bsea-cgo-col #ca-tbl table.grid tbody td { font-size: 11.5px; padding-top: 5px; padding-bottom: 5px; }
+.bsea-cgo-col #ca-tbl .ideas-text { font-size: 11.5px; }
+.bsea-cgo-col #ca-tbl table.grid td, .bsea-cgo-col #ca-tbl table.grid th { font-family: inherit; }
 .bsea-panel-title { display: flex; align-items: center; gap: 10px; padding: 8px 12px; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-dim); border-bottom: 1px solid var(--line); }
 .bsea-panel-title .count-pill { margin-left: 6px; }
 .bsea-panel-title .filter-clear-all { margin-left: auto; }
+.bsea-panel-title .bsea-stack-btn { font-size: 10px; font-weight: 700; letter-spacing: .04em; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--text-dim); cursor: pointer; }
+.bsea-panel-title .bsea-stack-btn:hover { color: var(--text); border-color: var(--text-dim); }
 .ecsa-list-col .flag-ok { display: inline-block; min-width: 30px; text-align: center; padding: 1px 6px; border-radius: 999px; border: 1px solid var(--line); font-size: 10px; font-weight: 700; cursor: pointer; opacity: .45; user-select: none; }
 .ecsa-list-col .flag-ok.on { opacity: 1; background: #2D8A4F; color: #fff; border-color: #2D8A4F; }
 .ecsa-list-col tr.bsea-ballast td[data-col="eta"] { color: #C0392B; font-weight: 700; }
@@ -6472,7 +6485,7 @@ routes['bsea-list'] = function() {
   $('#topbar-actions').innerHTML = `<div class="global-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="f-q" placeholder="Search vessel, ideas, owner…" /></div>
     <button class="primary" id="bsea-copy" title="Copy the BSEA list as text (Teams / mail)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy list</button>`;
   $('#content').innerHTML = `
-    <div class="ecsa-layout bsea-layout">
+    <div class="ecsa-layout bsea-layout ${localStorage.getItem('pmx-bsea-stack') === '1' ? 'stacked' : (localStorage.getItem('pmx-bsea-stack') === '0' ? 'force-side' : '')}" id="bsea-layout" style="${localStorage.getItem('pmx-bsea-cgo-w') ? '--bsea-cgo-w:' + localStorage.getItem('pmx-bsea-cgo-w') + 'px' : ''}">
       <div class="ecsa-list-col">
         <div class="panel">
           <div class="filters">
@@ -6487,13 +6500,13 @@ routes['bsea-list'] = function() {
           <div class="tbl-wrap" id="tbl"></div>
         </div>
       </div>
+      <div class="bsea-divider" id="bsea-divider" title="Drag to resize"></div>
       <div class="bsea-cgo-col">
         <div class="panel">
-          <div class="bsea-panel-title">BSEA cargoes <span class="count-pill" id="bsea-cgo-cnt">—</span><button class="filter-clear-all" type="button" id="bsea-cgo-clear" title="Clear cargo filters">✕ Clear filters</button></div>
-          <div class="tbl-wrap" id="bsea-cgo-tbl"></div>
+          <div class="bsea-panel-title">BSEA cargoes <span class="count-pill" id="bsea-cgo-cnt">—</span><button class="filter-clear-all" type="button" id="bsea-cgo-clear" title="Clear cargo filters">✕ Clear filters</button><button class="bsea-stack-btn" type="button" id="bsea-stack" title="Side by side / one below the other">⇅ Stack</button></div>
+          <div class="tbl-wrap" id="ca-tbl"></div>
         </div>
       </div>
-
     </div>`;
   const hiddenCols = new Set(JSON.parse(localStorage.getItem('pmx-bsea-hidecols') || '[]'));
   const saveCols = () => { try { localStorage.setItem('pmx-bsea-hidecols', JSON.stringify([...hiddenCols])); } catch(e){} };
@@ -6534,9 +6547,9 @@ routes['bsea-list'] = function() {
     }
     if (!rows.length) html.push('<tr><td colspan="11" class="muted" style="padding:14px">No BSEA cargoes in list</td></tr>');
     html.push('</tbody></table>');
-    $('#bsea-cgo-tbl').innerHTML = html.join('');
-    $$('#bsea-cgo-tbl .status-menu .opt').forEach(o => o.onclick = (e) => { e.stopPropagation(); const id = Number(o.dataset.cid); const next = o.dataset.status; updCargo(id, { status: next, subs: next === 'on_subs' ? 'S' : '' }); refreshCargo(); });
-    $$('#bsea-cgo-tbl thead th.th-filter input').forEach(inp => {
+    $('#ca-tbl').innerHTML = html.join('');
+    $$('#ca-tbl .status-menu .opt').forEach(o => o.onclick = (e) => { e.stopPropagation(); const id = Number(o.dataset.cid); const next = o.dataset.status; updCargo(id, { status: next, subs: next === 'on_subs' ? 'S' : '' }); refreshCargo(); });
+    $$('#ca-tbl thead th.th-filter input').forEach(inp => {
       if (inp.value) inp.classList.add('filter-active');
       if (inp.classList.contains('filter-date-range')) {
         const col = inp.dataset.col; const F2 = getFilter('bsea-cgo');
@@ -6544,7 +6557,7 @@ routes['bsea-list'] = function() {
         inp.onclick = () => openFilterDateRange(inp, F2[fromK], F2[toK], (from, to) => { F2[fromK] = from; F2[toK] = to; refreshCargo(); });
         return;
       }
-      inp.oninput = debounce((e) => { const col = inp.dataset.col; const selStart = e.target.selectionStart; setFilter('bsea-cgo', col, e.target.value); refreshCargo(); restoreFilterFocus('#bsea-cgo-tbl', col, selStart); }, 250);
+      inp.oninput = debounce((e) => { const col = inp.dataset.col; const selStart = e.target.selectionStart; setFilter('bsea-cgo', col, e.target.value); refreshCargo(); restoreFilterFocus('#ca-tbl', col, selStart); }, 250);
     });
   };
   const refresh = () => {
@@ -6622,6 +6635,18 @@ routes['bsea-list'] = function() {
   $('#f-status').onchange = refresh; $('#f-trader').onchange = refresh;
   $('#f-q').oninput = debounce(refresh, 200);
   $('#bsea-cgo-clear').onclick = () => { const F = getFilter('bsea-cgo'); for (const k of Object.keys(F)) delete F[k]; refreshCargo(); };
+  // Affiancate / impilate: bottone (ricordato) — sotto i 1400px si impilano da sole
+  const lay = $('#bsea-layout'); const stackBtn = $('#bsea-stack');
+  const paintStack = () => { const st = lay.classList.contains('stacked'); stackBtn.textContent = st ? '⇄ Side by side' : '⇅ Stack'; };
+  stackBtn.onclick = () => { const st = !lay.classList.contains('stacked'); lay.classList.toggle('stacked', st); lay.classList.toggle('force-side', !st); try { localStorage.setItem('pmx-bsea-stack', st ? '1' : '0'); } catch(e){} paintStack(); };
+  paintStack();
+  // Divisore trascinabile: larghezza del pannello carichi salvata
+  const div = $('#bsea-divider');
+  div.onmousedown = (e) => { e.preventDefault(); div.classList.add('dragging'); const rect = lay.getBoundingClientRect();
+    const move = (ev) => { const w = Math.max(360, Math.min(rect.right - ev.clientX, rect.width - 420)); lay.style.setProperty('--bsea-cgo-w', w + 'px'); };
+    const up = () => { div.classList.remove('dragging'); document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); const w = parseInt(getComputedStyle(lay).getPropertyValue('--bsea-cgo-w')) || 0; if (w) try { localStorage.setItem('pmx-bsea-cgo-w', String(w)); } catch(e){} };
+    document.addEventListener('mousemove', move); document.addEventListener('mouseup', up); };
+  div.ondblclick = () => { lay.style.removeProperty('--bsea-cgo-w'); try { localStorage.removeItem('pmx-bsea-cgo-w'); } catch(e){} };
   $('#bsea-copy').onclick = () => { copyToClipboard(generateBseaListText()); const b = $('#bsea-copy'); const old = b.innerHTML; b.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied!`; setTimeout(() => b.innerHTML = old, 1300); };
   refresh();
 };
@@ -10379,7 +10404,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v78'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v79'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
@@ -11536,7 +11561,7 @@ setRoute();
   function clearColumn(inp){
     const col = inp.dataset.col;
     const cur = curRoute();
-    const F = (typeof getFilter === 'function') ? getFilter(inp.closest('#bsea-cgo-tbl') ? 'bsea-cgo' : cur) : null;
+    const F = (typeof getFilter === 'function') ? getFilter(inp.closest('.bsea-cgo-col') ? 'bsea-cgo' : cur) : null;
     if (F){
       if (col === 'dates') { delete F.dates_from; delete F.dates_to; }
       else if (col === 'update_date') { delete F.update_from; delete F.update_to; }
