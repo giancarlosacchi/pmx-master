@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v88 -->
+<!-- build: 20260903-inbox-v89 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2799,7 +2799,6 @@ body:not(.logged-in) .app { visibility: hidden; }
     <nav class="nav">
       <a data-route="rundown-ecsa" data-badge="E"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v6h6"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/></svg><span class="nav-label">ECSA</span></a>
       <a data-route="rundown-natl" data-badge="N"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v6h6"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/></svg><span class="nav-label">N.ATL</span></a>
-      <a data-route="rundown-bsea" data-badge="B"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v6h6"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/></svg><span class="nav-label">BSEA</span></a>
       <a data-route="rundown-pac" data-badge="P"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v6h6"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/></svg><span class="nav-label">PACIFIC</span></a>
     </nav>
   </div>
@@ -9027,12 +9026,18 @@ routes['rundown-bsea'] = () => { setBseaTab('rundown'); if (location.hash !== '#
 // ===== AGENTS (v88): agenti portuali. Dati nella tabella rundowns, chiave "agents" (JSON), come i rundown: realtime gia' incluso =====
 const AGENT_COLS = [['area', 'Area', 70], ['port', 'Port', 110], ['company', 'Company', 200], ['address', 'Address', 320], ['email', 'Email', 180], ['phone', 'Telephone', 130], ['fax', 'Fax', 120], ['website', 'Website', 150], ['notes', 'Notes', 200]];
 const AGENT_AREAS = ['BSEA', 'EMED', 'WMED', 'CONT', 'UKC', 'BALTIC', 'ECSA', 'NCSA', 'USG', 'USEC', 'WAFR', 'SAFR', 'RSEA', 'PG', 'INDIA', 'SEASIA', 'FEAST', 'NOPAC', 'AUSSIE'];
-function getAgents() { try { const a = JSON.parse((DATA.rundowns || {}).agents || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+// agenti iniziali (Giancarlo 16 set): visibili anche prima che il cloud li abbia (vincolo rundowns_key_check da togliere con strumenti/sql/2026-09-16-rundowns-key.sql)
+const DEFAULT_AGENTS = [
+  { id: 'ag-sirius', area: 'BSEA', port: 'CONSTANTA', company: 'Sirius Shipping & Services SRL', address: 'Incinta Port Constanta, Poarta 2, Camin M2, Scara A, Etaj 2, Camera 204-205, 900900 Constanta, Romania', email: 'office@sirius-shipping.ro', phone: '+40 748 993 391', fax: '+40 241 601 667', website: 'www.siriusshipping.ro', notes: '' },
+  { id: 'ag-idu', area: 'BSEA', port: 'CONSTANTA', company: 'Idu Shipping & Services S.R.L.', address: '182 Mamaia Avenue, 900540 Constanta, Romania', email: 'office@idu.ro', phone: '+40 241 543 300', fax: '+40 241 545 500', website: 'www.idu.ro', notes: '' },
+  { id: 'ag-frenchatl', area: 'CONT', port: 'PAIMBOEUF / NANTES-ST NAZAIRE', company: 'French Atlantic Ship Agencies Sarl', address: '24 Quai Sadi Carnot, 44560 Paimboeuf, France', email: 'agency@frenchatlantic.fr', phone: '+33 982 457 920', fax: '+33 981 408 519', website: 'www.frenchatlantic.fr', notes: '' },
+];
+function getAgents() { try { const a = JSON.parse((DATA.rundowns || {}).agents || 'null'); return Array.isArray(a) ? a : DEFAULT_AGENTS.map(x => ({ ...x })); } catch (e) { return DEFAULT_AGENTS.map(x => ({ ...x })); } }
 function saveAgents(list) {
   DATA.rundowns = DATA.rundowns || {};
   DATA.rundowns.agents = JSON.stringify(list);
   saveData(DATA);
-  if (window._cloudSyncActive && !window._cloudLoadFailed) sb.from('rundowns').upsert({ key: 'agents', text: DATA.rundowns.agents }).then(handleErr('agents save'));
+  if (window._cloudSyncActive && !window._cloudLoadFailed) sb.from('rundowns').upsert({ key: 'agents', text: DATA.rundowns.agents }).then(r => { if (r && r.error) cloudToast('Agents not saved to cloud: ' + (r.error.code === '23514' ? 'run strumenti/sql/2026-09-16-rundowns-key.sql in Supabase first' : r.error.message), { kind: 'error', duration: 8000 }); });
 }
 function agentUrl(w) { w = String(w || '').trim(); const m = w.match(/\((https?:\/\/[^)]+)\)/); if (m) w = m[1]; w = w.replace(/^\[|\]$/g, ''); return w; }
 function agentHref(w) { w = agentUrl(w); if (!w) return ''; return /^https?:\/\//i.test(w) ? w : 'https://' + w; }
@@ -10614,7 +10619,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v88'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v89'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
