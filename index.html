@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v92 -->
+<!-- build: 20260903-inbox-v93 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -9020,7 +9020,7 @@ const BSEA_TABS = [
 function bseaTab() { let t = null; try { t = localStorage.getItem('pmx-bsea-tab'); } catch (e) {} return BSEA_TABS.some(x => x[0] === t) ? t : 'list'; }
 function setBseaTab(t) { try { localStorage.setItem('pmx-bsea-tab', t); } catch (e) {} }
 routes['bsea'] = function() {
-  if (!canBsea()) { if (typeof cloudToast === 'function') cloudToast('BSEA section is restricted.', { kind: 'info', duration: 3000 }); location.hash = '#/atl-tng'; return; }   // v91
+  if (CURRENT_USER && !canBsea()) { if (typeof cloudToast === 'function') cloudToast('BSEA section is restricted.', { kind: 'info', duration: 3000 }); location.hash = '#/atl-tng'; return; }   // v91; v93: prima del login (setRoute dalla cache) non si rimbalza
   const tab = bseaTab();
   if (tab === 'list') renderBseaList();
   else if (tab === 'rundown') { renderRundown('bsea', 'Black Sea Rundown'); const ta = $('#rd-text'); if (ta) ta.style.height = 'calc(100% - 54px)'; }
@@ -9127,7 +9127,7 @@ const DIRS = {
   },
   fixtures: {
     key: 'fixtures', label: 'fixture', defaults: DEFAULT_FIXTURES, sortDefault: ['cp_date', 'desc'],
-    cols: [['cp_date', 'CP date', 84, { date: true }], ['vessel', 'Vessel', 150, { required: true, cls: 'ag-company', upper: true }], ['type', 'Type', 50, { list: 'fx-types', upper: true }], ['load', 'Load port / origin', 150], ['disch', 'Discharge port / destination', 190], ['qty', 'Qty (MT)', 90, { num: 2 }], ['rate', 'Rate (USD/MT)', 90, { num: 2 }], ['cargo', 'Cargo', 130], ['charterer', 'Charterer', 150, { short: true }], ['owner', 'Owner', 200, { short: true }], ['lc_from', 'Laycan start', 84, { date: true }], ['lc_to', 'Laycan end', 84, { date: true }]],
+    cols: [['cp_date', 'CP date', 84, { date: true }], ['vessel', 'Vessel', 150, { required: true, cls: 'ag-company', upper: true }], ['type', 'Type', 50, { list: 'fx-types', upper: true }], ['load', 'Load port / origin', 150, { upper: true }], ['disch', 'Discharge port / destination', 190, { upper: true }], ['qty', 'Qty (MT)', 90, { num: 2 }], ['rate', 'Rate (USD/MT)', 90, { num: 2 }], ['cargo', 'Cargo', 130, { upper: true }], ['charterer', 'Charterer', 150, { short: true, upper: true }], ['owner', 'Owner', 200, { short: true, upper: true }], ['lc_from', 'Laycan start', 84, { date: true }], ['lc_to', 'Laycan end', 84, { date: true }]],
     sortKey: (a, k) => (k === 'qty' || k === 'rate') ? (Number(a[k]) || -1) : String(a[k] || '').toLowerCase(),
     text: a => [fmtDmy(a.cp_date), a.vessel, a.type, [a.load, a.disch].filter(Boolean).join(' / '), a.qty ? fmtNum(a.qty, 0) + ' MT' : '', a.rate ? 'USD ' + fmtNum(a.rate, 2) : '', a.cargo, a.charterer, a.owner, (a.lc_from || a.lc_to) ? 'L/C ' + fmtDmy(a.lc_from) + '-' + fmtDmy(a.lc_to) : ''].filter(Boolean).join(' | '),
     blank: () => ({ cp_date: todayIso(), vessel: '', type: 'VC', load: '', disch: '', qty: '', rate: '', cargo: '', charterer: '', owner: '', lc_from: '', lc_to: '' }),
@@ -9161,7 +9161,7 @@ function renderDirectory(name) {
   </thead><tbody id="ag-body"></tbody></table></div></div>
   <datalist id="ag-areas">${AGENT_AREAS.map(a => `<option value="${a}">`).join('')}</datalist><datalist id="fx-types"><option value="VC"><option value="TC"></datalist>`;
   const body = $('#ag-body');
-  const show = (a, k, o) => { const v = a[k]; if (o.date) return fmtDmy(v); if (o.num != null) return fmtNum(v, o.num); return v == null ? '' : String(v); };
+  const show = (a, k, o) => { const v = a[k]; if (o.date) return fmtDmy(v); if (o.num != null) return fmtNum(v, o.num); return v == null ? '' : (o.upper ? String(v).toUpperCase() : String(v)); };   // v93: Fixtures tutto maiuscolo
   const visible = () => {
     const list = getDir(name).slice();
     const o = Object.fromEntries(cfg.cols.map(c => [c[0], c[3] || {}]));
@@ -10727,7 +10727,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v92'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v93'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
