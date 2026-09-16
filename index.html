@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v87 -->
+<!-- build: 20260903-inbox-v88 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -906,6 +906,38 @@ pre.rundown { white-space: pre-wrap; font-family: inherit;
   background: var(--bg-3); color: var(--text); padding: 16px 18px; border-radius: 0 0 var(--radius-lg) var(--radius-lg);
   font-size: 12px; line-height: 1.65; max-height: 65vh; overflow: auto; margin: 0; border-top: 1px solid var(--line-soft); }
 /* Textarea per le pagine Rundown: stile coerente con il resto + flex per riempire il pannello */
+/* ===== BSEA hub: segmented control (v88) ===== */
+.seg-ctl-wrap { display: flex; justify-content: center; margin: 0 0 12px; animation: none !important; }
+.seg-ctl { display: inline-flex; gap: 4px; padding: 4px; background: var(--bg-3); border: 1px solid var(--line); border-radius: 999px; box-shadow: inset 0 1px 2px rgba(0,0,0,.05); }
+.seg-btn { display: inline-flex; align-items: center; gap: 7px; padding: 7px 18px; border: none; border-radius: 999px; background: transparent; color: var(--text-mute); font: inherit; font-size: 12.5px; font-weight: 600; letter-spacing: .01em; cursor: pointer; transition: background .18s var(--ease-mac), color .18s var(--ease-mac), box-shadow .18s var(--ease-mac); }
+.seg-btn svg { width: 14px; height: 14px; }
+.seg-btn:hover { color: var(--text); }
+.seg-btn.active { background: var(--bg-2); color: var(--gold); box-shadow: 0 1px 3px rgba(0,0,0,.12), 0 0 0 1px var(--line-soft); }
+.bsea-layout, .ag-tbl { animation: none; }
+/* ===== Agents table (v88) ===== */
+.ag-tbl { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; }
+.ag-tbl th { position: sticky; top: 0; z-index: 2; background: var(--bg-3); color: var(--text-mute); font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.ag-tbl td { padding: 8px 10px; border-bottom: 1px solid var(--line-soft); vertical-align: top; line-height: 1.45; }
+.ag-tbl tbody tr:hover td { background: var(--bg-3); }
+.ag-tbl .ag-filters td { padding: 4px 6px; background: var(--bg-2); border-bottom: 1px solid var(--line); }
+.ag-tbl .ag-f, .ag-tbl .ag-in { width: 100%; box-sizing: border-box; padding: 5px 7px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--bg-2); color: var(--text); font: inherit; font-size: 11.5px; }
+.ag-tbl .ag-in { min-width: 90px; }
+.ag-tbl textarea.ag-in { resize: vertical; min-height: 40px; }
+.ag-tbl .ag-f:focus, .ag-tbl .ag-in:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold-soft); }
+.ag-tbl .ag-company { font-weight: 600; color: var(--text); }
+.ag-tbl .ag-area { font-weight: 700; color: var(--gold); letter-spacing: .03em; }
+.ag-tbl .ag-address, .ag-tbl .ag-notes { white-space: pre-line; color: var(--text-dim); max-width: 340px; }
+.ag-tbl a { color: var(--text); text-decoration: none; border-bottom: 1px dotted var(--line); }
+.ag-tbl a:hover { color: var(--gold); border-bottom-color: var(--gold); }
+.ag-tbl .ag-empty { color: var(--text-mute); opacity: .5; }
+.ag-tbl .ag-act { width: 1%; white-space: nowrap; text-align: right; }
+.ag-tbl .ag-act button { border: 1px solid var(--line); background: var(--bg-2); color: var(--text-mute); border-radius: var(--radius-sm); padding: 3px 8px; margin-left: 4px; cursor: pointer; font: inherit; font-size: 11.5px; opacity: .55; transition: opacity .15s, color .15s, border-color .15s; }
+.ag-tbl tbody tr:hover .ag-act button, .ag-tbl .ag-edit .ag-act button, .ag-tbl .ag-filters .ag-act button { opacity: 1; }
+.ag-tbl .ag-act button:hover { color: var(--text); border-color: var(--text-mute); }
+.ag-tbl .ag-act button.ag-del:hover { color: var(--red); border-color: var(--red); }
+.ag-tbl .ag-act button.primary { background: var(--gold); border-color: var(--gold); color: #fff; opacity: 1; }
+.ag-tbl .ag-edit td { background: var(--gold-soft); }
+.ag-tbl .ag-none { text-align: center; color: var(--text-mute); padding: 28px 10px; }
 .rundown-textarea {
   flex: 1;
   min-height: 0;
@@ -2775,7 +2807,7 @@ body:not(.logged-in) .app { visibility: hidden; }
     <div class="nav-section">Tools</div>
     <nav class="nav">
       <a data-route="ecsa-list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18"/></svg><span class="nav-label">ECSA List</span></a>
-      <a data-route="bsea-list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><span class="nav-label">BSEA List</span></a>
+      <a data-route="bsea"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><span class="nav-label">BSEA</span></a>
       <a data-route="inbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg><span class="nav-label">Inbox</span></a>
       <a data-route="calc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h2M14 11h2M8 15h2M14 15h2"/></svg><span class="nav-label">Calc DOP/APS</span></a>
       <a data-route="distances"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg><span class="nav-label">Distances</span></a>
@@ -3367,10 +3399,10 @@ function _scheduleRtRender(table) {
 }
 // Route che mostrano ogni tabella: se l'update non riguarda la pagina aperta, niente rerender (niente flicker)
 const _RT_ROUTES = {
-  vessels:  ['atl-tng','pac-tng','vsl','ecsa-list','personal'],
-  cargoes:  ['atl-cgo','pac-cgo','cgo','personal'],
+  vessels:  ['atl-tng','pac-tng','vsl','ecsa-list','bsea-list','bsea','personal'],
+  cargoes:  ['atl-cgo','pac-cgo','cgo','bsea-list','bsea','personal'],
   accounts: ['accounts'],
-  rundowns: ['rundown-ecsa','rundown-natl','rundown-pac'],
+  rundowns: ['rundown-ecsa','rundown-natl','rundown-pac','rundown-bsea','bsea'],
 };
 function _doRtRender() {
   try {
@@ -5473,6 +5505,8 @@ const PAGES = {
   'pac-tng':   ['PAC TNG', 'Pacific Master List — panamax position'],
   'ecsa-list': ['ECSA List', ''],
   'bsea-list': ['BSEA List', 'Ukr/Russia candidates spot onw + BSEA cargoes'],
+  'bsea': ['BSEA', 'Black Sea hub'],
+  'agents': ['Agents', 'Port agents'],
   'rundown-bsea': ['BSEA', 'Black Sea Rundown'],
   'inbox':     ['Inbox', 'Posizioni estratte da Teams — approva o scarta'],
   'vsl-descr': ['Vsl Descr', ''],
@@ -8469,9 +8503,9 @@ function autoUpdateRundowns() {
     saveData(DATA);
     // Se l'utente è su una pagina rundown, aggiorna anche il textarea visibile
     const hash = location.hash.replace(/^#\//, '');
-    if (hash.startsWith('rundown-')) {
+    if (hash.startsWith('rundown-') || hash === 'bsea') {
       const ta = document.getElementById('rd-text');
-      const key = hash.replace('rundown-','');
+      const key = hash === 'bsea' ? 'bsea' : hash.replace('rundown-','');
       if (ta && DATA.rundowns[key]) ta.value = DATA.rundowns[key];
     }
   } catch (e) {
@@ -8964,7 +8998,106 @@ function renderRundown(key, title) {
 routes['rundown-ecsa'] = () => renderRundown('ecsa', 'ECSA Rundown');
 routes['rundown-natl'] = () => renderRundown('natl', 'N. Atlantic Rundown');
 routes['rundown-pac']  = () => renderRundown('pac',  'Pacific Rundown');
-routes['rundown-bsea'] = () => renderRundown('bsea', 'Black Sea Rundown');
+// ===== BSEA HUB (v88, Giancarlo 16 set 2026): una sola pagina in Tools con 3 tasti — List / Rundown / Agents =====
+const renderBseaList = routes['bsea-list'];
+const BSEA_TABS = [
+  ['list', 'List', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>'],
+  ['rundown', 'Rundown', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v6h6"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M8 13h8M8 17h8"/></svg>'],
+  ['agents', 'Agents', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/><path d="M9 10h.01M15 10h.01M12 13h.01"/></svg>'],
+];
+function bseaTab() { let t = null; try { t = localStorage.getItem('pmx-bsea-tab'); } catch (e) {} return BSEA_TABS.some(x => x[0] === t) ? t : 'list'; }
+function setBseaTab(t) { try { localStorage.setItem('pmx-bsea-tab', t); } catch (e) {} }
+routes['bsea'] = function() {
+  const tab = bseaTab();
+  if (tab === 'list') renderBseaList();
+  else if (tab === 'rundown') { renderRundown('bsea', 'Black Sea Rundown'); const ta = $('#rd-text'); if (ta) ta.style.height = 'calc(100% - 54px)'; }
+  else renderAgents();
+  const bar = document.createElement('div');
+  bar.className = 'seg-ctl-wrap';
+  bar.innerHTML = `<div class="seg-ctl" role="tablist">${BSEA_TABS.map(([k, l, ic]) => `<button type="button" class="seg-btn${k === tab ? ' active' : ''}" data-tab="${k}" role="tab" aria-selected="${k === tab}">${ic}<span>${l}</span></button>`).join('')}</div>`;
+  $('#content').prepend(bar);
+  bar.querySelectorAll('.seg-btn').forEach(b => b.onclick = () => { if (b.dataset.tab === bseaTab()) return; setBseaTab(b.dataset.tab); _lastRoute = null; setRoute(); });
+  const subs = { list: 'Ukr/Russia candidates spot onw + BSEA cargoes', rundown: 'Black Sea Rundown', agents: 'Port agents — Black Sea and beyond' };
+  $('#page-title').textContent = 'BSEA'; $('#page-sub').textContent = subs[tab];
+};
+// vecchi link → hub (stesso contenuto, un solo posto)
+routes['bsea-list'] = () => { setBseaTab('list'); if (location.hash !== '#/bsea') location.hash = '#/bsea'; else routes['bsea'](); };
+routes['rundown-bsea'] = () => { setBseaTab('rundown'); if (location.hash !== '#/bsea') location.hash = '#/bsea'; else routes['bsea'](); };
+
+// ===== AGENTS (v88): agenti portuali. Dati nella tabella rundowns, chiave "agents" (JSON), come i rundown: realtime gia' incluso =====
+const AGENT_COLS = [['area', 'Area', 70], ['port', 'Port', 110], ['company', 'Company', 200], ['address', 'Address', 320], ['email', 'Email', 180], ['phone', 'Telephone', 130], ['fax', 'Fax', 120], ['website', 'Website', 150], ['notes', 'Notes', 200]];
+const AGENT_AREAS = ['BSEA', 'EMED', 'WMED', 'CONT', 'UKC', 'BALTIC', 'ECSA', 'NCSA', 'USG', 'USEC', 'WAFR', 'SAFR', 'RSEA', 'PG', 'INDIA', 'SEASIA', 'FEAST', 'NOPAC', 'AUSSIE'];
+function getAgents() { try { const a = JSON.parse((DATA.rundowns || {}).agents || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+function saveAgents(list) {
+  DATA.rundowns = DATA.rundowns || {};
+  DATA.rundowns.agents = JSON.stringify(list);
+  saveData(DATA);
+  if (window._cloudSyncActive && !window._cloudLoadFailed) sb.from('rundowns').upsert({ key: 'agents', text: DATA.rundowns.agents }).then(handleErr('agents save'));
+}
+function agentUrl(w) { w = String(w || '').trim(); const m = w.match(/\((https?:\/\/[^)]+)\)/); if (m) w = m[1]; w = w.replace(/^\[|\]$/g, ''); return w; }
+function agentHref(w) { w = agentUrl(w); if (!w) return ''; return /^https?:\/\//i.test(w) ? w : 'https://' + w; }
+function agentText(a) {
+  const L = [a.company || ''];
+  if (a.address) L.push(a.address);
+  if (a.email) L.push('Email: ' + a.email);
+  if (a.phone) L.push('Telephone: ' + a.phone);
+  if (a.fax) L.push('Fax: ' + a.fax);
+  if (a.website) L.push('Website: ' + agentUrl(a.website));
+  if (a.notes) L.push('Notes: ' + a.notes);
+  return L.join('\n');
+}
+function renderAgents() {
+  const F = getFilter('agents');
+  let editId = window.__agentEdit || null;
+  $('#topbar-actions').innerHTML = `
+    <button class="primary" id="ag-add"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Add agent</button>
+    <button id="ag-copy" title="Copy the visible agents as text (Teams / mail)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy</button>`;
+  $('#content').innerHTML = `<div class="panel"><div class="tbl-wrap"><table id="ag-tbl" class="ag-tbl"><thead>
+    <tr>${AGENT_COLS.map(([k, l, w]) => `<th style="min-width:${w}px">${l}</th>`).join('')}<th class="ag-act"></th></tr>
+    <tr class="ag-filters">${AGENT_COLS.map(([k]) => `<td><input class="ag-f" data-col="${k}" placeholder="Filter…" value="${esc(F[k] || '')}"></td>`).join('')}<td class="ag-act"><button class="ag-clear" title="Clear filters">✕</button></td></tr>
+  </thead><tbody id="ag-body"></tbody></table></div></div>
+  <datalist id="ag-areas">${AGENT_AREAS.map(a => `<option value="${a}">`).join('')}</datalist>`;
+  const body = $('#ag-body');
+  const visible = () => {
+    const list = getAgents().slice().sort((a, b) => String(a.area || '').localeCompare(String(b.area || '')) || String(a.port || '').localeCompare(String(b.port || '')) || String(a.company || '').localeCompare(String(b.company || '')));
+    return list.filter(a => AGENT_COLS.every(([k]) => { const f = String(F[k] || '').trim().toLowerCase(); return !f || String(a[k] || '').toLowerCase().includes(f); }) || a.id === editId);
+  };
+  const cell = (a, k) => {
+    const v = a[k] || '';
+    if (!v) return '<span class="ag-empty">—</span>';
+    if (k === 'email') return `<a href="mailto:${esc(v)}">${esc(v)}</a>`;
+    if (k === 'website') return `<a href="${esc(agentHref(v))}" target="_blank" rel="noopener">${esc(agentUrl(v))}</a>`;
+    if (k === 'phone' || k === 'fax') return `<a href="tel:${esc(String(v).replace(/[^\d+]/g, ''))}">${esc(v)}</a>`;
+    return esc(v);
+  };
+  const draw = () => {
+    const rows = visible();
+    body.innerHTML = rows.length ? rows.map(a => a.id === editId
+      ? `<tr class="ag-edit" data-id="${a.id}">${AGENT_COLS.map(([k, l]) => `<td>${k === 'address' || k === 'notes' ? `<textarea class="ag-in" data-col="${k}" rows="2" placeholder="${l}">${esc(a[k] || '')}</textarea>` : `<input class="ag-in" data-col="${k}" ${k === 'area' ? 'list="ag-areas"' : ''} placeholder="${l}" value="${esc(a[k] || '')}">`}</td>`).join('')}<td class="ag-act"><button class="ag-save primary" title="Save">Save</button><button class="ag-cancel" title="Cancel">✕</button></td></tr>`
+      : `<tr data-id="${a.id}">${AGENT_COLS.map(([k]) => `<td class="ag-${k}">${cell(a, k)}</td>`).join('')}<td class="ag-act"><button class="ag-ed" title="Edit">✎</button><button class="ag-del" title="Delete">🗑</button></td></tr>`).join('')
+      : `<tr><td colspan="${AGENT_COLS.length + 1}" class="ag-none">No agents${Object.values(F).some(Boolean) ? ' match the filters' : ' yet — click “Add agent”'}.</td></tr>`;
+    const first = body.querySelector('.ag-edit .ag-in'); if (first && window.__agentFocus) { first.focus(); window.__agentFocus = false; }
+  };
+  draw();
+  $$('#ag-tbl .ag-f').forEach(inp => inp.oninput = debounce(() => { F[inp.dataset.col] = inp.value; draw(); }, 150));
+  $('#ag-tbl .ag-clear').onclick = () => { for (const k of Object.keys(F)) delete F[k]; $$('#ag-tbl .ag-f').forEach(i => i.value = ''); draw(); };
+  $('#ag-add').onclick = () => { const list = getAgents(); const a = { id: 'ag-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), area: String(F.area || '').toUpperCase(), port: '', company: '', address: '', email: '', phone: '', fax: '', website: '', notes: '' }; list.push(a); saveAgents(list); window.__agentEdit = editId = a.id; window.__agentFocus = true; draw(); };
+  $('#ag-copy').onclick = () => { const rows = visible().filter(a => a.id !== editId); const txt = rows.map(agentText).join('\n\n'); navigator.clipboard.writeText(txt).then(() => cloudToast('Copied ' + rows.length + ' agent(s)', { kind: 'ok', duration: 2000 })); };
+  body.onclick = (e) => {
+    const tr = e.target.closest('tr[data-id]'); if (!tr) return; const id = tr.dataset.id;
+    if (e.target.closest('.ag-ed')) { window.__agentEdit = editId = id; draw(); }
+    else if (e.target.closest('.ag-cancel')) { const list = getAgents(); const a = list.find(x => x.id === id); if (a && !AGENT_COLS.some(([k]) => k !== 'area' && a[k])) { saveAgents(list.filter(x => x.id !== id)); } window.__agentEdit = editId = null; draw(); }
+    else if (e.target.closest('.ag-save')) {
+      const list = getAgents(); const a = list.find(x => x.id === id); if (!a) return;
+      tr.querySelectorAll('.ag-in').forEach(i => { a[i.dataset.col] = i.value.trim(); }); a.area = String(a.area || '').toUpperCase(); a.website = agentUrl(a.website);
+      if (!a.company) { cloudToast('Company name is required', { kind: 'error', duration: 2500 }); return; }
+      saveAgents(list); window.__agentEdit = editId = null; draw();
+    }
+    else if (e.target.closest('.ag-del')) { const list = getAgents(); const a = list.find(x => x.id === id); if (!a) return; if (!confirm('Delete agent “' + (a.company || '') + '”?')) return; saveAgents(list.filter(x => x.id !== id)); draw(); }
+  };
+  body.onkeydown = (e) => { if (e.key === 'Escape' && e.target.closest('.ag-edit')) e.target.closest('tr').querySelector('.ag-cancel').click(); if (e.key === 'Enter' && e.target.tagName === 'INPUT' && e.target.closest('.ag-edit')) { e.preventDefault(); e.target.closest('tr').querySelector('.ag-save').click(); } };
+}
+routes['agents'] = () => { setBseaTab('agents'); if (location.hash !== '#/bsea') location.hash = '#/bsea'; else routes['bsea'](); };
 
 // ============== CALC DOP / APS (formule reali) ==============
 let calcTab = 'aps2dop';
@@ -10481,7 +10614,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v87'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v88'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
@@ -11613,8 +11746,8 @@ setRoute();
 // ============================================================
 (function(){
   if (window.__bfilterClearInit) return; window.__bfilterClearInit = true;
-  function curRoute(){ return location.hash.replace(/^#\//,'') || 'atl-tng'; }
-  function rerender(){ const cur = curRoute(); if (typeof routes !== 'undefined' && routes[cur]) routes[cur](); }
+  function curRoute(){ const r = location.hash.replace(/^#\//,'') || 'atl-tng'; return (r === 'bsea' && typeof bseaTab === 'function') ? (bseaTab() === 'list' ? 'bsea-list' : bseaTab() === 'agents' ? 'agents' : r) : r; }   // v88: dentro l'hub BSEA i filtri sono quelli della scheda aperta
+  function rerender(){ const cur = location.hash.replace(/^#\//,'') || 'atl-tng'; if (typeof routes !== 'undefined' && routes[cur]) routes[cur](); }
   // --- clear all filters della lista corrente ---
   function clearAllFilters(){
     const cur = curRoute();
