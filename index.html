@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v84 -->
+<!-- build: 20260903-inbox-v85 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -5001,12 +5001,15 @@ function rollIdeasSeg(seg, age) {
   if (age === 1 && new Date(todayIso() + 'T00:00:00Z').getUTCDay() !== 1) return seg.replace(/^(\s*)YDAY\s+(OFFERS?|GUIDE|IDEA|SEEN|BID|HOLDING|AIMING|HEARD)\b/i, '$1LAST $2').replace(/^(\s*)(OFFERS?|GUIDE|IDEA|SEEN|BID|HOLDING|AIMING|HEARD)\b/i, '$1YDAY $2');
   return seg.replace(/^(\s*)(?:YDAY\s+)?(OFFERS?|GUIDE|IDEA|SEEN|BID|HOLDING|AIMING|HEARD)\b/i, '$1LAST $2');
 }
+// 16 set 2026: il prefisso YDAY/LAST viene ora SCRITTO nel testo ogni mattina (ageIdeasMorning). In video si invecchiano solo i
+// segmenti ancora senza prefisso; "YDAY …"/"LAST …" gia' scritti restano come sono (niente doppio invecchiamento).
+function rollDisplaySeg(seg, age) { return /^\s*(?:YDAY|LAST)\b/i.test(seg) ? seg : rollIdeasSeg(seg, age); }
 function fmtIdeas(text, updateDateIso) {
   if (!text) return '';
   const age = updateDateIso ? _daysAgo(updateDateIso) : 0;
   const segments = String(text).split(/(\s*\/\/\s*)/);
   // Il bold è applicato a livello di cella (classe .cell-offers) — vedi isIdeasOffers() + CSS.
-  return segments.map(seg => esc(rollIdeasSeg(seg, age))).join('');
+  return segments.map(seg => esc(rollDisplaySeg(seg, age))).join('');
 }
 // Versione plain-text di fmtIdeas: applica le stesse regole di prefisso
 // YDAY/LAST ma SENZA escape HTML — usata per pre-popolare l'editor inline
@@ -5016,7 +5019,7 @@ function fmtIdeasPlain(text, updateDateIso) {
   if (!text) return '';
   const age = updateDateIso ? _daysAgo(updateDateIso) : 0;
   const segments = String(text).split(/(\s*\/\/\s*)/);
-  return segments.map(seg => rollIdeasSeg(seg, age)).join('');
+  return segments.map(seg => rollDisplaySeg(seg, age)).join('');
 }
 // Vero solo quando la cella mostra "OFFER(S) …" (oggi). YDAY/LAST OFFER(S) → falso.
 function isIdeasOffers(text, updateDateIso) {
@@ -5359,6 +5362,34 @@ async function purgeStale() {
       try { setRoute(); } catch (e) {}
     }
   } catch (e) { console.warn('purgeStale:', e); }
+  setTimeout(ageIdeasMorning, 1500);
+}
+// Regola Giancarlo 16 set 2026 ("ogni mattina, prima dell'update, tutte le offerte/guide di ieri prendono YDAY"):
+// una volta al giorno (flag condiviso nella tabella rundowns, chiave ideas_aged) si RISCRIVE il testo di ideas (navi) e notes (carichi)
+// delle righe non aggiornate oggi: OFFERS/GUIDE/IDEA/BID/SEEN/HOLDING/AIMING/HEARD → YDAY … (1 giorno) → LAST … (2+ giorni, o lunedi).
+// update_date NON cambia. Cosi' un messaggio senza offerta approvato dopo (che azzera la data) non fa tornare "nuova" un'offerta vecchia (REACHY).
+async function ageIdeasMorning() {
+  try {
+    if (CURRENT_USER_ROLE !== 'admin' || window._restoring || window._cloudLoadFailed) return;
+    const today = todayIso();
+    const chk = await sb.from('rundowns').select('text').eq('key', 'ideas_aged').maybeSingle();
+    if (chk && chk.data && chk.data.text === today) return;
+    let nV = 0, nC = 0;
+    for (const v of (DATA.vessels || [])) {
+      if (!v.ideas || !v.update_date || v.update_date >= today) continue;
+      const age = _daysAgo(v.update_date);
+      const t = String(v.ideas).split(/(\s*\/\/\s*)/).map(sg => rollIdeasSeg(sg, age)).join('');
+      if (t !== v.ideas) { updVessel(v.id, { ideas: t, update_date: v.update_date }); nV++; }
+    }
+    for (const c of (DATA.cargoes || [])) {
+      if (!c.notes || !c.update_date || c.update_date >= today) continue;
+      const age = _daysAgo(c.update_date);
+      const t = String(c.notes).split(/(\s*\/\/\s*)/).map(sg => rollIdeasSeg(sg, age)).join('');
+      if (t !== c.notes) { updCargo(c.id, { notes: t, update_date: c.update_date }); nC++; }
+    }
+    await sb.from('rundowns').upsert({ key: 'ideas_aged', text: today });
+    if (nV || nC) { if (typeof cloudToast === 'function') cloudToast('Morning: ' + nV + ' vessel ideas and ' + nC + ' cargo notes aged (YDAY / LAST)', { kind: 'info', duration: 7000 }); try { setRoute(); } catch (e) {} }
+  } catch (e) { console.warn('ageIdeasMorning:', e); }
 }
 function delVessel(id) {
   const v = DATA.vessels.find(x=>x.id===id);
@@ -9957,7 +9988,7 @@ function renderInboxCargo() {
         const oldSegs = String(ex.notes).split(/\s*\/\/\s*/).filter(Boolean), newSegs = String(r.notes || '').split(/\s*\/\/\s*/).filter(Boolean);
         if (!newSegs.some(isOff) && oldSegs.some(isOff)) {
           const age = ex.update_date ? _daysAgo(ex.update_date) : 0;
-          const roll = t => age >= 1 ? t.replace(/^(\s*)(?:YDAY\s+|LAST\s+)?(BID|BIDS|IDEA|IDEAS|OFFERS?|GUIDE|HOLDING|TARGET)\b/i, '$1LAST $2').replace(/^(\s*)YDAY\s+(\d)/i, '$1LAST $2') : t;
+          const roll = t => rollDisplaySeg(t, age);   // 16 set: YDAY a 1 giorno, LAST da 2; i prefissi gia' scritti restano
           const keep = oldSegs.filter(isOff).map(roll);
           patch.notes = [...keep, ...newSegs.filter(n => !keep.includes(n))].join(' // ');
         }
@@ -10387,7 +10418,7 @@ routes['inbox'] = function() {
       if (kindOf(r) && !r.open_port && ex) Object.assign(r, { dwt_blt: r.dwt_blt || ex.dwt_blt, open_port: ex.open_port, open_from: ex.open_from, open_to: ex.open_to, area: ex.area, basin: ex.basin, ows_brkr: r.ows_brkr || ex.ows_brkr, bunker: r.bunker || ex.bunker, ls_brkr: r.ls_brkr || ex.ls_brkr });
       // message without any offer → the offer already in the list stays, aged (OFFERS → YDAY → LAST) as of today (Giancarlo 9 Sep 2026)
       // (se l'offerta in lista e' gia' di ieri o prima, da oggi e' LAST: l'update_date della lista viene rimesso a oggi dall'approvazione e non puo' piu' invecchiarla — MARATHON 10 set)
-      if (!r.ideas && ex && ex.ideas) { const ageL = ex.update_date ? _daysAgo(ex.update_date) : 0; r.ideas = ageL >= 1 ? String(ex.ideas).split(/(\s*\/\/\s*)/).map(sg => sg.replace(/^(\s*)(?:YDAY\s+|LAST\s+)?(OFFERS?|GUIDE|IDEA|SEEN|BID|HOLDING|AIMING|HEARD)\b/i, '$1LAST $2')).join('') : ex.ideas; r.__ideasFromList = true; }
+      if (!r.ideas && ex && ex.ideas) { const ageL = ex.update_date ? _daysAgo(ex.update_date) : 0; r.ideas = ageL >= 1 ? String(ex.ideas).split(/(\s*\/\/\s*)/).map(sg => rollDisplaySeg(sg, ageL)).join('') : ex.ideas; r.__ideasFromList = true; }
       // owner / bunker missing in the message → take them from the list
       if (ex) { if (!r.ows_brkr && ex.ows_brkr) r.ows_brkr = ex.ows_brkr; if (!r.bunker && ex.bunker) r.bunker = ex.bunker; }
       // a position for a vessel that is NOT in the list = fresh (Giancarlo 9 Sep 2026: NISSAKI, SDTR ALICE, ULTRA LYNX)
@@ -10420,7 +10451,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v84'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v85'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
