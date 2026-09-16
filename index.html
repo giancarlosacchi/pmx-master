@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v90 -->
+<!-- build: 20260903-inbox-v91 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -407,6 +407,7 @@ body { -webkit-font-smoothing: antialiased; font-feature-settings: "tnum" 1; }
 body.is-admin .admin-only { display: flex !important; }
 /* Vsl Descr: per ora visibile solo a Giancarlo */
 body:not(.is-gsc) [data-route="vsl-descr"] { display: none !important; }
+body:not(.can-bsea) [data-route="bsea"] { display: none !important; }
 body:not(.is-admin) [data-route="inbox"] { display: none !important; }
 
 /* Admin page styles */
@@ -2886,6 +2887,10 @@ window.sb = sb;
 
 // Currently signed-in user (set after successful login)
 let CURRENT_USER = null;
+// v91: chi vede l'hub BSEA (List / Rundown / Agents / Fixtures) — codice = parte prima della @ della mail di login
+const BSEA_USERS = new Set(['LCE', 'MPE', 'OPE', 'CPE', 'GSC']);
+function userCode(u) { u = u || CURRENT_USER; return String((u && u.email) || '').split('@')[0].toUpperCase(); }
+function canBsea(u) { return BSEA_USERS.has(userCode(u)); }
 let CURRENT_USER_ROLE = null;   // 'admin' | 'broker' (from allowed_users)
 let CURRENT_USER_NAME = null;   // display_name (from allowed_users)
 window.CURRENT_USER = CURRENT_USER;
@@ -2908,6 +2913,7 @@ async function bootAppAfterAuth(user, allowedRow) {
   if (CURRENT_USER_ROLE === 'admin') document.body.classList.add('is-admin');
   if (CURRENT_USER_ROLE === 'admin' && typeof pollInboxBadge === 'function') { pollInboxBadge(); setTimeout(pollInboxBadge, 2500); }   // badge Inbox subito dopo il login, da qualsiasi pagina
   if (String((user && user.email) || '').toLowerCase() === 'gsc@lightshipchartering.com') document.body.classList.add('is-gsc');
+  if (canBsea(user)) document.body.classList.add('can-bsea');   // v91: hub BSEA solo per LCE/MPE/OPE/CPE/GSC (Giancarlo 16 set)
   renderUserChip(user);
   // 1) Load latest data from cloud (with auto-migration if cloud empty)
   await loadDataFromCloud();
@@ -9014,6 +9020,7 @@ const BSEA_TABS = [
 function bseaTab() { let t = null; try { t = localStorage.getItem('pmx-bsea-tab'); } catch (e) {} return BSEA_TABS.some(x => x[0] === t) ? t : 'list'; }
 function setBseaTab(t) { try { localStorage.setItem('pmx-bsea-tab', t); } catch (e) {} }
 routes['bsea'] = function() {
+  if (!canBsea()) { if (typeof cloudToast === 'function') cloudToast('BSEA section is restricted.', { kind: 'info', duration: 3000 }); location.hash = '#/atl-tng'; return; }   // v91
   const tab = bseaTab();
   if (tab === 'list') renderBseaList();
   else if (tab === 'rundown') { renderRundown('bsea', 'Black Sea Rundown'); const ta = $('#rd-text'); if (ta) ta.style.height = 'calc(100% - 54px)'; }
@@ -10717,7 +10724,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v90'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v91'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
