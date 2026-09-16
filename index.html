@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v97 -->
+<!-- build: 20260903-inbox-v98 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -928,7 +928,7 @@ pre.rundown { white-space: pre-wrap; font-family: inherit;
 .ag-tbl .ag-company { font-weight: 600; color: var(--text); }
 .ag-tbl .ag-area { font-weight: 700; color: var(--gold); letter-spacing: .03em; }
 .ag-tbl .ag-address, .ag-tbl .ag-notes { white-space: pre-line; color: var(--text-dim); }
-.ag-tbl .ag-address { max-width: 420px; }
+.ag-tbl .ag-address { max-width: 300px; }
 .ag-tbl .ag-notes { max-width: 220px; }
 .ag-tbl a { color: var(--text); text-decoration: none; border-bottom: 1px dotted var(--line); }
 .ag-tbl a:hover { color: var(--gold); border-bottom-color: var(--gold); }
@@ -9127,7 +9127,7 @@ const fmtNum = (v, dec) => { const n = Number(String(v || '').replace(/,/g, ''))
 const DIRS = {
   agents: {
     key: 'agents', label: 'agent', defaults: DEFAULT_AGENTS, sortDefault: ['area', 'asc'],
-    cols: [['area', 'Area', 70, { list: 'ag-areas', upper: true }], ['port', 'Port', 110], ['company', 'Company', 200, { required: true, cls: 'ag-company' }], ['address', 'Address', 320, { multi: true, cls: 'ag-address', fill: true }], ['email', 'Email', 180, { link: 'mailto' }], ['phone', 'Telephone', 130, { link: 'tel' }], ['website', 'Website', 150, { link: 'web' }], ['notes', 'Notes', 60, { multi: true, cls: 'ag-notes' }]],   // v97: niente Fax; Notes stretta (Address assorbe lo spazio)
+    cols: [['area', 'Area', 70, { list: 'ag-areas', upper: true }], ['port', 'Port', 190], ['company', 'Company', 260, { required: true, cls: 'ag-company' }], ['address', 'Address', 260, { multi: true, cls: 'ag-address' }], ['email', 'Email', 190, { link: 'mailto' }], ['phone', 'Telephone', 130, { link: 'tel' }], ['website', 'Website', 160, { link: 'web' }], ['notes', 'Notes', 60, { multi: true, cls: 'ag-notes' }]],   // v98: Port/Company piu' larghe, Address va a capo (max 300px)   // v97: niente Fax; Notes stretta (Address assorbe lo spazio)
     sortKey: (a, k) => String(a[k] || '').toLowerCase(),
     text: a => { const L = [a.company || '']; if (a.address) L.push(a.address); if (a.email) L.push('Email: ' + a.email); if (a.phone) L.push('Telephone: ' + a.phone); if (a.website) L.push('Website: ' + agentUrl(a.website)); if (a.notes) L.push('Notes: ' + a.notes); return L.join('\n'); },
     blank: F => ({ area: String(F.area || '').toUpperCase(), port: '', company: '', address: '', email: '', phone: '', website: '', notes: '' }),
@@ -10735,7 +10735,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v97'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v98'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
