@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v101 -->
+<!-- build: 20260903-inbox-v102 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -5076,7 +5076,7 @@ function rollIdeasSeg(seg, age) {
 }
 // 16 set 2026: il prefisso YDAY/LAST viene ora SCRITTO nel testo ogni mattina (ageIdeasMorning). In video si invecchiano solo i
 // segmenti ancora senza prefisso; "YDAY …"/"LAST …" gia' scritti restano come sono (niente doppio invecchiamento).
-function rollDisplaySeg(seg, age) { return /^\s*(?:YDAY|LAST)\b/i.test(seg) ? seg : rollIdeasSeg(seg, age); }
+function rollDisplaySeg(seg, age) { if (/^\s*YDAY\b/i.test(seg)) return age >= 2 ? seg.replace(/^(\s*)YDAY\b/i, '$1LAST') : seg; if (/^\s*LAST\b/i.test(seg)) return seg; return rollIdeasSeg(seg, age); }   // v102: "YDAY …" scritto ieri e non piu' invecchiato → da 2 giorni in poi e' LAST
 function fmtIdeas(text, updateDateIso) {
   if (!text) return '';
   const age = updateDateIso ? _daysAgo(updateDateIso) : 0;
@@ -10703,6 +10703,14 @@ routes['inbox'] = function() {
       // message without any offer → the offer already in the list stays, aged (OFFERS → YDAY → LAST) as of today (Giancarlo 9 Sep 2026)
       // (se l'offerta in lista e' gia' di ieri o prima, da oggi e' LAST: l'update_date della lista viene rimesso a oggi dall'approvazione e non puo' piu' invecchiarla — MARATHON 10 set)
       if (!r.ideas && ex && ex.ideas) { const ageL = ex.update_date ? _daysAgo(ex.update_date) : 0; r.ideas = ageL >= 1 ? String(ex.ideas).split(/(\s*\/\/\s*)/).map(sg => rollDisplaySeg(sg, ageL)).join('') : ex.ideas; r.__ideasFromList = true; }
+      // v102 (Giancarlo 17 set): stessa nave quotata in piu' chat lo stesso giorno con offerte per rotte DIVERSE (AQUAVITA EVOLUTION, AGIA VALENTINI):
+      // le offerte gia' in lista oggi si SOMMANO a quelle nuove; stessa rotta → vince la cifra nuova. Mai perdere l'offerta dell'altra chat.
+      if (r.ideas && ex && ex.ideas && ex.update_date === todayIso()) {
+        const isOffS = t => /^(?:YDAY |LAST )?(?:OFFERS?|BID|IDEA|GUIDE|HOLDING|AIMING)\b/.test(t);
+        const keyS = t => t.replace(/^(?:YDAY|LAST)\s+/, '').replace(/\bUSD \d+(?:-\d+)?(?: \+ [\d.]+ ?(?:MLN|K)?)?/, 'USD').replace(/\s*-\s*[\d.]+K P6 EQUIV/, '').replace(/\s+/g, ' ').trim();
+        const news = String(r.ideas).split(/\s*\/\/\s*/).filter(Boolean), olds = String(ex.ideas).split(/\s*\/\/\s*/).filter(Boolean);
+        if (news.some(isOffS) && olds.some(isOffS)) { const nk = new Set(news.map(keyS)); const keep = olds.filter(o => isOffS(o) && !/^(?:YDAY|LAST)\s/.test(o) && !nk.has(keyS(o)) && !news.includes(o)); if (keep.length) r.ideas = [...keep, ...news].join(' // '); }
+      }
       // owner / bunker missing in the message → take them from the list
       if (ex) { if (!r.ows_brkr && ex.ows_brkr) r.ows_brkr = ex.ows_brkr; if (!r.bunker && ex.bunker) r.bunker = ex.bunker; }
       // a position for a vessel that is NOT in the list = fresh (Giancarlo 9 Sep 2026: NISSAKI, SDTR ALICE, ULTRA LYNX)
@@ -10735,7 +10743,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v101'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v102'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
@@ -11601,7 +11609,7 @@ setRoute();
 
     let welcomed = false;
     function openPanel(){ panel.classList.remove('bchat-hidden'); document.getElementById('bchatInput').focus();
-      if (!welcomed){ welcomed = true; bchatAddMsg('Hi! Ask me anything about the Teams chats and our lists — vessels, cargoes, offers, fixtures, market news. I remember months of messages. Italian or English, as you like.'); }
+      if (!welcomed){ welcomed = true; bchatAddMsg('Hi! Ask me anything about the Teams chats and our lists — vessels, cargoes, offers, fixtures, market news. I remember months of messages. Ask in any language — I always answer in English.'); }
     }
     fab.addEventListener('click', ()=> panel.classList.contains('bchat-hidden') ? openPanel() : panel.classList.add('bchat-hidden'));
     panel.querySelector('#bchatClose').addEventListener('click', ()=> panel.classList.add('bchat-hidden'));
