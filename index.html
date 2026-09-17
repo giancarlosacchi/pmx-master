@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v99 -->
+<!-- build: 20260903-inbox-v100 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -10735,7 +10735,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v99'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v100'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
@@ -11451,7 +11451,7 @@ setRoute();
       if (data && data.info) { _asst.url = String(data.info.url || '').replace(/\/$/, ''); _asst.model = data.info.model || (data.info.groq ? 'groq' : null); _asst.at = data.at ? new Date(data.at).getTime() : 0; }
     } catch (e) {}
     const hd = document.querySelector('#bchatHead small');
-    if (hd) hd.textContent = asstOnline() ? ('lists + AI (' + (_asst.model || 'ready') + ')') : 'lists · AI offline';
+    if (hd) hd.textContent = asstOnline() ? 'online' : 'offline — office PC unreachable';
     return _asst;
   }
   function asstOnline() { return !!(_asst.url && Date.now() - _asst.at < 3 * 60 * 1000); }
@@ -11474,17 +11474,23 @@ setRoute();
   }
   async function askAssistant(q) {
     await asstStatus(true);
-    if (!asstOnline()) { bchatAddMsg('The AI assistant is offline right now (it runs on the office PC). For list searches write an area, e.g. <b>vessels in ECSA</b>.'); return; }
-    const node = bchatAddMsg('<span class="bchat-typing">Thinking<span>.</span><span>.</span><span>.</span></span> <small class="bchat-dim">' + esc(_asst.model || '') + '</small>', 'bot');
-    const t0 = Date.now();
+    if (!asstOnline()) { bchatAddMsg('The assistant is offline right now (it runs on the office PC). Try again in a few minutes.'); return; }
+    const node = bchatAddMsg('<span class="bchat-typing">Thinking<span>.</span><span>.</span><span>.</span></span> <small class="bchat-dim bchat-timer">0s</small>', 'bot');
+    const t0 = Date.now(); const tick = setInterval(() => { const el = node.querySelector('.bchat-timer'); if (el) el.textContent = Math.round((Date.now() - t0) / 1000) + 's' + (Date.now() - t0 > 20000 ? ' — searching months of messages, please wait' : ''); }, 1000);
     try {
       const { data: { session } } = await sb.auth.getSession();
       const token = session && session.access_token; if (!token) throw new Error('Not signed in');
-      const ctrl = new AbortController(); const tm = setTimeout(() => ctrl.abort(), 180000);
-      const r = await fetch(_asst.url + '/ask', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify({ q, history: bchatHist.slice(-8) }), signal: ctrl.signal });
-      clearTimeout(tm);
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
+      // v100: /ask risponde subito con un job id; poi polling ogni 2.5 s (il tunnel chiude le richieste lunghe)
+      const r = await fetch(_asst.url + '/ask', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify({ q, history: bchatHist.slice(-8) }), signal: AbortSignal.timeout(60000) });
+      let j = await r.json().catch(() => ({}));
+      if (!r.ok && r.status !== 202) throw new Error(j.error || ('HTTP ' + r.status));
+      while (j.job && j.status === 'running') {
+        await new Promise(res => setTimeout(res, 2500));
+        if (Date.now() - t0 > 10 * 60 * 1000) throw new Error('timeout (10 min)');
+        const p = await fetch(_asst.url + '/job?id=' + encodeURIComponent(j.job), { signal: AbortSignal.timeout(30000) }).catch(() => null);
+        if (p && p.ok) { const pj = await p.json().catch(() => null); if (pj) j = { ...j, ...pj }; }
+      }
+      if (j.status === 'error' || j.error) throw new Error(j.error || 'assistant error');
       bchatHist.push({ role: 'user', content: q }, { role: 'assistant', content: j.answer || '' });
       const src = (j.sources || []);
       node.innerHTML = '<div class="bchat-ai">' + mdLite(j.answer || '(no answer)') + '</div>' +
@@ -11496,18 +11502,15 @@ setRoute();
       node.querySelector('[data-act="copyai"]').onclick = () => navigator.clipboard.writeText(j.answer || '').then(() => cloudToast('Copied', { kind: 'ok', duration: 1500 }));
       const m = document.getElementById('bchatMsgs'); if (m) m.scrollTop = m.scrollHeight;
     } catch (e) {
-      node.innerHTML = '<span class="bchat-err">AI error: ' + esc(e.name === 'AbortError' ? 'timeout (the model is slow or busy)' : e.message) + '</span>';
-    }
+      node.innerHTML = '<span class="bchat-err">Sorry, something went wrong: ' + esc(/abort|timeout/i.test(e.name + e.message) ? 'the answer took too long' : e.message === 'Failed to fetch' ? 'cannot reach the assistant (office PC offline or tunnel restarting)' : e.message) + '</span>';
+    } finally { clearInterval(tick); }
   }
   setTimeout(() => asstStatus(true), 4000); setInterval(() => asstStatus(true), 90000);
   function bchatHandle(text){
     const t = text.trim(); if(!t) return;
     bchatAddMsg(esc(t), 'user');
-    const forceAi = /^\s*(\?|ai[:\s]|chiedi|ask)/i.test(t);   // v99: "?" davanti = sempre AI
-    if (forceAi) { askAssistant(t.replace(/^\s*(\?|ai[:\s]|chiedi|ask)\s*/i, '')); return; }
-    const f = bchatParse(t);
-    const structured = !!(f.areas.size || f.basin || f.ecsaDest);
-    if ((!structured || looksNatural(t)) && asstOnline()) { askAssistant(t); return; }   // v99: domanda libera → AI (se online), altrimenti motore a regole
+    // v100 (Giancarlo): solo AI, niente motore a regole ("list search") — tutto passa dall'assistant
+    askAssistant(t.replace(/^\s*(\?|ai[:\s]|chiedi|ask)\s*/i, '')); return;
     if (!f.areas.size && !f.basin && !f.ecsaDest){
       bchatAddMsg('Specify at least an area (e.g. <b>ECSA</b>, <b>USG</b>, <b>SEASIA</b>) or a basin (<b>atlantic</b>/<b>pacific</b>) — or ask the AI in plain words (it is ' + (asstOnline() ? 'online' : 'offline now') + '). Example: "vessels loadable in ECSA second half July".'); return;
     }
@@ -11579,21 +11582,21 @@ setRoute();
     `;
     document.head.appendChild(style);
     const fab = document.createElement('button');
-    fab.id = 'bchatFab'; fab.title = 'Ask the list';
+    fab.id = 'bchatFab'; fab.title = 'Assistant';
     fab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
     const panel = document.createElement('div');
     panel.id = 'bchatPanel'; panel.className = 'bchat-hidden';
-    const examples = ['vessels loadable in ECSA second half July','fresh vessels in pacific','what did Reachy offer on ECSA this week?','riassumi il mercato Black Sea di oggi'];
+    const examples = ['What did Reachy offer on ECSA this week?','Ultime notizie sul Black Sea','Fresh vessels in the Pacific list'];
     panel.innerHTML =
-      '<div id="bchatHead"><div>Ask the list<small>lists · AI checking…</small></div><button id="bchatClose">✕</button></div>' +
+      '<div id="bchatHead"><div>Assistant<small>checking…</small></div><button id="bchatClose">✕</button></div>' +
       '<div id="bchatMsgs"></div>' +
       '<div id="bchatExamples">' + examples.map(e=>`<button class="bchat-ex">${esc(e)}</button>`).join('') + '</div>' +
-      '<form id="bchatForm"><input id="bchatInput" autocomplete="off" placeholder="Ask the lists or the AI… (e.g. ? cosa ha offerto Reachy sulle ECSA?)"><button type="submit">➤</button></form>';
+      '<form id="bchatForm"><input id="bchatInput" autocomplete="off" placeholder="Ask a question…"><button type="submit">➤</button></form>';
     document.body.appendChild(fab); document.body.appendChild(panel);
 
     let welcomed = false;
     function openPanel(){ panel.classList.remove('bchat-hidden'); document.getElementById('bchatInput').focus();
-      if (!welcomed){ welcomed = true; bchatAddMsg('Hi! Two ways to use me:<br>• <b>List search</b> — area + period, e.g. <i>vessels loadable in ECSA second half July</i><br>• <b>AI</b> — any question in plain words about Teams messages and the lists, e.g. <i>what did Reachy offer on ECSA this week?</i> (start with <b>?</b> to force the AI). Memory goes back months.'); }
+      if (!welcomed){ welcomed = true; bchatAddMsg('Hi! Ask me anything about the Teams chats and our lists — vessels, cargoes, offers, fixtures, market news. I remember months of messages. Italian or English, as you like.'); }
     }
     fab.addEventListener('click', ()=> panel.classList.contains('bchat-hidden') ? openPanel() : panel.classList.add('bchat-hidden'));
     panel.querySelector('#bchatClose').addEventListener('click', ()=> panel.classList.add('bchat-hidden'));
