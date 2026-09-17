@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v103 -->
+<!-- build: 20260903-inbox-v104 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -10745,7 +10745,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v103'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v104'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
@@ -12078,8 +12078,18 @@ setRoute();
     sync();
     // v103: il pannello e' position:fixed (il .panel del finder ha overflow:hidden e con pochi
     // risultati tagliava il menu). Coordinate ricalcolate ad ogni apertura, scroll e resize.
+    // v104: il .panel ha backdrop-filter (vetro) → e' containing block anche per position:fixed e
+    // tagliava lo stesso: mentre e' aperto il menu vive dentro <body> (portal), poi torna nel wrap.
+    const setOpen = (on) => {
+      wrap.classList.toggle('open', on);
+      panel.classList.toggle('fdd-panel-open', on);
+      if (on) { if (panel.parentNode !== document.body) document.body.appendChild(panel); }
+      else if (panel.parentNode === document.body) { if (document.contains(wrap)) wrap.appendChild(panel); else panel.remove(); }
+    };
+    wrap.__fddClose = () => setOpen(false);
     const place = () => {
       if (!wrap.classList.contains('open')) return;
+      if (!document.contains(wrap)) { setOpen(false); return; }
       const r = btn.getBoundingClientRect();
       panel.style.top = (r.bottom + 8) + 'px';
       let left = r.left;
@@ -12091,10 +12101,11 @@ setRoute();
     };
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      document.querySelectorAll('.fdd.open').forEach(x => { if (x !== wrap) x.classList.remove('open'); });
-      wrap.classList.toggle('open');
+      document.querySelectorAll('.fdd.open').forEach(x => { if (x !== wrap) (x.__fddClose || (() => x.classList.remove('open')))(); });
+      setOpen(!wrap.classList.contains('open'));
       place();
     });
+    panel.addEventListener('click', (e) => e.stopPropagation());
     window.addEventListener('scroll', place, true);
     window.addEventListener('resize', place);
     panel.addEventListener('click', (e) => {
@@ -12102,13 +12113,15 @@ setRoute();
       sel.value = opt.dataset.area || '';
       sel.dispatchEvent(new Event('change'));
       sync();
-      wrap.classList.remove('open');
+      setOpen(false);
     });
     sel.addEventListener('change', sync);
   }
   function enhanceAll(){ document.querySelectorAll('select.area-color-select').forEach(enhanceOne); }
-  document.addEventListener('click', () => { document.querySelectorAll('.fdd.open').forEach(x => x.classList.remove('open')); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') document.querySelectorAll('.fdd.open').forEach(x => x.classList.remove('open')); });
+  const closeAll = () => document.querySelectorAll('.fdd.open').forEach(x => (x.__fddClose || (() => x.classList.remove('open')))());
+  document.addEventListener('click', closeAll);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeAll(); });
+  window.addEventListener('hashchange', closeAll);
   function init(){
     const st = document.createElement('style');
     st.textContent = `
@@ -12120,7 +12133,7 @@ setRoute();
       .fdd-chev{width:12px;height:12px;opacity:.6;transition:transform 180ms ease;flex:none}
       .fdd.open .fdd-chev{transform:rotate(180deg)}
       .fdd-panel{position:fixed;top:0;left:0;background:var(--bg-hover);border:1px solid var(--line);border-radius:var(--radius-lg);padding:10px;z-index:1000;display:none;box-shadow:0 16px 40px rgba(15,23,42,.18);transform-origin:top center}
-      .fdd.open .fdd-panel{display:block;animation:mac-popIn 200ms cubic-bezier(0.32,0.72,0,1) both}
+      .fdd-panel.fdd-panel-open{display:block;animation:mac-popIn 200ms cubic-bezier(0.32,0.72,0,1) both}
       .fdd-all{padding:9px 12px;border-radius:8px;font-size:13px;font-weight:600;color:var(--text-dim);cursor:pointer;text-align:center;border-bottom:1px solid var(--line-soft);margin-bottom:8px}
       .fdd-all:hover{background:var(--bg-2)}
       .fdd-all.sel{color:var(--text);background:var(--gold-soft)}
