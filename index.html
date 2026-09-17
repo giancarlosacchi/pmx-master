@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v100 -->
+<!-- build: 20260903-inbox-v101 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -10735,7 +10735,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v100'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v101'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
@@ -11534,8 +11534,13 @@ setRoute();
       #bchatFab{position:fixed;right:20px;bottom:20px;width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;background:#0f172a;color:#fff;box-shadow:0 8px 24px rgba(15,23,42,.35);display:flex;align-items:center;justify-content:center;z-index:99990;transition:transform .15s}
       #bchatFab:hover{transform:scale(1.06)}
       #bchatFab svg{width:26px;height:26px}
-      #bchatPanel{position:fixed;right:20px;bottom:88px;width:min(440px,calc(100vw - 32px));height:min(70vh,640px);background:#fff;border-radius:16px;box-shadow:0 18px 50px rgba(15,23,42,.30);display:flex;flex-direction:column;overflow:hidden;z-index:99991;font-family:Helvetica Neue,Helvetica,Arial,sans-serif}
+      #bchatPanel{position:fixed;right:20px;bottom:88px;width:min(var(--bchat-w,440px),calc(100vw - 32px));height:min(var(--bchat-h,640px),calc(100vh - 110px));background:#fff;border-radius:16px;box-shadow:0 18px 50px rgba(15,23,42,.30);display:flex;flex-direction:column;overflow:hidden;z-index:99991;font-family:Helvetica Neue,Helvetica,Arial,sans-serif}
       #bchatPanel.bchat-hidden{display:none}
+      #bchatResize{position:absolute;left:0;top:0;width:22px;height:22px;cursor:nwse-resize;z-index:5;border-radius:16px 0 0 0}
+      #bchatResize::before{content:'';position:absolute;left:5px;top:5px;width:8px;height:8px;border-left:2px solid #94a3b8;border-top:2px solid #94a3b8;border-radius:2px 0 0 0}
+      #bchatMax{background:none;border:none;color:#cbd5e1;font-size:15px;cursor:pointer;line-height:1;margin-right:10px}
+      #bchatHead .bchat-hbtns{display:flex;align-items:center}
+      body.bchat-resizing{user-select:none;cursor:nwse-resize}
       #bchatHead{background:#0f172a;color:#fff;padding:13px 16px;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:space-between}
       #bchatHead small{display:block;font-weight:400;font-size:11px;color:#94a3b8;margin-top:2px}
       #bchatClose{background:none;border:none;color:#cbd5e1;font-size:18px;cursor:pointer;line-height:1}
@@ -11588,7 +11593,7 @@ setRoute();
     panel.id = 'bchatPanel'; panel.className = 'bchat-hidden';
     const examples = ['What did Reachy offer on ECSA this week?','Ultime notizie sul Black Sea','Fresh vessels in the Pacific list'];
     panel.innerHTML =
-      '<div id="bchatHead"><div>Assistant<small>checking…</small></div><button id="bchatClose">✕</button></div>' +
+      '<div id="bchatResize" title="Drag to resize"></div><div id="bchatHead"><div>Assistant<small>checking…</small></div><div class="bchat-hbtns"><button id="bchatMax" title="Larger / smaller">⤢</button><button id="bchatClose">✕</button></div></div>' +
       '<div id="bchatMsgs"></div>' +
       '<div id="bchatExamples">' + examples.map(e=>`<button class="bchat-ex">${esc(e)}</button>`).join('') + '</div>' +
       '<form id="bchatForm"><input id="bchatInput" autocomplete="off" placeholder="Ask a question…"><button type="submit">➤</button></form>';
@@ -11600,6 +11605,17 @@ setRoute();
     }
     fab.addEventListener('click', ()=> panel.classList.contains('bchat-hidden') ? openPanel() : panel.classList.add('bchat-hidden'));
     panel.querySelector('#bchatClose').addEventListener('click', ()=> panel.classList.add('bchat-hidden'));
+    // v101: dimensione regolabile — trascina l'angolo in alto a sinistra, oppure ⤢ per grande/normale; si ricorda (localStorage)
+    const applySize = (w, h) => { if (w) panel.style.setProperty('--bchat-w', Math.round(w) + 'px'); if (h) panel.style.setProperty('--bchat-h', Math.round(h) + 'px'); };
+    try { const sv = JSON.parse(localStorage.getItem('pmx-bchat-size') || 'null'); if (sv) applySize(sv.w, sv.h); } catch(e) {}
+    const saveSize = () => { try { localStorage.setItem('pmx-bchat-size', JSON.stringify({ w: panel.offsetWidth, h: panel.offsetHeight })); } catch(e) {} };
+    panel.querySelector('#bchatResize').addEventListener('mousedown', e => {
+      e.preventDefault(); const sx = e.clientX, sy = e.clientY, sw = panel.offsetWidth, sh = panel.offsetHeight; document.body.classList.add('bchat-resizing');
+      const mv = ev => applySize(Math.max(320, sw + (sx - ev.clientX)), Math.max(300, sh + (sy - ev.clientY)));
+      const up = () => { document.removeEventListener('mousemove', mv); document.removeEventListener('mouseup', up); document.body.classList.remove('bchat-resizing'); saveSize(); };
+      document.addEventListener('mousemove', mv); document.addEventListener('mouseup', up);
+    });
+    panel.querySelector('#bchatMax').addEventListener('click', () => { const big = panel.offsetWidth < window.innerWidth * 0.6; applySize(big ? window.innerWidth * 0.8 : 440, big ? window.innerHeight * 0.85 : 640); saveSize(); });
     panel.querySelector('#bchatForm').addEventListener('submit', e=>{ e.preventDefault(); const inp=document.getElementById('bchatInput'); const v=inp.value; inp.value=''; bchatHandle(v); });
     panel.querySelectorAll('.bchat-ex').forEach(b=> b.addEventListener('click', ()=>{ document.getElementById('bchatInput').value=b.textContent; bchatHandle(b.textContent); }));
   }
