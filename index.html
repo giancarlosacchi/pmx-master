@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v104 -->
+<!-- build: 20260903-inbox-v105 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -10745,7 +10745,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v104'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v105'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
@@ -11647,7 +11647,7 @@ setRoute();
   const ALL_C = ['size','route','dates','cgo','notes','ls_brkr','update_date'];
   let dragging = false, moved = false, start = null, additive = false, rectCells = [];
   const cells = () => [...document.querySelectorAll('td.bcell')];
-  function clearSel(){ cells().forEach(td => { td.classList.remove('bcell'); td.style.boxShadow=''; }); }
+  function clearSel(){ cells().forEach(td => { td.classList.remove('bcell'); td.style.boxShadow=''; td.style.borderRadius=''; }); }
   function refreshEdges(){
     const C = 'rgba(37,99,235,.45)';
     cells().forEach(td => {
@@ -11656,11 +11656,15 @@ setRoute();
       const up = tr.previousElementSibling && tr.previousElementSibling.hasAttribute('data-sel-id') ? tr.previousElementSibling.cells[ci] : null;
       const dn = tr.nextElementSibling && tr.nextElementSibling.hasAttribute('data-sel-id') ? tr.nextElementSibling.cells[ci] : null;
       const parts = [];
-      if (!selN(up)) parts.push('inset 0 1px 0 ' + C);
-      if (!selN(dn)) parts.push('inset 0 -1px 0 ' + C);
-      if (!selN(tr.cells[ci-1])) parts.push('inset 1px 0 0 ' + C);
-      if (!selN(tr.cells[ci+1])) parts.push('inset -1px 0 0 ' + C);
+      const eU = !selN(up), eD = !selN(dn), eL = !selN(tr.cells[ci-1]), eR = !selN(tr.cells[ci+1]);
+      if (eU) parts.push('inset 0 1px 0 ' + C);
+      if (eD) parts.push('inset 0 -1px 0 ' + C);
+      if (eL) parts.push('inset 1px 0 0 ' + C);
+      if (eR) parts.push('inset -1px 0 0 ' + C);
       td.style.boxShadow = parts.join(', ');
+      // v105: angoli smussati sul perimetro della selezione (solo le celle d'angolo)
+      const R = '7px';
+      td.style.borderRadius = [(eU && eL) ? R : '0', (eU && eR) ? R : '0', (eD && eR) ? R : '0', (eD && eL) ? R : '0'].join(' ');
     });
   }
   function cellAt(x, y){ const el = document.elementFromPoint(x, y); return el && el.closest ? el.closest('td') : null; }
