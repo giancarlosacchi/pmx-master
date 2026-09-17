@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v102 -->
+<!-- build: 20260903-inbox-v103 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -5108,6 +5108,8 @@ function fmtDateRange(a, b) {
   const da = a ? new Date(a) : null, db = b ? new Date(b) : null;
   const mon = (d) => MONTHS[d.getUTCMonth()].slice(0,3);
   if (da && db) {
+    // v103: stesso giorno → "5 Oct" e non "5-5 Oct" (vale ovunque nel sito)
+    if (da.getUTCDate() === db.getUTCDate() && da.getUTCMonth() === db.getUTCMonth()) return `${da.getUTCDate()} ${mon(da)}`;
     if (da.getUTCMonth() === db.getUTCMonth()) return `${da.getUTCDate()}-${db.getUTCDate()} ${mon(db)}`;
     return `${da.getUTCDate()} ${mon(da)} - ${db.getUTCDate()} ${mon(db)}`;
   }
@@ -10743,7 +10745,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v102'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v103'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
@@ -12074,11 +12076,27 @@ setRoute();
       panel.querySelectorAll('.fdd-opt,.fdd-all').forEach(el => el.classList.toggle('sel', (el.dataset.area||'') === (sel.value||'')));
     };
     sync();
+    // v103: il pannello e' position:fixed (il .panel del finder ha overflow:hidden e con pochi
+    // risultati tagliava il menu). Coordinate ricalcolate ad ogni apertura, scroll e resize.
+    const place = () => {
+      if (!wrap.classList.contains('open')) return;
+      const r = btn.getBoundingClientRect();
+      panel.style.top = (r.bottom + 8) + 'px';
+      let left = r.left;
+      const w = panel.offsetWidth || 0;
+      if (left + w > window.innerWidth - 8) left = Math.max(8, window.innerWidth - 8 - w);
+      panel.style.left = left + 'px';
+      const h = panel.offsetHeight || 0;
+      if (r.bottom + 8 + h > window.innerHeight - 8 && r.top - 8 - h > 0) panel.style.top = (r.top - 8 - h) + 'px';
+    };
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       document.querySelectorAll('.fdd.open').forEach(x => { if (x !== wrap) x.classList.remove('open'); });
       wrap.classList.toggle('open');
+      place();
     });
+    window.addEventListener('scroll', place, true);
+    window.addEventListener('resize', place);
     panel.addEventListener('click', (e) => {
       const opt = e.target.closest('[data-area]'); if (!opt) return;
       sel.value = opt.dataset.area || '';
@@ -12101,7 +12119,7 @@ setRoute();
       .fdd-lbl{font-weight:600}
       .fdd-chev{width:12px;height:12px;opacity:.6;transition:transform 180ms ease;flex:none}
       .fdd.open .fdd-chev{transform:rotate(180deg)}
-      .fdd-panel{position:absolute;top:calc(100% + 8px);left:0;background:var(--bg-hover);border:1px solid var(--line);border-radius:var(--radius-lg);padding:10px;z-index:1000;display:none;box-shadow:0 16px 40px rgba(15,23,42,.18);transform-origin:top center}
+      .fdd-panel{position:fixed;top:0;left:0;background:var(--bg-hover);border:1px solid var(--line);border-radius:var(--radius-lg);padding:10px;z-index:1000;display:none;box-shadow:0 16px 40px rgba(15,23,42,.18);transform-origin:top center}
       .fdd.open .fdd-panel{display:block;animation:mac-popIn 200ms cubic-bezier(0.32,0.72,0,1) both}
       .fdd-all{padding:9px 12px;border-radius:8px;font-size:13px;font-weight:600;color:var(--text-dim);cursor:pointer;text-align:center;border-bottom:1px solid var(--line-soft);margin-bottom:8px}
       .fdd-all:hover{background:var(--bg-2)}
