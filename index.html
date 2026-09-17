@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v98 -->
+<!-- build: 20260903-inbox-v99 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -10735,7 +10735,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v98'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v99'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
@@ -11439,12 +11439,77 @@ setRoute();
     if (f.period) bits.push(f.period.label);
     return bits.join(' · ') + ' — <b>' + res.total + '</b> result' + (res.total===1?'':'s');
   }
+  // ===== v99 (17 set 2026): AI assistant — modello open source sul PC di Giancarlo (Ollama), raggiunto via Tailscale Funnel.
+  // L'URL lo pubblica il servizio stesso in scraper_heartbeat (id 'assistant'); qui si legge e basta. Auth: token Supabase dell'utente.
+  const bchatHist = [];
+  let _asst = { url: null, model: null, at: 0, checked: 0 };
+  async function asstStatus(force) {
+    if (!force && Date.now() - _asst.checked < 60000) return _asst;
+    _asst.checked = Date.now();
+    try {
+      const { data } = await sb.from('scraper_heartbeat').select('at,info').eq('id', 'assistant').maybeSingle();
+      if (data && data.info) { _asst.url = String(data.info.url || '').replace(/\/$/, ''); _asst.model = data.info.model || (data.info.groq ? 'groq' : null); _asst.at = data.at ? new Date(data.at).getTime() : 0; }
+    } catch (e) {}
+    const hd = document.querySelector('#bchatHead small');
+    if (hd) hd.textContent = asstOnline() ? ('lists + AI (' + (_asst.model || 'ready') + ')') : 'lists · AI offline';
+    return _asst;
+  }
+  function asstOnline() { return !!(_asst.url && Date.now() - _asst.at < 3 * 60 * 1000); }
+  function looksNatural(t) {
+    const s = t.toLowerCase();
+    if (/^\s*(\?|ai[:\s]|chiedi|ask)/.test(s)) return true;
+    if (s.split(/\s+/).length >= 9) return true;
+    return /\b(cosa|chi|quanto|quanti|quale|quali|perch[eé]|come|quando|dove|riassumi|spiega|confronta|what|who|how|why|when|where|which|summar|explain|compare|did|does|has|have|hanno|ha detto|offerto|offered|offer|bid|idea|ideas|fixed|fixture|fissato|last done|mercato|market|sentiment|rundown|messaggi?|messages?|teams|chat|news)\b/.test(s);
+  }
+  function mdLite(t) {
+    let h = esc(String(t || '')).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`([^`]+)`/g, '<code>$1</code>');
+    const lines = h.split('\n'); const out = []; let inList = false;
+    for (const ln of lines) {
+      const m = ln.match(/^\s*(?:[-•*]|\d+[.)])\s+(.*)$/);
+      if (m) { if (!inList) { out.push('<ul class="bchat-ul">'); inList = true; } out.push('<li>' + m[1] + '</li>'); }
+      else { if (inList) { out.push('</ul>'); inList = false; } if (ln.trim()) out.push('<div>' + ln + '</div>'); }
+    }
+    if (inList) out.push('</ul>');
+    return out.join('');
+  }
+  async function askAssistant(q) {
+    await asstStatus(true);
+    if (!asstOnline()) { bchatAddMsg('The AI assistant is offline right now (it runs on the office PC). For list searches write an area, e.g. <b>vessels in ECSA</b>.'); return; }
+    const node = bchatAddMsg('<span class="bchat-typing">Thinking<span>.</span><span>.</span><span>.</span></span> <small class="bchat-dim">' + esc(_asst.model || '') + '</small>', 'bot');
+    const t0 = Date.now();
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      const token = session && session.access_token; if (!token) throw new Error('Not signed in');
+      const ctrl = new AbortController(); const tm = setTimeout(() => ctrl.abort(), 180000);
+      const r = await fetch(_asst.url + '/ask', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify({ q, history: bchatHist.slice(-8) }), signal: ctrl.signal });
+      clearTimeout(tm);
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
+      bchatHist.push({ role: 'user', content: q }, { role: 'assistant', content: j.answer || '' });
+      const src = (j.sources || []);
+      node.innerHTML = '<div class="bchat-ai">' + mdLite(j.answer || '(no answer)') + '</div>' +
+        '<div class="bchat-meta">' + esc(String(j.model || '').replace(/^ollama:/, '')) + ' · ' + Math.round((j.ms || (Date.now() - t0)) / 1000) + 's · ' + esc(j.window || '') +
+        (src.length ? ' · <a href="#" class="bchat-srcbtn">' + src.length + ' sources</a>' : '') + '</div>' +
+        (src.length ? '<div class="bchat-src" style="display:none">' + src.map(s => '<div><b>' + esc(new Date(s.t).toLocaleString('en-GB', { timeZone: 'Europe/Rome', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })) + ' · ' + esc(s.chat) + ' · ' + esc(s.sender || '') + '</b><br>' + esc(s.text) + '</div>').join('') + '</div>' : '') +
+        '<div class="bchat-acts"><button class="bchat-act" data-act="copyai">⎘ Copy</button></div>';
+      const sb_ = node.querySelector('.bchat-srcbtn'); if (sb_) sb_.onclick = (e) => { e.preventDefault(); const d = node.querySelector('.bchat-src'); d.style.display = d.style.display === 'none' ? '' : 'none'; };
+      node.querySelector('[data-act="copyai"]').onclick = () => navigator.clipboard.writeText(j.answer || '').then(() => cloudToast('Copied', { kind: 'ok', duration: 1500 }));
+      const m = document.getElementById('bchatMsgs'); if (m) m.scrollTop = m.scrollHeight;
+    } catch (e) {
+      node.innerHTML = '<span class="bchat-err">AI error: ' + esc(e.name === 'AbortError' ? 'timeout (the model is slow or busy)' : e.message) + '</span>';
+    }
+  }
+  setTimeout(() => asstStatus(true), 4000); setInterval(() => asstStatus(true), 90000);
   function bchatHandle(text){
     const t = text.trim(); if(!t) return;
     bchatAddMsg(esc(t), 'user');
+    const forceAi = /^\s*(\?|ai[:\s]|chiedi|ask)/i.test(t);   // v99: "?" davanti = sempre AI
+    if (forceAi) { askAssistant(t.replace(/^\s*(\?|ai[:\s]|chiedi|ask)\s*/i, '')); return; }
     const f = bchatParse(t);
+    const structured = !!(f.areas.size || f.basin || f.ecsaDest);
+    if ((!structured || looksNatural(t)) && asstOnline()) { askAssistant(t); return; }   // v99: domanda libera → AI (se online), altrimenti motore a regole
     if (!f.areas.size && !f.basin && !f.ecsaDest){
-      bchatAddMsg('Specify at least an area (e.g. <b>ECSA</b>, <b>USG</b>, <b>SEASIA</b>) or a basin (<b>atlantic</b>/<b>pacific</b>). Example: "vessels loadable in ECSA second half July".'); return;
+      bchatAddMsg('Specify at least an area (e.g. <b>ECSA</b>, <b>USG</b>, <b>SEASIA</b>) or a basin (<b>atlantic</b>/<b>pacific</b>) — or ask the AI in plain words (it is ' + (asstOnline() ? 'online' : 'offline now') + '). Example: "vessels loadable in ECSA second half July".'); return;
     }
     const res = bchatQuery(f);
     if (!res.total){ bchatAddMsg('No results for: ' + bchatSummary(f,res) + '.'); return; }
@@ -11476,6 +11541,21 @@ setRoute();
       .bchat-user{align-self:flex-end;background:#0f172a;color:#fff;padding:8px 12px;border-radius:14px 14px 4px 14px;max-width:85%}
       .bchat-bot{align-self:flex-start;background:#fff;color:#1f2937;padding:10px 12px;border-radius:14px 14px 14px 4px;box-shadow:0 1px 4px rgba(15,23,42,.08);max-width:100%}
       .bchat-sum{font-size:12px;color:#475569;margin-bottom:8px}
+      .bchat-ai{font-size:12.5px;line-height:1.5;color:#1f2937}
+      .bchat-ai div{margin:2px 0}
+      .bchat-ul{margin:4px 0 4px 16px;padding:0}
+      .bchat-ul li{margin:2px 0}
+      .bchat-ai code{background:#f1f5f9;border-radius:4px;padding:0 4px;font-size:11.5px}
+      .bchat-meta{margin-top:8px;font-size:10.5px;color:#64748b}
+      .bchat-meta a{color:#0f172a;text-decoration:underline}
+      .bchat-src{margin-top:6px;max-height:220px;overflow:auto;font-size:10.5px;color:#475569;border-top:1px solid #e5e9f0;padding-top:6px}
+      .bchat-src div{margin:0 0 6px}
+      .bchat-typing span{animation:bchatDot 1.2s infinite}
+      .bchat-typing span:nth-child(2){animation-delay:.2s}
+      .bchat-typing span:nth-child(3){animation-delay:.4s}
+      @keyframes bchatDot{0%,60%,100%{opacity:.2}30%{opacity:1}}
+      .bchat-dim{color:#94a3b8;font-size:10.5px}
+      .bchat-err{color:#b91c1c}
       .bchat-tblwrap{overflow-x:auto;border-radius:10px;border:1px solid #e5e9f0}
       table.bchat-tbl{border-collapse:collapse;font-size:11.5px;width:100%;line-height:1.35}
       table.bchat-tbl thead th{background:#0f172a;color:#cbd5e1;text-transform:uppercase;font-size:9px;letter-spacing:.06em;font-weight:700;padding:7px 9px;text-align:left;white-space:nowrap}
@@ -11503,17 +11583,17 @@ setRoute();
     fab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
     const panel = document.createElement('div');
     panel.id = 'bchatPanel'; panel.className = 'bchat-hidden';
-    const examples = ['vessels loadable in ECSA second half July','fresh vessels in pacific','cargo USG august','vessels in SEASIA'];
+    const examples = ['vessels loadable in ECSA second half July','fresh vessels in pacific','what did Reachy offer on ECSA this week?','riassumi il mercato Black Sea di oggi'];
     panel.innerHTML =
-      '<div id="bchatHead"><div>Ask the list<small>vessels, cargoes, areas & periods</small></div><button id="bchatClose">✕</button></div>' +
+      '<div id="bchatHead"><div>Ask the list<small>lists · AI checking…</small></div><button id="bchatClose">✕</button></div>' +
       '<div id="bchatMsgs"></div>' +
       '<div id="bchatExamples">' + examples.map(e=>`<button class="bchat-ex">${esc(e)}</button>`).join('') + '</div>' +
-      '<form id="bchatForm"><input id="bchatInput" autocomplete="off" placeholder="e.g. vessels loadable in ECSA 2nd half July"><button type="submit">➤</button></form>';
+      '<form id="bchatForm"><input id="bchatInput" autocomplete="off" placeholder="Ask the lists or the AI… (e.g. ? cosa ha offerto Reachy sulle ECSA?)"><button type="submit">➤</button></form>';
     document.body.appendChild(fab); document.body.appendChild(panel);
 
     let welcomed = false;
     function openPanel(){ panel.classList.remove('bchat-hidden'); document.getElementById('bchatInput').focus();
-      if (!welcomed){ welcomed = true; bchatAddMsg('Hi! Ask me which vessels or cargoes are available by area and period. Examples:<br>• <i>vessels loadable in ECSA second half July</i><br>• <i>fresh vessels in pacific</i><br>• <i>cargo USG august</i>'); }
+      if (!welcomed){ welcomed = true; bchatAddMsg('Hi! Two ways to use me:<br>• <b>List search</b> — area + period, e.g. <i>vessels loadable in ECSA second half July</i><br>• <b>AI</b> — any question in plain words about Teams messages and the lists, e.g. <i>what did Reachy offer on ECSA this week?</i> (start with <b>?</b> to force the AI). Memory goes back months.'); }
     }
     fab.addEventListener('click', ()=> panel.classList.contains('bchat-hidden') ? openPanel() : panel.classList.add('bchat-hidden'));
     panel.querySelector('#bchatClose').addEventListener('click', ()=> panel.classList.add('bchat-hidden'));
