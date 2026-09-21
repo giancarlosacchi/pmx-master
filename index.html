@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v105 -->
+<!-- build: 20260903-inbox-v106 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -10745,7 +10745,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v105'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v106'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
@@ -12174,7 +12174,12 @@ setRoute();
 
 <script>
 /* ===== LIVE CURSORS + ONLINE - solo Giancarlo. Frecce ancorate al contenuto, visibili anche da fermi ===== */
+/* v106 (21 set): DISATTIVATO. Ogni mousemove mandava un broadcast Realtime ogni 50 ms da ogni utente e ogni tab:
+   ha bruciato la quota gratuita Supabase (2M messaggi/mese, "exceed_realtime_message_count_quota") e il progetto
+   e' stato sospeso = nessuno entrava nel sito. Per riattivare: LIVE_CURSORS = true (e pensare a un throttle serio). */
 (function () {
+  var LIVE_CURSORS = false;
+  if (!LIVE_CURSORS) return;
   var VIEWER = 'gsc@lightshipchartering.com';
   function routeNow(){ return (location.hash || '').replace('#/', '') || 'home'; }
   function mainScroller(){
