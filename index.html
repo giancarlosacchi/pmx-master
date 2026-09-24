@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v107 -->
+<!-- build: 20260903-inbox-v108 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -10027,7 +10027,28 @@ function bindInboxModeBar() {
 }
 function renderInboxCargo() {
   $$('#page-title .ib-mode').forEach(x => x.remove()); $('#page-title').insertAdjacentHTML('beforeend', inboxModeBar());
-  $('#topbar-actions').innerHTML = `<span id="ib-live" title="Reader status" style="font-size:11.5px;color:var(--text-mute);margin-right:8px">● checking…</span><span class="count-pill" id="ib-cnt">—</span>`;
+  $('#topbar-actions').innerHTML = `<span id="ib-live" title="Reader status" style="font-size:11.5px;color:var(--text-mute);margin-right:8px">● checking…</span><span class="count-pill" id="ib-cnt">—</span><button class="primary" id="ib-approve-all" title="Approve every pending row that has an area/section (one by one, same rules as ✓)" style="margin-left:8px">✓ Approve all</button>`;
+  // v108 (24 set): approva tutte le righe in sequenza, con le stesse regole del singolo ✓; le righe senza area/sezione restano in Inbox
+  $('#ib-approve-all').onclick = async () => {
+    const btn = $('#ib-approve-all'); if (btn.disabled) return;
+    const total = $$('#ib-tbl tr[data-row] .ib-ok').length;
+    if (!total) { cloudToast('Nothing pending.', { kind: 'info', duration: 2500 }); return; }
+    if (!confirm(`Approve all ${total} pending rows?\nRows without area/section are skipped and stay in the Inbox.`)) return;
+    btn.disabled = true; const origAlert = window.alert; let done = 0, skipped = 0; const seen = new Set();
+    window.alert = () => { skipped++; };
+    try {
+      for (let guard = 0; guard < total + 5; guard++) {
+        const ok = $$('#ib-tbl tr[data-row] .ib-ok').find(b => !seen.has(b.closest('tr').dataset.row));
+        if (!ok) break;
+        const rowId = ok.closest('tr').dataset.row; seen.add(rowId);
+        const before = skipped; ok.click();
+        await new Promise(r => setTimeout(r, 700));
+        if (skipped === before) done++;
+        btn.textContent = `✓ ${done}/${total}…`;
+      }
+    } finally { window.alert = origAlert; btn.disabled = false; btn.textContent = '✓ Approve all'; }
+    cloudToast(`Approved ${done}${skipped ? ` · skipped ${skipped} (no area/section)` : ''}`, { kind: 'ok', duration: 5000 });
+  };
   bindInboxModeBar();
   $('#content').innerHTML = `
     <style>
@@ -10350,7 +10371,28 @@ routes['inbox'] = function() {
   if (CURRENT_USER_ROLE !== 'admin') { location.hash = '#/atl-tng'; return; }
   if (window.__ibMode === 'cgo') return renderInboxCargo();
   $$('#page-title .ib-mode').forEach(x => x.remove()); $('#page-title').insertAdjacentHTML('beforeend', inboxModeBar());
-  $('#topbar-actions').innerHTML = `<span id="ib-live" title="Reader status" style="font-size:11.5px;color:var(--text-mute);margin-right:8px">● checking…</span><span class="count-pill" id="ib-cnt">—</span>`;
+  $('#topbar-actions').innerHTML = `<span id="ib-live" title="Reader status" style="font-size:11.5px;color:var(--text-mute);margin-right:8px">● checking…</span><span class="count-pill" id="ib-cnt">—</span><button class="primary" id="ib-approve-all" title="Approve every pending row that has an area/section (one by one, same rules as ✓)" style="margin-left:8px">✓ Approve all</button>`;
+  // v108 (24 set): approva tutte le righe in sequenza, con le stesse regole del singolo ✓; le righe senza area/sezione restano in Inbox
+  $('#ib-approve-all').onclick = async () => {
+    const btn = $('#ib-approve-all'); if (btn.disabled) return;
+    const total = $$('#ib-tbl tr[data-row] .ib-ok').length;
+    if (!total) { cloudToast('Nothing pending.', { kind: 'info', duration: 2500 }); return; }
+    if (!confirm(`Approve all ${total} pending rows?\nRows without area/section are skipped and stay in the Inbox.`)) return;
+    btn.disabled = true; const origAlert = window.alert; let done = 0, skipped = 0; const seen = new Set();
+    window.alert = () => { skipped++; };
+    try {
+      for (let guard = 0; guard < total + 5; guard++) {
+        const ok = $$('#ib-tbl tr[data-row] .ib-ok').find(b => !seen.has(b.closest('tr').dataset.row));
+        if (!ok) break;
+        const rowId = ok.closest('tr').dataset.row; seen.add(rowId);
+        const before = skipped; ok.click();
+        await new Promise(r => setTimeout(r, 700));
+        if (skipped === before) done++;
+        btn.textContent = `✓ ${done}/${total}…`;
+      }
+    } finally { window.alert = origAlert; btn.disabled = false; btn.textContent = '✓ Approve all'; }
+    cloudToast(`Approved ${done}${skipped ? ` · skipped ${skipped} (no area/section)` : ''}`, { kind: 'ok', duration: 5000 });
+  };
   bindInboxModeBar();
   $('#content').innerHTML = `
     <style>
@@ -10745,7 +10787,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v107'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v108'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
