@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v114 -->
+<!-- build: 20260903-inbox-v115 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -10974,6 +10974,9 @@ if (AUTO_INBOX_FRAME) {
         const skipped = (window.__aiSkipped || 0) - before;
         if (done - skipped > 0) console.log(`[auto-inbox] ${mode}: ${done - skipped} approved${skipped ? ', ' + skipped + ' left (no area/section)' : ''}`);
       }
+      // quello che resta (area/sezione mancante) dopo 3 giorni e' roba vecchia: via, cosi' l'Inbox non si riempie di scorie
+      const cutoff = new Date(Date.now() - 3 * 86400e3).toISOString();
+      for (const t of ['inbox_candidates', 'inbox_cargoes']) { try { await sb.from(t).update({ status: 'rejected' }).eq('status', 'pending').lt('msg_time', cutoff); } catch (e) {} }
     } catch (e) { console.warn('[auto-inbox]', e && e.message || e); }
     finally { window.__aiBusy = false; }
   }
@@ -10983,7 +10986,7 @@ if (AUTO_INBOX_FRAME) {
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v114'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v115'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
