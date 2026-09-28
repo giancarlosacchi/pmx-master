@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v110 -->
+<!-- build: 20260903-inbox-v111 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -9257,7 +9257,7 @@ routes['ecsa-count'] = async function() {
     .ec-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 14px}
     .ec-bar .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
     .ec-bar .seg button{background:transparent;border:0;border-right:1px solid var(--line);color:var(--text-dim);padding:5px 11px;font:inherit;font-size:12px;font-weight:600;cursor:pointer}
-    .ec-bar .seg button:last-child{border-right:0}.ec-bar .seg button.on{background:var(--ac);color:#fff}
+    .ec-bar .seg button:last-child{border-right:0}.ec-bar .seg button.on{background:var(--gold,#1A73E8);color:#fff}
     .ec-bar .tog{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer;padding:4px 9px;border-radius:8px;border:1px solid var(--line);opacity:.45}
     .ec-bar .tog.on{opacity:1}.ec-bar .tog i{width:10px;height:10px;border-radius:3px;display:inline-block}
     .ec-chart{position:relative;padding:6px 10px 10px}
@@ -9323,7 +9323,7 @@ function renderEcsaCount() {
   const xTicks = []; { const span = (t1 - t0) / 86400e3; const d = new Date(t0); d.setUTCHours(0, 0, 0, 0);
     if (span <= 45) { while (d.getTime() <= t1) { xTicks.push([d.getTime(), d.getUTCDate() + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getUTCMonth()]]); d.setUTCDate(d.getUTCDate() + 7); } }
     else { d.setUTCDate(1); if (d.getTime() < t0) d.setUTCMonth(d.getUTCMonth() + 1); while (d.getTime() <= t1) { xTicks.push([d.getTime(), ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getUTCMonth()] + (d.getUTCMonth() === 0 || xTicks.length === 0 ? ' ' + d.getUTCFullYear() : '')]); d.setUTCMonth(d.getUTCMonth() + 1); } } }
-  const path = (k, fn) => { let s = '', pen = false; for (const r of rows) { const v = fn ? fn(r) : r[k]; if (v == null) { pen = false; continue; } s += (pen ? 'L' : 'M') + X(Date.parse(r.day)).toFixed(1) + ' ' + Y(v).toFixed(1); pen = true; } return s; };
+  const path = (k, fn) => { let s = '', pen = false, lastT = 0; for (const r of rows) { const v = fn ? fn(r) : r[k]; if (v == null) { pen = false; continue; } const t = Date.parse(r.day); if (pen && t - lastT > 10 * 86400e3) pen = false;   /* buco > 10 gg (bot fermo): la linea si interrompe invece di tirare una retta */ s += (pen ? 'L' : 'M') + X(t).toFixed(1) + ' ' + Y(v).toFixed(1); pen = true; lastT = t; } return s; };
   const mavg = k => { const out = new Map(); for (let i = 0; i < rows.length; i++) { const w = rows.slice(Math.max(0, i - 6), i + 1).map(r => r[k]).filter(v => v != null); if (w.length >= 3) out.set(rows[i].day, w.reduce((a, b) => a + b, 0) / w.length); } return r => out.has(r.day) ? out.get(r.day) : null; };
   let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" font-family="inherit">`;
   for (const v of yTicks) svg += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line-soft)" stroke-width="1"/><text x="${L - 8}" y="${Y(v) + 4}" font-size="11" fill="var(--text-mute)" text-anchor="end">${v}</text>`;
@@ -10922,7 +10922,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v110'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v111'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
