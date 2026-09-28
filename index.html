@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v109 -->
+<!-- build: 20260903-inbox-v110 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -35,7 +35,7 @@
         .then(function(r){
           var srv = Date.parse(r.headers.get('Last-Modified') || '') || 0;
           if (!srv || srv <= docLM + 5000) return;
-          if (busy()) return;
+          if (busy()) return; /* utente sta scrivendo: riprova al giro dopo */
           var key = 'pmx_reload_' + srv;
           var n = +(sessionStorage.getItem('pmx_reload_n') || 0);
           if (n < 20 && !sessionStorage.getItem(key)) {
@@ -349,6 +349,7 @@ body {
   background-size: 46px 46px;
   background-attachment: fixed; min-height: 100vh;
 }
+/* Appearance: varianti sfondo selezionabili dalle impostazioni */
 html[data-app-bg="soft"] body {
   background-color: #6d82b4;
   background-image:
@@ -1356,6 +1357,7 @@ pre.rundown { white-space: pre-wrap; font-family: inherit;
 .distance-tbl td:first-child { background: var(--bg-2); color: var(--gold); font-weight: 600; text-align: left; }
 .distance-tbl td.na { color: var(--text-mute); }
 .distance-tbl td.zero { background: rgba(245,177,78,.1); color: var(--gold); font-weight: 600; }
+/* Scrollbar nascoste ovunque (lo scroll resta attivo con rotella/trackpad) */
 ::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none; }
 * { scrollbar-width: none; }
 .global-search { position: relative; width: 36px; height: 36px; margin-right: 9px; transition: width .35s cubic-bezier(.32,.72,0,1); }
@@ -2090,6 +2092,7 @@ tr.status-subs .status-menu .opt { text-decoration: none; }
 .dwt-popup .dwt-fill { position: absolute; top: 11px; height: 4px; border-radius: 2px; background: var(--gold, #c9a227); }
 .dwt-popup .dwt-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 11px; color: var(--text-mute); }
 .dwt-popup .dwt-foot button { font-size: 11px; padding: 2px 8px; }
+
 .dr-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 0 4px; }
 .dr-head-title { font-weight: 600; font-size: 13px; }
 .dr-nav { background: transparent; border: 1px solid transparent; color: var(--text-dim); width: 24px; height: 24px; padding: 0; border-radius: 4px; cursor: pointer; display:inline-flex; align-items:center; justify-content:center; font-size: 16px; }
@@ -2525,16 +2528,20 @@ table.grid th.col-c-stato { overflow: hidden; }
 .acct-del.armed, .cli-del.armed { background: var(--red) !important; color: #fff !important; border-color: var(--red) !important; opacity: 1 !important; }
 .cli-del.armed { border-radius: 3px; padding: 0 4px; }
 
-/* Vetro satinato ATTIVO (stile AstaTracker) + riflesso quasi invisibile */
+/* Vetro satinato ATTIVO sui pannelli principali (stile AstaTracker) — vedi tokens --glass-* */
+/* Riflesso "vetro reale", quasi invisibile: lamina di luce nel primissimo bordo */
 .panel, .panel-filters, .panel-list, .modal, .stat-card, .cp-view, .rm-panel, .calc-panel { position: relative; }
 /* Riflessi rimossi: superficie piatta */
 .panel-filters { display: none !important; }
 table.grid thead th { max-width: none !important; overflow: visible !important; }
 .topbar #theme-toggle { display: none !important; }
+/* Angoli: la striscia filtri segue la curva del pannello (niente mezzaluna bianca) */
 #tbl table.grid thead th:first-child, #ca-tbl table.grid thead th:first-child { border-top-left-radius: calc(var(--radius-lg) - 2px); }
 #tbl table.grid thead th:last-child, #ca-tbl table.grid thead th:last-child { border-top-right-radius: calc(var(--radius-lg) - 2px); }
+/* Topbar trasparente: niente vetro sulla fascia alta */
 .topbar { background: transparent !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; border: none !important; box-shadow: none !important; }
 .topbar::before { display: none !important; }
+/* Linee divisorie come nell'anteprima (grigio-blu translucido, non bianche) + header semi-trasparente */
 [data-theme="light"] table.grid td, [data-theme="light"] table.grid th { border-color: rgba(90,110,150,.16) !important; }
 [data-theme="light"] table.grid thead th { background: #eef1f5 !important; border-bottom-color: rgba(90,110,150,.24) !important; }
 #tbl table.grid thead[class*="area-"] th, #ca-tbl table.grid thead[class*="area-"] th, #vd-tbl table.grid thead[class*="area-"] th { background: var(--ac) !important; color: #fff !important; }
@@ -2559,6 +2566,7 @@ html[data-palette] #tbl table.grid thead[class*="area-"] th, html[data-palette] 
   color: rgba(255,255,255,.75) !important;
 }
 [data-theme="dark"] table.grid td, [data-theme="dark"] table.grid th, :root:not([data-theme="light"]) table.grid td { border-color: rgba(255,255,255,.09) !important; }
+/* Eccezione: Vsl/Cgo Finder empty state — carta a quadretti per il disegno a penna */
 .panel.finder-empty {
   background: transparent !important;
   border: none !important; box-shadow: none !important;
@@ -2816,6 +2824,7 @@ body:not(.logged-in) .app { visibility: hidden; }
     <nav class="nav">
       <a data-route="ecsa-list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3v18"/></svg><span class="nav-label">ECSA List</span></a>
       <a data-route="bsea"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><span class="nav-label">BSEA</span></a>
+      <a data-route="ecsa-count"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m6 15 4-5 4 3 5-7"/></svg><span class="nav-label">ECSA Count</span></a>
       <a data-route="inbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg><span class="nav-label">Inbox</span></a>
       <a data-route="calc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h2M14 11h2M8 15h2M14 15h2"/></svg><span class="nav-label">Calc DOP/APS</span></a>
       <a data-route="distances"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg><span class="nav-label">Distances</span></a>
@@ -3016,6 +3025,9 @@ function dedupeData(){
     var arr = DATA[t];
     if (!Array.isArray(arr) || arr.length < 2) return;
     var best = Object.create(null);
+    // Keeper: righe sincronizzate battono le orfane; a parità, vince la più
+    // AGGIORNATA di recente (updated_at), poi l'id più alto. Così il sito
+    // mostra sempre la versione fresca del foglio, mai la copia stantia.
     var better = function(a, b){
       var aS = a.sync_id != null, bS = b.sync_id != null;
       if (aS !== bS) return aS;
@@ -3081,7 +3093,10 @@ async function loadDataFromCloud() {
     const cloudV = v.data || [];
     const cloudC = c.data || [];
 
-    // One-shot migration DISATTIVATA (re-import di massa: incidenti 16 Lug e 24 Ago)
+    // One-shot migration DISATTIVATA: causava re-import di massa di dati stantii
+    // (incidenti del 16 Lug e 24 Ago: browser con cache vecchia + lettura cloud vuota
+    //  → upload di centinaia di righe doppie senza sync_id). Il cloud è la fonte
+    // di verità: se è vuoto è un wipe in corso, non "carica il localStorage".
     if (false && cloudV.length === 0 && cloudC.length === 0 && !localStorage.getItem(MIGRATED_FLAG)) {
       const raw = localStorage.getItem(KEY_LOCAL);
       if (raw) {
@@ -5524,6 +5539,7 @@ const PAGES = {
   'agents': ['Agents', 'Port agents'],
   'fixtures': ['Fixtures', 'Black Sea fixtures'],
   'rundown-bsea': ['BSEA', 'Black Sea Rundown'],
+  'ecsa-count': ['ECSA Count', 'Vessels able to make ECSA — daily tonnage count from Teams'],
   'inbox':     ['Inbox', 'Posizioni estratte da Teams — approva o scarta'],
   'vsl-descr': ['Vsl Descr', ''],
   'atl-cgo':   ['ATL CGO', 'Atlantic Cargoes'],
@@ -9222,6 +9238,125 @@ const renderFixtures = () => renderDirectory('fixtures');
 routes['agents'] = () => { setBseaTab('agents'); if (location.hash !== '#/bsea') location.hash = '#/bsea'; else routes['bsea'](); };
 routes['fixtures'] = () => { setBseaTab('fixtures'); if (location.hash !== '#/bsea') location.hash = '#/bsea'; else routes['bsea'](); };
 
+// ============================================================
+// ECSA COUNT (v110, 28 set 2026) — serie "ECSA TONNAGE COUNT UPDATE" dalla chat ECSA PMAX
+// (tabella ecsa_tng_count, riempita dal bot: day, d15, d25, d30). Grafico SVG senza librerie.
+// ============================================================
+let _ecRows = null, _ecAt = 0;
+const EC_SERIES = [['d30', '+30 days', '#C5392B'], ['d25', '+25 days', '#D97706'], ['d15', '+15 days', '#2563EB']];
+const EC_STATE = { range: (() => { try { return localStorage.getItem('pmx-ec-range') || 'YTD'; } catch (e) { return 'YTD'; } })(), on: { d15: true, d25: true, d30: true }, avg: false };   // default: da gennaio di quest'anno (Giancarlo 28 set)
+routes['ecsa-count'] = async function() {
+  $('#content').innerHTML = `<style>
+    .ec-wrap{display:flex;flex-direction:column;gap:12px;min-height:0}
+    .ec-cards{display:flex;gap:10px;flex-wrap:wrap}
+    .ec-card{background:var(--bg-2);border:1px solid var(--line);border-radius:var(--radius-lg);padding:12px 16px;min-width:150px;flex:1}
+    .ec-card .k{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-mute);font-weight:700}
+    .ec-card .v{font-size:26px;font-weight:800;line-height:1.15;margin-top:4px}
+    .ec-card .d{font-size:11.5px;margin-top:2px;color:var(--text-dim)}
+    .ec-card .d.up{color:#2D8A4F}.ec-card .d.dn{color:#C5392B}
+    .ec-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 14px}
+    .ec-bar .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+    .ec-bar .seg button{background:transparent;border:0;border-right:1px solid var(--line);color:var(--text-dim);padding:5px 11px;font:inherit;font-size:12px;font-weight:600;cursor:pointer}
+    .ec-bar .seg button:last-child{border-right:0}.ec-bar .seg button.on{background:var(--ac);color:#fff}
+    .ec-bar .tog{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer;padding:4px 9px;border-radius:8px;border:1px solid var(--line);opacity:.45}
+    .ec-bar .tog.on{opacity:1}.ec-bar .tog i{width:10px;height:10px;border-radius:3px;display:inline-block}
+    .ec-chart{position:relative;padding:6px 10px 10px}
+    .ec-chart svg{width:100%;height:auto;display:block}
+    .ec-tip{position:absolute;pointer-events:none;background:var(--bg-hover);border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-size:11.5px;box-shadow:0 8px 24px rgba(15,23,42,.15);display:none;white-space:nowrap;z-index:5}
+    .ec-tip b{display:block;margin-bottom:3px}
+    .ec-tbl table{width:100%;border-collapse:collapse;font-size:12px}
+    .ec-tbl th{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-mute);text-align:right;padding:8px 12px;border-bottom:1px solid var(--line)}
+    .ec-tbl td{padding:6px 12px;text-align:right;border-bottom:1px solid var(--line-soft);font-variant-numeric:tabular-nums}
+    .ec-tbl th:first-child,.ec-tbl td:first-child{text-align:left}
+    .ec-tbl .dl{font-size:11px;color:var(--text-mute);margin-left:5px}.ec-tbl .dl.up{color:#2D8A4F}.ec-tbl .dl.dn{color:#C5392B}
+  </style>
+  <div class="ec-wrap">
+    <div class="ec-cards" id="ec-cards"></div>
+    <div class="panel" style="flex:0 0 auto">
+      <div class="ec-bar" id="ec-bar"></div>
+      <div class="ec-chart" id="ec-chart"><div style="padding:30px;color:var(--text-mute);font-size:12.5px">Loading…</div></div>
+    </div>
+    <div class="panel ec-tbl" style="flex:0 0 auto"><div class="tbl-wrap" id="ec-tbl"></div></div>
+  </div>`;
+  if (!_ecRows || Date.now() - _ecAt > 60_000) {
+    try { const { data, error } = await sb.from('ecsa_tng_count').select('day,d15,d25,d30').order('day', { ascending: true }).limit(5000); if (error) throw error; _ecRows = data || []; _ecAt = Date.now(); }
+    catch (e) { $('#ec-chart').innerHTML = `<div style="padding:30px;color:var(--red)">Cannot load data: ${esc(e.message || e)}</div>`; return; }
+  }
+  if (location.hash.replace('#/', '') !== 'ecsa-count') return;
+  renderEcsaCount();
+};
+function renderEcsaCount() {
+  const all = _ecRows || [];
+  const chart = $('#ec-chart'), bar = $('#ec-bar'), cards = $('#ec-cards'), tbl = $('#ec-tbl');
+  if (!chart) return;
+  const fmtD = d => { const x = new Date(d + 'T00:00:00Z'); return x.getUTCDate() + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][x.getUTCMonth()]; };
+  const fmtDY = d => fmtD(d) + ' ' + d.slice(0, 4);
+  // ---- cards: ultimo valore + delta vs giorno precedente disponibile
+  const last = all[all.length - 1], prev = all[all.length - 2];
+  cards.innerHTML = last ? EC_SERIES.map(([k, l, c]) => {
+    const v = last[k], p = prev ? prev[k] : null; const d = (v != null && p != null) ? v - p : null;
+    return `<div class="ec-card" style="border-top:3px solid ${c}"><div class="k">Vsls to make ECSA today ${l}</div><div class="v">${v == null ? '—' : v}</div><div class="d ${d > 0 ? 'up' : d < 0 ? 'dn' : ''}">${d == null ? '' : (d > 0 ? '+' : '') + d + ' vs ' + (prev ? fmtD(prev.day) : '')}</div></div>`;
+  }).join('') + `<div class="ec-card"><div class="k">Last update</div><div class="v" style="font-size:18px">${fmtDY(last.day)}</div><div class="d">${all.length} days on record since ${fmtDY(all[0].day)}</div></div>` : '<div class="ec-card"><div class="k">No data yet</div><div class="d">The bot fills this table from the daily "ECSA TONNAGE COUNT UPDATE" message.</div></div>';
+  // ---- barra: range + serie + media mobile
+  const RANGES = [['1M', 31], ['3M', 92], ['6M', 183], ['YTD', -1], ['1Y', 366], ['All', 0]];   // YTD = dal 1 gennaio di quest'anno
+  bar.innerHTML = `<span class="seg">${RANGES.map(([r]) => `<button data-r="${r}" class="${EC_STATE.range === r ? 'on' : ''}">${r}</button>`).join('')}</span>
+    ${EC_SERIES.map(([k, l, c]) => `<span class="tog ${EC_STATE.on[k] ? 'on' : ''}" data-s="${k}"><i style="background:${c}"></i>${l}</span>`).join('')}
+    <span class="tog ${EC_STATE.avg ? 'on' : ''}" data-avg="1" title="7-day moving average (dashed)"><i style="background:var(--text-mute)"></i>7d avg</span>
+    <span style="margin-left:auto;font-size:11px;color:var(--text-mute)">Source: daily "ECSA TONNAGE COUNT UPDATE" · ECSA PMAX LIGHTSHIP</span>`;
+  bar.querySelectorAll('[data-r]').forEach(b => b.onclick = () => { EC_STATE.range = b.dataset.r; try { localStorage.setItem('pmx-ec-range', EC_STATE.range); } catch (e) {} renderEcsaCount(); });
+  bar.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { EC_STATE.on[b.dataset.s] = !EC_STATE.on[b.dataset.s]; renderEcsaCount(); });
+  const avgBtn = bar.querySelector('[data-avg]'); if (avgBtn) avgBtn.onclick = () => { EC_STATE.avg = !EC_STATE.avg; renderEcsaCount(); };
+  // ---- dati nel range
+  const days = (RANGES.find(([r]) => r === EC_STATE.range) || [0, 0])[1];
+  const from = days === -1 ? new Date().getFullYear() + '-01-01' : days ? new Date(Date.now() - days * 86400e3).toISOString().slice(0, 10) : '0000';
+  const rows = all.filter(r => r.day >= from);
+  if (!rows.length) { chart.innerHTML = '<div style="padding:30px;color:var(--text-mute);font-size:12.5px">No data in this range.</div>'; tbl.innerHTML = ''; return; }
+  // ---- grafico SVG
+  const W = 1100, H = 380, L = 44, R = 16, T = 18, B = 34;
+  const t0 = Date.parse(rows[0].day), t1 = Math.max(Date.parse(rows[rows.length - 1].day), t0 + 86400e3);
+  const series = EC_SERIES.filter(([k]) => EC_STATE.on[k]);
+  let ymax = 0; for (const r of rows) for (const [k] of series) if (r[k] != null) ymax = Math.max(ymax, r[k]);
+  ymax = Math.max(10, Math.ceil((ymax + 2) / 10) * 10);
+  const X = t => L + (t - t0) / (t1 - t0) * (W - L - R), Y = v => T + (1 - v / ymax) * (H - T - B);
+  const yTicks = []; { const step = ymax <= 30 ? 5 : ymax <= 80 ? 10 : 20; for (let v = 0; v <= ymax; v += step) yTicks.push(v); }
+  // tick X: uno per mese (o per settimana se il range e' corto)
+  const xTicks = []; { const span = (t1 - t0) / 86400e3; const d = new Date(t0); d.setUTCHours(0, 0, 0, 0);
+    if (span <= 45) { while (d.getTime() <= t1) { xTicks.push([d.getTime(), d.getUTCDate() + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getUTCMonth()]]); d.setUTCDate(d.getUTCDate() + 7); } }
+    else { d.setUTCDate(1); if (d.getTime() < t0) d.setUTCMonth(d.getUTCMonth() + 1); while (d.getTime() <= t1) { xTicks.push([d.getTime(), ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getUTCMonth()] + (d.getUTCMonth() === 0 || xTicks.length === 0 ? ' ' + d.getUTCFullYear() : '')]); d.setUTCMonth(d.getUTCMonth() + 1); } } }
+  const path = (k, fn) => { let s = '', pen = false; for (const r of rows) { const v = fn ? fn(r) : r[k]; if (v == null) { pen = false; continue; } s += (pen ? 'L' : 'M') + X(Date.parse(r.day)).toFixed(1) + ' ' + Y(v).toFixed(1); pen = true; } return s; };
+  const mavg = k => { const out = new Map(); for (let i = 0; i < rows.length; i++) { const w = rows.slice(Math.max(0, i - 6), i + 1).map(r => r[k]).filter(v => v != null); if (w.length >= 3) out.set(rows[i].day, w.reduce((a, b) => a + b, 0) / w.length); } return r => out.has(r.day) ? out.get(r.day) : null; };
+  let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" font-family="inherit">`;
+  for (const v of yTicks) svg += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line-soft)" stroke-width="1"/><text x="${L - 8}" y="${Y(v) + 4}" font-size="11" fill="var(--text-mute)" text-anchor="end">${v}</text>`;
+  for (const [t, lab] of xTicks) svg += `<line x1="${X(t)}" x2="${X(t)}" y1="${T}" y2="${H - B}" stroke="var(--line-soft)" stroke-width="1" stroke-dasharray="2 4"/><text x="${X(t)}" y="${H - B + 18}" font-size="11" fill="var(--text-mute)" text-anchor="middle">${lab}</text>`;
+  svg += `<line x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}" stroke="var(--line)"/>`;
+  for (const [k, , c] of series) {
+    if (EC_STATE.avg) svg += `<path d="${path(k, mavg(k))}" fill="none" stroke="${c}" stroke-width="2" stroke-dasharray="6 5" opacity=".55"/>`;
+    svg += `<path d="${path(k)}" fill="none" stroke="${c}" stroke-width="${EC_STATE.avg ? 1.6 : 2.4}" stroke-linejoin="round" stroke-linecap="round" opacity="${EC_STATE.avg ? .8 : 1}"/>`;
+    if (rows.length <= 120) for (const r of rows) if (r[k] != null) svg += `<circle cx="${X(Date.parse(r.day))}" cy="${Y(r[k])}" r="2.6" fill="${c}"/>`;
+  }
+  svg += `<line id="ec-cross" x1="0" x2="0" y1="${T}" y2="${H - B}" stroke="var(--text-mute)" stroke-width="1" stroke-dasharray="3 3" style="display:none"/></svg><div class="ec-tip" id="ec-tip"></div>`;
+  chart.innerHTML = svg;
+  // ---- tooltip: giorno piu' vicino al mouse
+  const svgEl = chart.querySelector('svg'), cross = chart.querySelector('#ec-cross'), tip = chart.querySelector('#ec-tip');
+  svgEl.addEventListener('mousemove', e => {
+    const rect = svgEl.getBoundingClientRect(); const px = (e.clientX - rect.left) / rect.width * W;
+    if (px < L || px > W - R) { cross.style.display = 'none'; tip.style.display = 'none'; return; }
+    const t = t0 + (px - L) / (W - L - R) * (t1 - t0);
+    let best = rows[0], bd = Infinity; for (const r of rows) { const d = Math.abs(Date.parse(r.day) - t); if (d < bd) { bd = d; best = r; } }
+    const x = X(Date.parse(best.day)); cross.setAttribute('x1', x); cross.setAttribute('x2', x); cross.style.display = '';
+    const i = rows.indexOf(best), pr = i > 0 ? rows[i - 1] : null;
+    tip.innerHTML = `<b>${fmtDY(best.day)}</b>` + EC_SERIES.filter(([k]) => EC_STATE.on[k]).map(([k, l, c]) => { const d = (pr && pr[k] != null && best[k] != null) ? best[k] - pr[k] : null; return `<div><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:${c};margin-right:6px"></span>${l}: <b style="display:inline">${best[k] == null ? '—' : best[k]}</b>${d == null ? '' : ` <span style="color:${d > 0 ? '#2D8A4F' : d < 0 ? '#C5392B' : 'var(--text-mute)'}">(${d > 0 ? '+' : ''}${d})</span>`}</div>`; }).join('');
+    tip.style.display = 'block';
+    const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+    tip.style.left = (cx + 14 + tip.offsetWidth > rect.width ? cx - tip.offsetWidth - 14 : cx + 14) + 'px'; tip.style.top = Math.max(0, cy - 20) + 'px';
+  });
+  svgEl.addEventListener('mouseleave', () => { cross.style.display = 'none'; tip.style.display = 'none'; });
+  // ---- tabella ultimi 20 giorni del range (piu' recenti in alto)
+  const lastRows = rows.slice(-20).reverse();
+  const cell = (r, k) => { const i = all.indexOf(r), pr = i > 0 ? all[i - 1] : null; const d = (pr && pr[k] != null && r[k] != null) ? r[k] - pr[k] : null; return `<td>${r[k] == null ? '—' : r[k]}${d == null || d === 0 ? '' : `<span class="dl ${d > 0 ? 'up' : 'dn'}">${d > 0 ? '+' : ''}${d}</span>`}</td>`; };
+  tbl.innerHTML = `<table><thead><tr><th>Date</th><th>+15 days</th><th>+25 days</th><th>+30 days</th></tr></thead><tbody>${lastRows.map(r => `<tr><td>${fmtDY(r.day)}</td>${cell(r, 'd15')}${cell(r, 'd25')}${cell(r, 'd30')}</tr>`).join('')}</tbody></table>`;
+}
+
 // ============== CALC DOP / APS (formule reali) ==============
 let calcTab = 'aps2dop';
 routes['calc'] = function() {
@@ -10787,7 +10922,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v109'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v110'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
@@ -11690,11 +11825,12 @@ setRoute();
   let dragging = false, moved = false, start = null, additive = false, rectCells = [];
   const cells = () => [...document.querySelectorAll('td.bcell')];
   function clearSel(){ cells().forEach(td => { td.classList.remove('bcell'); td.style.boxShadow=''; td.style.borderRadius=''; }); }
+  // Bordo solo sul PERIMETRO della selezione: niente divisioni tra celle adiacenti
   function refreshEdges(){
     const C = 'rgba(37,99,235,.45)';
     cells().forEach(td => {
       const tr = td.parentElement, ci = td.cellIndex;
-      const selN = (t2) => !!(t2 && t2.classList && t2.classList.contains('bcell'));
+      const selN = (t) => !!(t && t.classList && t.classList.contains('bcell'));
       const up = tr.previousElementSibling && tr.previousElementSibling.hasAttribute('data-sel-id') ? tr.previousElementSibling.cells[ci] : null;
       const dn = tr.nextElementSibling && tr.nextElementSibling.hasAttribute('data-sel-id') ? tr.nextElementSibling.cells[ci] : null;
       const parts = [];
@@ -11854,14 +11990,15 @@ setRoute();
       if (typeof cloudToast==='function') cloudToast(copied?'Image copied to clipboard':'Image downloaded',{kind:'ok'});
     } finally { wrap.remove(); }
   }
+  // ---- mouse ----
   document.addEventListener('mousedown', (e) => {
     if (e.button !== 0) return;
     if (e.target.closest('.row-drag, button, input, select, textarea, a, label, .status-menu, .flag-chip, .flags-cell, .flags-label, .pill, .status-chip, .row-hide-btn, .opt, .area-dd, .area-dd-menu')) return;
     const td = e.target.closest('td'); const tr = td && td.closest('tr[data-sel-id]');
     if (!td || !tr) return;
     additive = e.ctrlKey || e.metaKey;
-    if (additive) e.preventDefault();
-    else clearSel();
+    if (additive) e.preventDefault();          // niente selezione-testo nativa
+    else clearSel();                            // gesto normale: riparte da zero
     dragging = true; moved = false;
     start = { tr, td, ci: td.cellIndex, tbody: tr.parentElement };
     rectCells = [];
@@ -11885,14 +12022,16 @@ setRoute();
     if (!dragging) return;
     dragging = false; document.body.style.userSelect = '';
     if (additive) {
-      if (!moved) { start.td.classList.toggle('bcell'); if (!start.td.classList.contains('bcell')) start.td.style.boxShadow=''; refreshEdges(); }
+      if (!moved) { start.td.classList.toggle('bcell'); if (!start.td.classList.contains('bcell')) start.td.style.boxShadow=''; refreshEdges(); }   // Ctrl+click: aggiungi/togli la cella
       rectCells = [];
+      // se il Ctrl e' gia' stato mollato prima del mouse: copia subito
       if (!(e.ctrlKey || e.metaKey) && cells().length) { doCopy(); clearSel(); }
     } else {
-      if (moved) { doCopy(); clearSel(); }
+      if (moved) { doCopy(); clearSel(); }              // rettangolo semplice: copia al rilascio
       else clearSel();
     }
   });
+  // ---- rilascio del tasto Ctrl: copia la selezione accumulata ----
   document.addEventListener('keyup', (e) => {
     if ((e.key === 'Control' || e.key === 'Meta') && !dragging && cells().length) { doCopy(); clearSel(); }
   });
@@ -12528,6 +12667,7 @@ setRoute();
     var raw = m[1].replace(',', '.').trim();
     var rate = /K$/.test(raw) ? parseFloat(raw)*1000 : parseFloat(raw);
     if (!(rate > 3000 && rate < 200000)) return null;
+    // offerta per altra destinazione (es. FOR INDO/INDIA, FOR SAFR/CHINA) -> non e' ECSA: ignora
     var rest = T.slice(m.index + m[0].length, m.index + m[0].length + 90);
     var forM = rest.match(/\b(?:FOR|FPR)\s+([A-Z0-9\/ \-]{2,32})/);
     if (forM && !/ECSA|SANTOS|S[-\s]?J\b|RECALADA|PLATE|BRAZIL|BRA\b/.test(forM[1])) return null;
@@ -12682,7 +12822,7 @@ setRoute();
 })();
 </script>
 <script>
-/* ===== THEAD TINT ===== */
+/* ===== THEAD TINT: la striscia filtri prende il colore dell'area visibile ===== */
 (function(){
   if (window.__theadTint) return; window.__theadTint = true;
   function tint(){
@@ -12705,6 +12845,7 @@ setRoute();
   function schedule(){ if (raf) return; raf = true; requestAnimationFrame(function(){ raf = false; tint(); }); }
   document.addEventListener('scroll', schedule, true);
   setInterval(tint, 1000);
+  // Re-render della tabella: ricolora SUBITO (niente flash bianco)
   var mo = new MutationObserver(schedule);
   if (document.body) mo.observe(document.body, { childList: true, subtree: true });
   else document.addEventListener('DOMContentLoaded', function(){ mo.observe(document.body, { childList: true, subtree: true }); });
