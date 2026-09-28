@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v113 -->
+<!-- build: 20260903-inbox-v114 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -4035,7 +4035,9 @@ function setFilter(page, col, value) { getFilter(page)[col] = value; }
 // v87 (Giancarlo 16 set): filtri, ricerche dei finder e scroll sopravvivono a un reload della pagina (nuova versione, risveglio,
 // cambio finestra verso WhatsApp e ritorno). Stato salvato in sessionStorage (per scheda) e ripristinato all'avvio.
 const UI_STATE_KEY = 'pmx-ui-state';
+const AUTO_INBOX_FRAME = /[?&]autoinbox=1/.test(location.search);   // v114: istanza nascosta (iframe) che approva l'Inbox da sola
 function saveUiState() {
+  if (AUTO_INBOX_FRAME) return;   // l'iframe condivide sessionStorage con la scheda: non deve sovrascrivere la pagina dell'utente
   try {
     const fs = {};
     for (const k of ['vsl', 'cgo']) { const s = FINDER_STATE[k] || {}; fs[k] = { area: s.area || '', from: s.from || '', to: s.to || '', q: s.q || '', hidden: s.hidden ? [...s.hidden] : [], excl: s.excl ? [...s.excl] : [] }; }
@@ -4045,6 +4047,7 @@ function saveUiState() {
   } catch (e) {}
 }
 (function restoreUiState() {
+  if (AUTO_INBOX_FRAME) return;
   try {
     const raw = sessionStorage.getItem(UI_STATE_KEY); if (!raw) return;
     const st = JSON.parse(raw); if (!st || Date.now() - (st.t || 0) > 12 * 3600 * 1000) return;
@@ -10911,6 +10914,7 @@ routes['inbox'] = function() {
 function updateInboxBadge(n) {
   const a = document.querySelector('a[data-route="inbox"]'); if (!a) return;
   a.classList.toggle('has-badge', !!(n > 0));
+  a.style.display = n > 0 ? '' : 'none';   // v114: l'Inbox si approva da sola; la voce compare solo se resta qualcosa che ha bisogno di una mano (area/sezione mancante)
   let b = a.querySelector('.nav-badge');
   if (!b) { b = document.createElement('span'); b.className = 'nav-badge'; b.style.cssText = 'margin-left:auto;background:var(--green,#2a9d5c);color:#fff;border-radius:10px;padding:0 6px;font-size:10px;font-weight:600;line-height:16px;min-width:16px;text-align:center'; a.appendChild(b); }
   b.textContent = n; b.style.display = n > 0 ? '' : 'none';
@@ -10921,10 +10925,65 @@ async function pollInboxBadge() {
 }
 [1000, 3000, 6000, 10000].forEach(ms => setTimeout(pollInboxBadge, ms));   // primi tentativi finche' il ruolo non e' noto
 setInterval(pollInboxBadge, 60000);
+
+// ============================================================
+// AUTO-INBOX (v114, 28 set 2026 — Giancarlo: "inserisci tutto direttamente sulle liste, l'Inbox sparisce")
+// Le candidate del bot vengono approvate DA SOLE con le stesse identiche regole del ✓ (stesso codice: nessuna
+// logica duplicata). Come: la scheda di un admin apre un iframe invisibile del sito (?autoinbox=1#/inbox) che
+// ogni 25 s passa in rassegna Inbox navi e carichi e clicca ✓ su ogni riga, una alla volta. La "claim"
+// pending→approved rende tutto idempotente anche con piu' admin collegati. Le righe che il ✓ rifiuterebbe
+// (area/sezione mancante) restano in Inbox: solo allora la voce Inbox ricompare nel menu, col numero.
+// ============================================================
+function ensureAutoInboxFrame() {
+  if (AUTO_INBOX_FRAME || window.top !== window) return;
+  if (typeof CURRENT_USER_ROLE === 'undefined' || CURRENT_USER_ROLE !== 'admin') return;
+  const old = document.getElementById('auto-inbox-frame');
+  if (old) { if (Date.now() - Number(old.dataset.t || 0) < 2 * 3600e3) return; old.remove(); }   // ogni 2 ore si ricrea da zero (sessione/scheda incastrata)
+  const f = document.createElement('iframe');
+  f.id = 'auto-inbox-frame'; f.title = 'auto inbox'; f.setAttribute('aria-hidden', 'true'); f.tabIndex = -1; f.dataset.t = String(Date.now());
+  f.src = location.pathname + '?autoinbox=1&t=' + Date.now() + '#/inbox';
+  // fuori schermo ma NON display:none (altrimenti il browser congela i timer): 1200x800 per avere una tabella vera
+  f.style.cssText = 'position:fixed;left:-4000px;top:0;width:1200px;height:800px;border:0;opacity:0;pointer-events:none';
+  document.body.appendChild(f);
+}
+setInterval(ensureAutoInboxFrame, 5000);
+if (AUTO_INBOX_FRAME) {
+  window.alert = () => { window.__aiSkipped = (window.__aiSkipped || 0) + 1; };   // "Choose the area first" → la riga resta in Inbox
+  window.confirm = () => true;
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const waitFor = async (fn, ms) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { try { if (fn()) return true; } catch (e) {} await sleep(250); } return false; };
+  async function autoInboxTick() {
+    if (window.__aiBusy) return;
+    if (typeof CURRENT_USER_ROLE === 'undefined' || CURRENT_USER_ROLE !== 'admin') return;
+    if (typeof DATA === 'undefined' || !DATA || !(DATA.vessels || []).length) return;   // liste non ancora caricate: findV non troverebbe nulla → doppioni
+    window.__aiBusy = true;
+    try {
+      for (const mode of ['vsl', 'cgo']) {
+        window.__ibMode = mode;
+        if (location.hash !== '#/inbox') location.hash = '#/inbox';
+        routes['inbox']();
+        await waitFor(() => document.querySelector('#ib-tbl table, #ib-empty'), 12000);
+        await sleep(1500);
+        const seen = new Set(); let done = 0; const before = window.__aiSkipped || 0;
+        for (let g = 0; g < 400; g++) {
+          const ok = [...document.querySelectorAll('#ib-tbl tr[data-row] .ib-ok')].find(b => !seen.has(b.closest('tr').dataset.row));
+          if (!ok) break;
+          seen.add(ok.closest('tr').dataset.row); ok.click(); done++;
+          await sleep(700);
+        }
+        const skipped = (window.__aiSkipped || 0) - before;
+        if (done - skipped > 0) console.log(`[auto-inbox] ${mode}: ${done - skipped} approved${skipped ? ', ' + skipped + ' left (no area/section)' : ''}`);
+      }
+    } catch (e) { console.warn('[auto-inbox]', e && e.message || e); }
+    finally { window.__aiBusy = false; }
+  }
+  setTimeout(autoInboxTick, 9000);
+  setInterval(autoInboxTick, 25000);
+}
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v113'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v114'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
