@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v111 -->
+<!-- build: 20260903-inbox-v112 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -9244,7 +9244,7 @@ routes['fixtures'] = () => { setBseaTab('fixtures'); if (location.hash !== '#/bs
 // ============================================================
 let _ecRows = null, _ecAt = 0;
 const EC_SERIES = [['d30', '+30 days', '#C5392B'], ['d25', '+25 days', '#D97706'], ['d15', '+15 days', '#2563EB']];
-const EC_STATE = { range: (() => { try { return localStorage.getItem('pmx-ec-range') || 'YTD'; } catch (e) { return 'YTD'; } })(), on: { d15: true, d25: true, d30: true }, avg: false };   // default: da gennaio di quest'anno (Giancarlo 28 set)
+const EC_STATE = { range: (() => { try { return localStorage.getItem('pmx-ec-range') || 'Max'; } catch (e) { return 'Max'; } })(), one: (() => { try { return localStorage.getItem('pmx-ec-series') || 'd30'; } catch (e) { return 'd30'; } })(), on: { d15: false, d25: false, d30: true }, avg: false };   // una serie alla volta, default +30 days (Giancarlo 28 set)
 routes['ecsa-count'] = async function() {
   $('#content').innerHTML = `<style>
     .ec-wrap{display:flex;flex-direction:column;gap:12px;min-height:0}
@@ -9276,7 +9276,6 @@ routes['ecsa-count'] = async function() {
       <div class="ec-bar" id="ec-bar"></div>
       <div class="ec-chart" id="ec-chart"><div style="padding:30px;color:var(--text-mute);font-size:12.5px">Loading…</div></div>
     </div>
-    <div class="panel ec-tbl" style="flex:0 0 auto"><div class="tbl-wrap" id="ec-tbl"></div></div>
   </div>`;
   if (!_ecRows || Date.now() - _ecAt > 60_000) {
     try { const { data, error } = await sb.from('ecsa_tng_count').select('day,d15,d25,d30').order('day', { ascending: true }).limit(5000); if (error) throw error; _ecRows = data || []; _ecAt = Date.now(); }
@@ -9297,22 +9296,23 @@ function renderEcsaCount() {
     const v = last[k], p = prev ? prev[k] : null; const d = (v != null && p != null) ? v - p : null;
     return `<div class="ec-card" style="border-top:3px solid ${c}"><div class="k">Vsls to make ECSA today ${l}</div><div class="v">${v == null ? '—' : v}</div><div class="d ${d > 0 ? 'up' : d < 0 ? 'dn' : ''}">${d == null ? '' : (d > 0 ? '+' : '') + d + ' vs ' + (prev ? fmtD(prev.day) : '')}</div></div>`;
   }).join('') + `<div class="ec-card"><div class="k">Last update</div><div class="v" style="font-size:18px">${fmtDY(last.day)}</div><div class="d">${all.length} days on record since ${fmtDY(all[0].day)}</div></div>` : '<div class="ec-card"><div class="k">No data yet</div><div class="d">The bot fills this table from the daily "ECSA TONNAGE COUNT UPDATE" message.</div></div>';
-  // ---- barra: range + serie + media mobile
-  const RANGES = [['1M', 31], ['3M', 92], ['6M', 183], ['YTD', -1], ['1Y', 366], ['All', 0]];   // YTD = dal 1 gennaio di quest'anno
+  // ---- barra: periodo (1W / 1M / 1Y / Max) + UNA sola serie alla volta (default +30 days) — Giancarlo 28 set
+  const RANGES = [['1W', 7], ['1M', 31], ['1Y', 366], ['Max', 0]];
+  if (!RANGES.some(([r]) => r === EC_STATE.range)) EC_STATE.range = 'Max';
   bar.innerHTML = `<span class="seg">${RANGES.map(([r]) => `<button data-r="${r}" class="${EC_STATE.range === r ? 'on' : ''}">${r}</button>`).join('')}</span>
-    ${EC_SERIES.map(([k, l, c]) => `<span class="tog ${EC_STATE.on[k] ? 'on' : ''}" data-s="${k}"><i style="background:${c}"></i>${l}</span>`).join('')}
-    <span class="tog ${EC_STATE.avg ? 'on' : ''}" data-avg="1" title="7-day moving average (dashed)"><i style="background:var(--text-mute)"></i>7d avg</span>
+    <span class="seg" style="margin-left:6px">${EC_SERIES.map(([k, l, c]) => `<button data-s="${k}" class="${EC_STATE.one === k ? 'on' : ''}" style="${EC_STATE.one === k ? 'background:' + c : ''}">${l}</button>`).join('')}</span>
     <span style="margin-left:auto;font-size:11px;color:var(--text-mute)">Source: daily "ECSA TONNAGE COUNT UPDATE" · ECSA PMAX LIGHTSHIP</span>`;
   bar.querySelectorAll('[data-r]').forEach(b => b.onclick = () => { EC_STATE.range = b.dataset.r; try { localStorage.setItem('pmx-ec-range', EC_STATE.range); } catch (e) {} renderEcsaCount(); });
-  bar.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { EC_STATE.on[b.dataset.s] = !EC_STATE.on[b.dataset.s]; renderEcsaCount(); });
-  const avgBtn = bar.querySelector('[data-avg]'); if (avgBtn) avgBtn.onclick = () => { EC_STATE.avg = !EC_STATE.avg; renderEcsaCount(); };
+  bar.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { EC_STATE.one = b.dataset.s; try { localStorage.setItem('pmx-ec-series', EC_STATE.one); } catch (e) {} renderEcsaCount(); });
+  EC_STATE.on = { d15: EC_STATE.one === 'd15', d25: EC_STATE.one === 'd25', d30: EC_STATE.one === 'd30' };
   // ---- dati nel range
   const days = (RANGES.find(([r]) => r === EC_STATE.range) || [0, 0])[1];
-  const from = days === -1 ? new Date().getFullYear() + '-01-01' : days ? new Date(Date.now() - days * 86400e3).toISOString().slice(0, 10) : '0000';
+  const from = days ? new Date(Date.now() - days * 86400e3).toISOString().slice(0, 10) : '0000';
   const rows = all.filter(r => r.day >= from);
-  if (!rows.length) { chart.innerHTML = '<div style="padding:30px;color:var(--text-mute);font-size:12.5px">No data in this range.</div>'; tbl.innerHTML = ''; return; }
+  if (tbl) tbl.innerHTML = '';
+  if (!rows.length) { chart.innerHTML = '<div style="padding:30px;color:var(--text-mute);font-size:12.5px">No data in this range.</div>'; return; }
   // ---- grafico SVG
-  const W = 1100, H = 380, L = 44, R = 16, T = 18, B = 34;
+  const W = 1100, H = 440, L = 44, R = 16, T = 18, B = 34;
   const t0 = Date.parse(rows[0].day), t1 = Math.max(Date.parse(rows[rows.length - 1].day), t0 + 86400e3);
   const series = EC_SERIES.filter(([k]) => EC_STATE.on[k]);
   let ymax = 0; for (const r of rows) for (const [k] of series) if (r[k] != null) ymax = Math.max(ymax, r[k]);
@@ -9323,7 +9323,12 @@ function renderEcsaCount() {
   const xTicks = []; { const span = (t1 - t0) / 86400e3; const d = new Date(t0); d.setUTCHours(0, 0, 0, 0);
     if (span <= 45) { while (d.getTime() <= t1) { xTicks.push([d.getTime(), d.getUTCDate() + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getUTCMonth()]]); d.setUTCDate(d.getUTCDate() + 7); } }
     else { d.setUTCDate(1); if (d.getTime() < t0) d.setUTCMonth(d.getUTCMonth() + 1); while (d.getTime() <= t1) { xTicks.push([d.getTime(), ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getUTCMonth()] + (d.getUTCMonth() === 0 || xTicks.length === 0 ? ' ' + d.getUTCFullYear() : '')]); d.setUTCMonth(d.getUTCMonth() + 1); } } }
-  const path = (k, fn) => { let s = '', pen = false, lastT = 0; for (const r of rows) { const v = fn ? fn(r) : r[k]; if (v == null) { pen = false; continue; } const t = Date.parse(r.day); if (pen && t - lastT > 10 * 86400e3) pen = false;   /* buco > 10 gg (bot fermo): la linea si interrompe invece di tirare una retta */ s += (pen ? 'L' : 'M') + X(t).toFixed(1) + ' ' + Y(v).toFixed(1); pen = true; lastT = t; } return s; };
+  // segmenti di punti (un buco > 10 gg = bot fermo → la linea si interrompe invece di tirare una retta)
+  const segments = (k, fn) => { const segs = []; let cur = [], lastT = 0; for (const r of rows) { const v = fn ? fn(r) : r[k]; if (v == null) { if (cur.length) segs.push(cur); cur = []; continue; } const t = Date.parse(r.day); if (cur.length && t - lastT > 10 * 86400e3) { segs.push(cur); cur = []; } cur.push([X(t), Y(v)]); lastT = t; } if (cur.length) segs.push(cur); return segs; };
+  // curva morbida: Catmull-Rom → Bezier cubiche, con i punti di controllo bloccati in verticale (niente "gobbe" sopra i massimi o sotto i minimi)
+  const smooth = pts => { if (pts.length < 2) return pts.length ? `M${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}` : ''; let d = `M${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`; for (let i = 0; i < pts.length - 1; i++) { const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2; const lo = Math.min(p1[1], p2[1]), hi = Math.max(p1[1], p2[1]); const c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = Math.min(hi, Math.max(lo, p1[1] + (p2[1] - p0[1]) / 6)); const c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = Math.min(hi, Math.max(lo, p2[1] - (p3[1] - p1[1]) / 6)); d += ` C${c1x.toFixed(1)} ${c1y.toFixed(1)}, ${c2x.toFixed(1)} ${c2y.toFixed(1)}, ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`; } return d; };
+  const path = (k, fn) => segments(k, fn).map(smooth).join(' ');
+  const area = k => segments(k).filter(s => s.length > 1).map(s => smooth(s) + ` L${s[s.length - 1][0].toFixed(1)} ${(H - B).toFixed(1)} L${s[0][0].toFixed(1)} ${(H - B).toFixed(1)} Z`).join(' ');
   const mavg = k => { const out = new Map(); for (let i = 0; i < rows.length; i++) { const w = rows.slice(Math.max(0, i - 6), i + 1).map(r => r[k]).filter(v => v != null); if (w.length >= 3) out.set(rows[i].day, w.reduce((a, b) => a + b, 0) / w.length); } return r => out.has(r.day) ? out.get(r.day) : null; };
   let svg = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" font-family="inherit">`;
   for (const v of yTicks) svg += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line-soft)" stroke-width="1"/><text x="${L - 8}" y="${Y(v) + 4}" font-size="11" fill="var(--text-mute)" text-anchor="end">${v}</text>`;
@@ -9331,8 +9336,9 @@ function renderEcsaCount() {
   svg += `<line x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}" stroke="var(--line)"/>`;
   for (const [k, , c] of series) {
     if (EC_STATE.avg) svg += `<path d="${path(k, mavg(k))}" fill="none" stroke="${c}" stroke-width="2" stroke-dasharray="6 5" opacity=".55"/>`;
-    svg += `<path d="${path(k)}" fill="none" stroke="${c}" stroke-width="${EC_STATE.avg ? 1.6 : 2.4}" stroke-linejoin="round" stroke-linecap="round" opacity="${EC_STATE.avg ? .8 : 1}"/>`;
-    if (rows.length <= 120) for (const r of rows) if (r[k] != null) svg += `<circle cx="${X(Date.parse(r.day))}" cy="${Y(r[k])}" r="2.6" fill="${c}"/>`;
+    svg += `<path d="${area(k)}" fill="${c}" opacity=".08"/>`;
+    svg += `<path d="${path(k)}" fill="none" stroke="${c}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>`;
+    if (rows.length <= 40) for (const r of rows) if (r[k] != null) svg += `<circle cx="${X(Date.parse(r.day))}" cy="${Y(r[k])}" r="3" fill="var(--bg-2,#fff)" stroke="${c}" stroke-width="2"/>`;
   }
   svg += `<line id="ec-cross" x1="0" x2="0" y1="${T}" y2="${H - B}" stroke="var(--text-mute)" stroke-width="1" stroke-dasharray="3 3" style="display:none"/></svg><div class="ec-tip" id="ec-tip"></div>`;
   chart.innerHTML = svg;
@@ -9351,10 +9357,6 @@ function renderEcsaCount() {
     tip.style.left = (cx + 14 + tip.offsetWidth > rect.width ? cx - tip.offsetWidth - 14 : cx + 14) + 'px'; tip.style.top = Math.max(0, cy - 20) + 'px';
   });
   svgEl.addEventListener('mouseleave', () => { cross.style.display = 'none'; tip.style.display = 'none'; });
-  // ---- tabella ultimi 20 giorni del range (piu' recenti in alto)
-  const lastRows = rows.slice(-20).reverse();
-  const cell = (r, k) => { const i = all.indexOf(r), pr = i > 0 ? all[i - 1] : null; const d = (pr && pr[k] != null && r[k] != null) ? r[k] - pr[k] : null; return `<td>${r[k] == null ? '—' : r[k]}${d == null || d === 0 ? '' : `<span class="dl ${d > 0 ? 'up' : 'dn'}">${d > 0 ? '+' : ''}${d}</span>`}</td>`; };
-  tbl.innerHTML = `<table><thead><tr><th>Date</th><th>+15 days</th><th>+25 days</th><th>+30 days</th></tr></thead><tbody>${lastRows.map(r => `<tr><td>${fmtDY(r.day)}</td>${cell(r, 'd15')}${cell(r, 'd25')}${cell(r, 'd30')}</tr>`).join('')}</tbody></table>`;
 }
 
 // ============== CALC DOP / APS (formule reali) ==============
@@ -10922,7 +10924,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v111'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v112'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
