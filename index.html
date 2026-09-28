@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v112 -->
+<!-- build: 20260903-inbox-v113 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -9244,7 +9244,7 @@ routes['fixtures'] = () => { setBseaTab('fixtures'); if (location.hash !== '#/bs
 // ============================================================
 let _ecRows = null, _ecAt = 0;
 const EC_SERIES = [['d30', '+30 days', '#C5392B'], ['d25', '+25 days', '#D97706'], ['d15', '+15 days', '#2563EB']];
-const EC_STATE = { range: (() => { try { return localStorage.getItem('pmx-ec-range') || 'Max'; } catch (e) { return 'Max'; } })(), one: (() => { try { return localStorage.getItem('pmx-ec-series') || 'd30'; } catch (e) { return 'd30'; } })(), on: { d15: false, d25: false, d30: true }, avg: false };   // una serie alla volta, default +30 days (Giancarlo 28 set)
+const EC_STATE = { range: (() => { try { return localStorage.getItem('pmx-ec-range') || 'Max'; } catch (e) { return 'Max'; } })(), on: (() => { try { const o = JSON.parse(localStorage.getItem('pmx-ec-on') || 'null'); if (o && Object.values(o).some(Boolean)) return o; } catch (e) {} return { d15: true, d25: true, d30: true }; })(), avg: false };   // tre serie nello stesso grafico, ognuna accendibile/spegnibile (Giancarlo 28 set)
 routes['ecsa-count'] = async function() {
   $('#content').innerHTML = `<style>
     .ec-wrap{display:flex;flex-direction:column;gap:12px;min-height:0}
@@ -9300,11 +9300,11 @@ function renderEcsaCount() {
   const RANGES = [['1W', 7], ['1M', 31], ['1Y', 366], ['Max', 0]];
   if (!RANGES.some(([r]) => r === EC_STATE.range)) EC_STATE.range = 'Max';
   bar.innerHTML = `<span class="seg">${RANGES.map(([r]) => `<button data-r="${r}" class="${EC_STATE.range === r ? 'on' : ''}">${r}</button>`).join('')}</span>
-    <span class="seg" style="margin-left:6px">${EC_SERIES.map(([k, l, c]) => `<button data-s="${k}" class="${EC_STATE.one === k ? 'on' : ''}" style="${EC_STATE.one === k ? 'background:' + c : ''}">${l}</button>`).join('')}</span>
+    <span class="seg" style="margin-left:6px">${EC_SERIES.map(([k, l, c]) => `<button data-s="${k}" class="${EC_STATE.on[k] ? 'on' : ''}" style="${EC_STATE.on[k] ? 'background:' + c : ''}" title="Show / hide">${l}</button>`).join('')}</span>
     <span style="margin-left:auto;font-size:11px;color:var(--text-mute)">Source: daily "ECSA TONNAGE COUNT UPDATE" · ECSA PMAX LIGHTSHIP</span>`;
   bar.querySelectorAll('[data-r]').forEach(b => b.onclick = () => { EC_STATE.range = b.dataset.r; try { localStorage.setItem('pmx-ec-range', EC_STATE.range); } catch (e) {} renderEcsaCount(); });
-  bar.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { EC_STATE.one = b.dataset.s; try { localStorage.setItem('pmx-ec-series', EC_STATE.one); } catch (e) {} renderEcsaCount(); });
-  EC_STATE.on = { d15: EC_STATE.one === 'd15', d25: EC_STATE.one === 'd25', d30: EC_STATE.one === 'd30' };
+  // le tre serie (+30 / +25 / +15) stanno nello stesso grafico e si accendono/spengono singolarmente (Giancarlo 28 set: "la divisione la voglio")
+  bar.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { const k = b.dataset.s; if (EC_STATE.on[k] && Object.values(EC_STATE.on).filter(Boolean).length === 1) return; EC_STATE.on[k] = !EC_STATE.on[k]; try { localStorage.setItem('pmx-ec-on', JSON.stringify(EC_STATE.on)); } catch (e) {} renderEcsaCount(); });
   // ---- dati nel range
   const days = (RANGES.find(([r]) => r === EC_STATE.range) || [0, 0])[1];
   const from = days ? new Date(Date.now() - days * 86400e3).toISOString().slice(0, 10) : '0000';
@@ -9336,7 +9336,7 @@ function renderEcsaCount() {
   svg += `<line x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}" stroke="var(--line)"/>`;
   for (const [k, , c] of series) {
     if (EC_STATE.avg) svg += `<path d="${path(k, mavg(k))}" fill="none" stroke="${c}" stroke-width="2" stroke-dasharray="6 5" opacity=".55"/>`;
-    svg += `<path d="${area(k)}" fill="${c}" opacity=".08"/>`;
+    if (series.length === 1) svg += `<path d="${area(k)}" fill="${c}" opacity=".08"/>`;   // ombra sotto la linea solo quando c'e' una serie sola
     svg += `<path d="${path(k)}" fill="none" stroke="${c}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>`;
     if (rows.length <= 40) for (const r of rows) if (r[k] != null) svg += `<circle cx="${X(Date.parse(r.day))}" cy="${Y(r[k])}" r="3" fill="var(--bg-2,#fff)" stroke="${c}" stroke-width="2"/>`;
   }
@@ -10924,7 +10924,7 @@ setInterval(pollInboxBadge, 60000);
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v112'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v113'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
