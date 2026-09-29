@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v116 -->
+<!-- build: 20260903-inbox-v117 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -5635,8 +5635,8 @@ function renderMasterList(basin) {
   // Filtro: tutte le navi del basin corrente + tutte le navi SEASIA (di entrambi i basin),
   // perché SEASIA è "ponte" tra ATL e PAC — vogliamo lo STESSO record visibile in entrambe le viste.
   // Così aggiungere/modificare/eliminare una nave SEASIA in una vista la propaga all'altra automaticamente.
-  const all = DATA.vessels.filter(v =>
-    v.basin === basin || String(v.area || '').trim().toUpperCase() === 'SEASIA'
+  const all = DATA.vessels.filter(v => !v.bsea_only &&   /* v117: righe create nella sezione BSEA restano solo li' */
+    (v.basin === basin || String(v.area || '').trim().toUpperCase() === 'SEASIA')
   );
   const s = statsFor(all);
   // Mostra nel filtro solo le aree che hanno effettivamente almeno una nave.
@@ -6173,6 +6173,7 @@ function openVesselForm(id, basin, defaults) {   // defaults (v116): campi preco
     data.yard = id ? (v.yard || '') : '';
     data.subs = id ? (v.subs || '') : '';
     data.basin = basin;
+    if (!id && defaults && defaults.bsea_only) data.bsea_only = true;   // v117: creata dalla pagina BSEA → vive SOLO li' (non in ATL TNG)
     if (id) updVessel(id, data); else addVessel(data);
     modal.close(); setRoute();
   };
@@ -6256,7 +6257,7 @@ function _shiftIsoDate(iso, days) {
 // Restituisce array di {v, area, offset, adjFrom, adjTo, eta} ordinato per adjFrom ASC, adjTo ASC
 function buildEcsaEtaEntries() {
   const entries = [];
-  for (const v of DATA.vessels.filter(x => x.basin === 'ATL')) {
+  for (const v of DATA.vessels.filter(x => x.basin === 'ATL' && !x.bsea_only)) {
     const rawArea = String(v.area || '').trim().toUpperCase();
     const area = (rawArea === 'PG' || rawArea === 'RSEA') ? 'PG / RSEA' : rawArea;
     if (!(area in ECSA_ATL_OFFSETS)) continue;
@@ -6268,7 +6269,7 @@ function buildEcsaEtaEntries() {
       eta: offset > 0 ? 'ECSA' : (v.open_port || 'ECSA'),
     });
   }
-  for (const v of DATA.vessels.filter(x => x.basin === 'PAC')) {
+  for (const v of DATA.vessels.filter(x => x.basin === 'PAC' && !x.bsea_only)) {
     const area = String(v.area || '').trim().toUpperCase();
     if (area !== 'SEASIA') continue;
     entries.push({
@@ -6634,8 +6635,9 @@ routes['bsea-list'] = function() {
   // v116 (29 set, Giancarlo): nella sezione BSEA si possono aggiungere righe intere; le celle delle righe esistenti si modificano
   // con doppio click come nelle altre liste (stesso motore inlineEdit). Le righe nuove nascono gia' in EMED / BSEA.
   { const bv = $('#bsea-new-vsl'), bc = $('#bsea-new-cgo');
-    if (bv) bv.onclick = () => openVesselForm(null, 'ATL', { area: 'EMED / BSEA' });
-    if (bc) bc.onclick = () => openCargoForm(null, 'ATL', { section: 'EMED / BSEA', area: 'EMED' }); }
+    // bsea_only: la riga esiste SOLO nella sezione Black Sea (Giancarlo 29 set: "ATL TNG → BSEA si', ma non viceversa")
+    if (bv) bv.onclick = () => openVesselForm(null, 'ATL', { area: 'EMED / BSEA', bsea_only: true });
+    if (bc) bc.onclick = () => openCargoForm(null, 'ATL', { section: 'EMED / BSEA', area: 'EMED', bsea_only: true }); }
   $('#content').innerHTML = `
     <div class="ecsa-layout bsea-layout ${localStorage.getItem('pmx-bsea-stack') === '1' ? 'stacked' : (localStorage.getItem('pmx-bsea-stack') === '0' ? 'force-side' : '')}" id="bsea-layout" style="${localStorage.getItem('pmx-bsea-cgo-w') ? '--bsea-cgo-w:' + localStorage.getItem('pmx-bsea-cgo-w') + 'px' : ''}">
       <div class="ecsa-list-col">
@@ -6876,7 +6878,7 @@ function renderCargoList(basin) {
     <button class="primary round-add" id="btn-new-cgo" title="New cargo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg></button>`;
   $('#btn-new-cgo').onclick = () => openCargoForm(null, basin);
   bindCpToggle(_pg);
-  const all = DATA.cargoes.filter(c => c.basin === basin);
+  const all = DATA.cargoes.filter(c => c.basin === basin && !c.bsea_only);   // v117: carichi creati nella sezione BSEA restano solo li'
   // Mostra nel filtro Sezione solo le sezioni che hanno effettivamente almeno un cargo.
   // Prima quelle predefinite (ordine canonico), poi quelle extra trovate nei dati.
   const allSections = basin === 'ATL' ? ATL_CGO_SECTIONS : PAC_CGO_SECTIONS;
@@ -7315,6 +7317,7 @@ function openCargoForm(id, basin, defaults) {   // defaults (v116): campi precom
     // Sincronizzo: area = section per coerenza con i filtri/rundown.
     if (data.section) data.area = data.section;
     data.basin = basin;
+    if (!id && defaults && defaults.bsea_only) data.bsea_only = true;   // v117: creato dalla pagina BSEA → vive SOLO li' (non in ATL CGO)
     if (id) updCargo(id, data); else addCargo(data);
     modal.close(); setRoute();
   };
@@ -7427,6 +7430,7 @@ routes['vsl'] = function() {
     // Deduplica navi presenti in ATL e PAC (es. SEASIA): chiave nome+DWT, tengo la prima
     const seenV = new Set();
     let rows = DATA.vessels.filter(v => {
+      if (v.bsea_only) return false;   // v117
       const k = (v.vessel||'').toUpperCase().trim() + '|' + (v.dwt_blt||'').trim();
       if (seenV.has(k)) return false;
       seenV.add(k);
@@ -7736,6 +7740,7 @@ routes['cgo'] = function() {
     // Deduplica: stesso cargo (chrtr + cargo + load + laycan) può comparire in entrambi i basin
     const seen = new Set();
     let rows = DATA.cargoes.filter(c => {
+      if (c.bsea_only) return false;   // v117
       const k = (c.chrtrs||'').toUpperCase() + '|' + (c.cgo||'') + '|' + (c.load_port||'') + '|' + (c.laycan_from||'');
       if (seen.has(k)) return false;
       seen.add(k);
@@ -8754,8 +8759,8 @@ function generateEcsaRundown(refIso) {
   const groupsOrder = [];
   const navi = [];
   // Includi tutte le navi ATL + le SEASIA (anche da PAC, perché sono "ponte" tra i due basin)
-  const vessels = DATA.vessels.filter(v =>
-    v.basin === 'ATL' || String(v.area || '').trim().toUpperCase() === 'SEASIA'
+  const vessels = DATA.vessels.filter(v => !v.bsea_only &&   /* v117 */
+    (v.basin === 'ATL' || String(v.area || '').trim().toUpperCase() === 'SEASIA')
   );
   for (const v of vessels) {
     if (v.status === 'on_subs' || v.status === 'off_mkt') continue;
@@ -8798,7 +8803,7 @@ function generateEcsaRundown(refIso) {
   // Includiamo tutti i cargo ECSA "vivi" (non on_subs/off_mkt, no notes endant *).
   // Il filtro data Apps Script originale escludeva troppi cargo dopo import Excel.
   const fh = [], ta = [];
-  const cargoes = DATA.cargoes.filter(c => c.basin === 'ATL');
+  const cargoes = DATA.cargoes.filter(c => c.basin === 'ATL' && !c.bsea_only);   // v117
   // Regex destinazione FH (fronthaul ECSA→Pacifico/Asia/Red Sea/Indian)
   const FH_DISCH_RE = /\b(CHINA|NCHINA|SCHINA|FEAST|SEASIA|INDO|JAPAN|KOREA|TAIWAN|HONG\s*KONG|VIETNAM|THAILAND|PHILIPPINES|SINGAPORE|MALAYSIA|PMO|S-?J|SINGAPORE-?JAPAN|RSEA|RED\s*SEA|JEDDAH|AQABA|SOHAR|FUJAIRAH|GULF\s*OF\s*OMAN|OMAN|MUSCAT|INDIA|PAKISTAN|BIN\s*QASIM|KARACHI|BANGLADESH|CHITTAGONG|MYANMAR|YANGON|EC\s*INDIA|WC\s*INDIA)\b/i;
   for (const c of cargoes) {
@@ -8926,7 +8931,7 @@ function generateNatlRundown(refIso) {
   const tIso = refIso || new Date().toISOString().slice(0,10);
   // Cargoes ATL filtrati per DATE = oggi + non subs
   const cgo = { balticContMed: [], usecFh: [], usecTa: [], usgFh: [], usgTa: [], ncsaFh: [], ncsaTa: [] };
-  const cargoes = DATA.cargoes.filter(c => c.basin === 'ATL');
+  const cargoes = DATA.cargoes.filter(c => c.basin === 'ATL' && !c.bsea_only);   // v117
   for (const c of cargoes) {
     if (c.status === 'on_subs' || c.status === 'off_mkt') continue;
     const subsU = String(c.subs || '').trim().toUpperCase();
@@ -8952,7 +8957,7 @@ function generateNatlRundown(refIso) {
 
   // Vessels
   const navi = { cont: [], wmedWafr: [], usec: [] };
-  const vessels = DATA.vessels.filter(v => v.basin === 'ATL');
+  const vessels = DATA.vessels.filter(v => v.basin === 'ATL' && !v.bsea_only);   // v117
   for (const v of vessels) {
     if (v.status === 'off_mkt' || v.status === 'on_subs') continue;
     const subsU = String(v.subs || '').trim().toUpperCase();
@@ -10235,7 +10240,7 @@ function renderInboxCargo() {
   const shift = (d, n) => { if (!d) return d; const x = new Date(d); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
   const near = (c, r) => overlap(shift(c.laycan_from, -5), shift(c.laycan_to || c.laycan_from, 5), r.laycan_from, r.laycan_to);
   const gapDays = (a, b) => (a && b) ? Math.abs((Date.parse(a) - Date.parse(b)) / 86400000) : 0;
-  const findC = r => { const L = (DATA.cargoes || []).filter(c => norm(c.chrtrs) === norm(r.chrtrs));
+  const findC = r => { const L = (DATA.cargoes || []).filter(c => !c.bsea_only && norm(c.chrtrs) === norm(r.chrtrs));   // v117: i carichi "solo BSEA" non si aggiornano da Teams
     // stesso carico solo se anche scarico/sezione sono compatibili: COFCO ECSA/S-J 5-12 OCT non e' COFCO ECSA/SPAIN 1 OCT ONW (16 set)
     const sameDisch = c => !c.disch_port || !r.disch_port || w1(c.disch_port) === w1(r.disch_port);
     const sameSec = c => !c.section || !r.section || c.section === r.section;
@@ -10581,7 +10586,7 @@ routes['inbox'] = function() {
   // v71: solo lettere (XIN HAI TONG 802 ≠ 808), stessa lunghezza (ANASTASIA ≠ ANASTASIA K): una lettera diversa o due lettere scambiate
   const dam1 = (a, b) => { if (a === b) return true; const la = a.length, lb = b.length; if (la !== lb || la < 8) return false; if (a.replace(/\D/g, '') !== b.replace(/\D/g, '')) return false; let d = []; for (let i = 0; i < la; i++) if (a[i] !== b[i]) d.push(i); if (d.some(i => /\d/.test(a[i]) || /\d/.test(b[i]))) return false; if (d.length === 1) return true; if (d.length === 2 && d[1] === d[0] + 1 && a[d[0]] === b[d[1]] && a[d[1]] === b[d[0]]) return true; return false; };
   const dwtOk = (x, dwt) => dwt == null || dwtK(dwt) == null || dwtK(x.dwt_blt) == null || Math.abs(dwtK(x.dwt_blt) - dwtK(dwt)) <= 3;
-  const findV = (name, dwt) => (DATA.vessels || []).find(x => norm(x.vessel) === norm(name) && dwtOk(x, dwt)) || (DATA.vessels || []).find(x => dam1(norm(x.vessel), norm(name)) && dwtOk(x, dwt));
+  const findV = (name, dwt) => (DATA.vessels || []).find(x => !x.bsea_only && norm(x.vessel) === norm(name) && dwtOk(x, dwt)) || (DATA.vessels || []).find(x => !x.bsea_only && dam1(norm(x.vessel), norm(name)) && dwtOk(x, dwt));   // v117: le righe "solo BSEA" non si aggiornano da Teams
   const plain = s => String(s || '').replace(/<[^>]+>/g, '');
   const kindOf = r => (r.kind && r.kind !== 'position') ? r.kind : '';   // 'remove' = "in house": la nave va tolta dalla lista (Giancarlo 10 set 2026); 'gone' resta on subs (lo decide il parser)
   // 'fresh' vale solo il giorno del messaggio (come in lista: il giorno dopo decade)
@@ -10998,7 +11003,7 @@ if (AUTO_INBOX_FRAME) {
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v116'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v117'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
