@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v118 -->
+<!-- build: 20260903-inbox-v119 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -10309,10 +10309,11 @@ function renderInboxCargo() {
 
   const render = () => {
     const wrap = $('#ib-tbl'); const sy = wrap ? wrap.scrollTop : 0;
-    const rows = Object.values(byId);
-    const cnt = $('#ib-cnt'); if (cnt) cnt.textContent = rows.length + ' pending';
+    // v119: nella scheda visibile si vedono SOLO i carichi senza sezione (quelli con sezione vanno dritti in lista dall'iframe, in pochi secondi)
+    const rows = Object.values(byId).filter(r => AUTO_INBOX_FRAME || !r.section);
+    const cnt = $('#ib-cnt'); if (cnt) cnt.textContent = rows.length + ' need a section';
     if (typeof pollInboxBadge === 'function') pollInboxBadge();
-    if (!rows.length) { $('#ib-tbl').innerHTML = '<div id="ib-empty" style="padding:24px;color:var(--text-mute);font-size:12.5px">No pending cargoes. New cargo messages from Teams will show up here automatically.</div>'; return; }
+    if (!rows.length) { $('#ib-tbl').innerHTML = '<div id="ib-empty" style="padding:24px;color:var(--text-mute);font-size:12.5px">Nothing needs your attention. Cargoes with a known section go straight to ATL / PAC CGO.</div>'; return; }
     const bySec = {};
     for (const r of rows) (bySec[r.section || '?'] ??= []).push(r);
     const ordered = [...SECTIONS.filter(s => bySec[s]), ...Object.keys(bySec).filter(s => s !== '?' && !SECTIONS.includes(s)).sort(), ...(bySec['?'] ? ['?'] : [])];
@@ -10653,10 +10654,11 @@ routes['inbox'] = function() {
 
   const render = () => {
     const wrap = $('#ib-tbl'); const sy = wrap ? wrap.scrollTop : 0;
-    const rows = Object.values(byId);
-    const cnt = $('#ib-cnt'); if (cnt) cnt.textContent = rows.length + ' pending';
+    // v119: nella scheda visibile si vedono SOLO le navi senza area (quelle con area, o fissati/in house, vanno dritte in lista dall'iframe, in pochi secondi)
+    const rows = Object.values(byId).filter(r => AUTO_INBOX_FRAME || (!r.area && !kindOf(r)));
+    const cnt = $('#ib-cnt'); if (cnt) cnt.textContent = rows.length + ' need an area';
     if (typeof pollInboxBadge === 'function') pollInboxBadge();
-    if (!rows.length) { $('#ib-tbl').innerHTML = '<div id="ib-empty" style="padding:24px;color:var(--text-mute);font-size:12.5px">No pending positions. New ECSA messages from Teams will show up here automatically.</div>'; return; }
+    if (!rows.length) { $('#ib-tbl').innerHTML = '<div id="ib-empty" style="padding:24px;color:var(--text-mute);font-size:12.5px">Nothing needs your attention. Positions with a known area go straight to ATL / PAC TNG.</div>'; return; }
     const byArea = {};
     for (const r of rows) (byArea[r.area || '?'] ??= []).push(r);
     const ordered = [...AREA_ORDER.filter(a => byArea[a]), ...Object.keys(byArea).filter(a => a !== '?' && !AREA_ORDER.includes(a)).sort(), ...(byArea['?'] ? ['?'] : [])];
@@ -10960,7 +10962,8 @@ function updateInboxBadge(n) {
 }
 async function pollInboxBadge() {
   if (typeof CURRENT_USER_ROLE === 'undefined' || CURRENT_USER_ROLE !== 'admin') return;
-  try { const [a, b] = await Promise.all([sb.from('inbox_candidates').select('id', { count: 'exact', head: true }).eq('status', 'pending'), sb.from('inbox_cargoes').select('id', { count: 'exact', head: true }).eq('status', 'pending')]); if (!a.error) updateInboxBadge((a.count || 0) + (b.error ? 0 : (b.count || 0))); } catch {}
+  // v119: il badge conta solo cio' che ha bisogno di una mano (nave senza area e senza kind fissato/in house; carico senza sezione) — il resto va in lista da solo
+  try { const [a, b] = await Promise.all([sb.from('inbox_candidates').select('id', { count: 'exact', head: true }).eq('status', 'pending').is('area', null).or('kind.is.null,kind.eq.position'), sb.from('inbox_cargoes').select('id', { count: 'exact', head: true }).eq('status', 'pending').is('section', null)]); if (!a.error) updateInboxBadge((a.count || 0) + (b.error ? 0 : (b.count || 0))); } catch {}
 }
 [1000, 3000, 6000, 10000].forEach(ms => setTimeout(pollInboxBadge, ms));   // primi tentativi finche' il ruolo non e' noto
 setInterval(pollInboxBadge, 60000);
@@ -11019,13 +11022,13 @@ if (AUTO_INBOX_FRAME) {
     } catch (e) { console.warn('[auto-inbox]', e && e.message || e); }
     finally { window.__aiBusy = false; }
   }
-  setTimeout(autoInboxTick, 9000);
-  setInterval(autoInboxTick, 25000);
+  setTimeout(autoInboxTick, 4000);
+  setInterval(autoInboxTick, 10000);   // v119: 10 s (era 25) — le righe con area devono stare in lista quasi subito
 }
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v118'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v119'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
