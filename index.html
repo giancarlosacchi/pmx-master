@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v120 -->
+<!-- build: 20260903-inbox-v121 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -1892,12 +1892,14 @@ table.grid tbody td.col-ideas {
 /* Click sul div .ideas-text: il testo va a capo, la riga cresce in altezza (click di nuovo per chiudere) */
 .ideas-text { cursor: pointer; }
 /* Inbox VSL/CGO: segmented control stile Apple (Giancarlo 9 set 2026) */
-.ib-seg { position: relative; display: inline-grid; grid-template-columns: 1fr 1fr; align-items: center; margin-left: 14px; vertical-align: 6px; padding: 3px; border-radius: 10px; background: color-mix(in srgb, var(--text) 9%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 6%, transparent); font-size: 11.5px; font-weight: 600; letter-spacing: .01em; user-select: none; }
+.ib-seg { position: relative; display: inline-grid; grid-template-columns: 1fr 1fr 1fr; align-items: center; margin-left: 14px; vertical-align: 6px; padding: 3px; border-radius: 10px; background: color-mix(in srgb, var(--text) 9%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 6%, transparent); font-size: 11.5px; font-weight: 600; letter-spacing: .01em; user-select: none; }
 .ib-seg button { position: relative; z-index: 1; min-width: 58px; padding: 4px 12px; border: 0; background: transparent; color: var(--text-dim); font: inherit; font-weight: 600; cursor: pointer; border-radius: 8px; transition: color .18s ease; -webkit-tap-highlight-color: transparent; }
 .ib-seg button[aria-selected="true"] { color: var(--text); font-weight: 700; }
 .ib-seg button:focus-visible { outline: 2px solid var(--pal-accent, var(--gold, #c9a227)); outline-offset: 1px; }
-.ib-seg-thumb { position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px); border-radius: 8px; background: var(--bg-2, #fff); box-shadow: 0 1px 2px rgba(0,0,0,.18), 0 3px 8px rgba(0,0,0,.10), inset 0 0 0 .5px rgba(0,0,0,.04); transition: transform .22s cubic-bezier(.32,.72,0,1); }
+.ib-seg-thumb { position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(33.333% - 2px); border-radius: 8px; background: var(--bg-2, #fff); box-shadow: 0 1px 2px rgba(0,0,0,.18), 0 3px 8px rgba(0,0,0,.10), inset 0 0 0 .5px rgba(0,0,0,.04); transition: transform .22s cubic-bezier(.32,.72,0,1); }
 .ib-seg.is-cgo .ib-seg-thumb { transform: translateX(100%); }
+.ib-seg.is-unp .ib-seg-thumb { transform: translateX(200%); }
+.ib-seg button .ib-seg-n { display: inline-block; margin-left: 5px; min-width: 15px; padding: 0 4px; border-radius: 8px; background: var(--red, #dc2626); color: #fff; font-size: 9.5px; line-height: 15px; font-weight: 700; }
 [data-theme="dark"] .ib-seg, html[data-palette] .ib-seg { background: rgba(120,120,128,.24); }
 [data-theme="dark"] .ib-seg-thumb { background: #636366; }
 [data-theme="dark"] .ib-seg button[aria-selected="true"] { color: #fff; }
@@ -6176,6 +6178,7 @@ function openVesselForm(id, basin, defaults) {   // defaults (v116): campi preco
     if (!id && defaults && defaults.bsea_only) data.bsea_only = true;   // v117: creata dalla pagina BSEA → vive SOLO li' (non in ATL TNG)
     if (id) updVessel(id, data); else addVessel(data);
     modal.close(); setRoute();
+    if (!id && defaults && typeof defaults.__onSaved === 'function') { try { defaults.__onSaved(data); } catch (e) {} }   // v121: Inbox "Unclear" chiude la sua riga
   };
   // Focus iniziale sul primo campo
   setTimeout(() => { const first = $('#vform [name=vessel]'); if (first) first.focus(); }, 50);
@@ -7320,6 +7323,7 @@ function openCargoForm(id, basin, defaults) {   // defaults (v116): campi precom
     if (!id && defaults && defaults.bsea_only) data.bsea_only = true;   // v117: creato dalla pagina BSEA → vive SOLO li' (non in ATL CGO)
     if (id) updCargo(id, data); else addCargo(data);
     modal.close(); setRoute();
+    if (!id && defaults && typeof defaults.__onSaved === 'function') { try { defaults.__onSaved(data); } catch (e) {} }   // v121: Inbox "Unclear" chiude la sua riga
   };
   // Focus iniziale sul primo campo: Chrtrs
   setTimeout(() => { const first = $('#cform [name=chrtrs]'); if (first) first.focus(); }, 50);
@@ -10193,15 +10197,17 @@ window.__ibMode = window.__ibMode || (function(){ try { return localStorage.getI
 function inboxModeBar() {
   const m = window.__ibMode;
   // segmented control stile iOS: binario grigio, cursore bianco che scorre
-  return `<span class="ib-mode ib-seg ${m === 'cgo' ? 'is-cgo' : 'is-vsl'}" role="tablist" aria-label="Inbox mode">
+  const nU = window.__ibUnpN || 0;   // v121: quanti messaggi "non capiti" in attesa
+  return `<span class="ib-mode ib-seg ${m === 'cgo' ? 'is-cgo' : m === 'unp' ? 'is-unp' : 'is-vsl'}" role="tablist" aria-label="Inbox mode">
     <span class="ib-seg-thumb" aria-hidden="true"></span>
     <button type="button" role="tab" data-mode="vsl" aria-selected="${m === 'vsl'}">VSL</button>
-    <button type="button" role="tab" data-mode="cgo" aria-selected="${m === 'cgo'}">CGO</button></span>`;
+    <button type="button" role="tab" data-mode="cgo" aria-selected="${m === 'cgo'}">CGO</button>
+    <button type="button" role="tab" data-mode="unp" aria-selected="${m === 'unp'}" title="Market messages the bot could not turn into a vessel or a cargo">UNCLEAR${nU ? `<span class="ib-seg-n">${nU}</span>` : ''}</button></span>`;
 }
 function bindInboxModeBar() {
   $$('.ib-mode button').forEach(b => b.onclick = () => { if (window.__ibMode === b.dataset.mode) return; window.__ibMode = b.dataset.mode; try { localStorage.setItem('pmx_ib_mode', window.__ibMode); } catch(e) {}
     // prima scorre il cursore (animazione), poi si ridisegna la pagina
-    const seg = b.closest('.ib-seg'); if (seg) { seg.classList.toggle('is-cgo', window.__ibMode === 'cgo'); seg.classList.toggle('is-vsl', window.__ibMode !== 'cgo'); seg.querySelectorAll('button').forEach(x => x.setAttribute('aria-selected', x.dataset.mode === window.__ibMode)); }
+    const seg = b.closest('.ib-seg'); if (seg) { seg.classList.toggle('is-cgo', window.__ibMode === 'cgo'); seg.classList.toggle('is-unp', window.__ibMode === 'unp'); seg.classList.toggle('is-vsl', window.__ibMode !== 'cgo' && window.__ibMode !== 'unp'); seg.querySelectorAll('button').forEach(x => x.setAttribute('aria-selected', x.dataset.mode === window.__ibMode)); }
     setTimeout(() => routes['inbox'](), 190); });
 }
 function renderInboxCargo() {
@@ -10545,11 +10551,64 @@ function renderInboxCargo() {
   if (window.__ibTimer) clearInterval(window.__ibTimer);
   window.__ibTimer = setInterval(() => { if (location.hash.startsWith('#/inbox') && window.__ibMode === 'cgo') sync(); else { clearInterval(window.__ibTimer); window.__ibTimer = null; } }, 30000);
 }
+// ============================================================
+// INBOX "UNCLEAR" (v121, 29 set 2026 — Giancarlo: "se c'e' un messaggio che non capisci, fammelo notare")
+// Messaggi di mercato (dwt / open / laycan / dely...) delle chat posizioni da cui il bot non ha tirato fuori
+// ne' una nave ne' un carico (tabella inbox_unparsed). Si legge il testo originale e si decide:
+// + Vessel / + Cargo aprono il form normale (poi la riga si chiude da sola), ✕ la scarta.
+// ============================================================
+function renderInboxUnclear() {
+  $$('#page-title .ib-mode').forEach(x => x.remove()); $('#page-title').insertAdjacentHTML('beforeend', inboxModeBar());
+  $('#topbar-actions').innerHTML = `<span class="count-pill" id="ib-cnt">—</span><button class="ghost" id="ib-unp-clear" title="Discard every message shown" style="margin-left:8px">✕ Discard all</button>`;
+  bindInboxModeBar();
+  $('#content').innerHTML = `<style>
+      .unp-list{display:flex;flex-direction:column;gap:10px;padding:12px 14px;overflow:auto;flex:1;min-height:0}
+      .unp-card{border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--bg-2);padding:10px 12px}
+      .unp-card.long{opacity:.85}
+      .unp-h{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-mute);font-weight:700;margin-bottom:6px}
+      .unp-h b{color:var(--text)} .unp-h .sp{margin-left:auto;display:flex;gap:6px}
+      .unp-h button{font:inherit;font-size:11px;text-transform:none;letter-spacing:0;padding:3px 9px;border-radius:7px;border:1px solid var(--line);background:transparent;color:var(--text);cursor:pointer}
+      .unp-h button.ok{color:var(--green,#2a9d5c);font-weight:700} .unp-h button.no{color:var(--red)}
+      .unp-body{white-space:pre-wrap;font-size:12px;line-height:1.4;max-height:220px;overflow:auto}
+    </style><div class="panel"><div class="unp-list" id="unp-list"><div style="padding:20px;color:var(--text-mute);font-size:12.5px">Loading…</div></div></div>`;
+  const list = $('#unp-list'); let rows = [];
+  const fmtWhen = iso => iso ? new Date(iso).toLocaleString('en-GB', { timeZone: 'Europe/Rome', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+  const setStatus = async (id, status) => { rows = rows.filter(r => r.id !== id); draw(); await sb.from('inbox_unparsed').update({ status }).eq('id', id); pollInboxBadge(); if (window.__unpSync && window.__unpSync !== sync) window.__unpSync(); };   // dopo il form la pagina e' stata ridisegnata: aggiorna la lista nuova
+  const draw = () => {
+    const cnt = $('#ib-cnt'); if (cnt) cnt.textContent = rows.length + ' unclear';
+    window.__ibUnpN = rows.length; const seg = $('.ib-seg button[data-mode="unp"]'); if (seg) seg.innerHTML = 'UNCLEAR' + (rows.length ? `<span class="ib-seg-n">${rows.length}</span>` : '');
+    if (!rows.length) { list.innerHTML = '<div style="padding:20px;color:var(--text-mute);font-size:12.5px">Nothing unclear. Every market message of the last days was turned into a vessel or a cargo.</div>'; return; }
+    list.innerHTML = rows.map(r => `<div class="unp-card ${String(r.body || '').length > 800 ? 'long' : ''}" data-id="${r.id}">
+      <div class="unp-h"><span>${esc(r.chat || '')}</span><b>${esc(r.sender || '')}</b><span>${esc(fmtWhen(r.msg_time))}</span>
+        <span class="sp"><button class="ok" data-act="vsl" title="Add as a vessel (opens the form)">+ Vessel</button><button class="ok" data-act="cgo" title="Add as a cargo (opens the form)">+ Cargo</button><button class="no" data-act="no" title="Discard: nothing to add">✕</button></span></div>
+      <div class="unp-body">${esc(String(r.body || '').replace(/\n{3,}/g, '\n\n').trim())}</div></div>`).join('');
+  };
+  list.onclick = e => {
+    const b = e.target.closest('button[data-act]'); if (!b) return;
+    const id = Number(b.closest('.unp-card').dataset.id), r = rows.find(x => x.id === id); if (!r) return;
+    if (b.dataset.act === 'no') return setStatus(id, 'rejected');
+    // il form si apre vuoto (il bot non ha capito il messaggio: non c'e' nulla di sicuro da precompilare); la riga si chiude quando il form salva
+    const done = () => setStatus(id, 'handled');
+    if (b.dataset.act === 'vsl') openVesselForm(null, 'ATL', { __onSaved: done }); else openCargoForm(null, 'ATL', { __onSaved: done });
+  };
+  $('#ib-unp-clear').onclick = async () => { if (!rows.length || !confirm(`Discard all ${rows.length} unclear messages?`)) return; const ids = rows.map(r => r.id); rows = []; draw(); await sb.from('inbox_unparsed').update({ status: 'rejected' }).in('id', ids); pollInboxBadge(); };
+  const sync = async () => {
+    if (location.hash !== '#/inbox' || window.__ibMode !== 'unp') return;
+    const { data, error } = await sb.from('inbox_unparsed').select('id,chat,sender,msg_time,body,reason').eq('status', 'pending').order('msg_time', { ascending: false }).limit(300);
+    if (error) { list.innerHTML = `<div style="padding:20px;color:var(--red)">Cannot load: ${esc(error.message)}</div>`; return; }
+    rows = data || []; draw();
+  };
+  window.__unpSync = sync;
+  sync();
+  if (window.__ibTimer) clearInterval(window.__ibTimer);
+  window.__ibTimer = setInterval(() => { if (location.hash.startsWith('#/inbox') && window.__ibMode === 'unp') sync(); else { clearInterval(window.__ibTimer); window.__ibTimer = null; } }, 30000);
+}
 routes['inbox'] = function() {
   // role not known yet (page opened / reloaded directly on #/inbox): wait, do NOT bounce to ATL TNG — setRoute() runs again after login
   if (CURRENT_USER_ROLE == null) { $('#content').innerHTML = '<div style="padding:24px;color:var(--text-mute)">Loading…</div>'; return; }
   if (CURRENT_USER_ROLE !== 'admin') { location.hash = '#/atl-tng'; return; }
   if (window.__ibMode === 'cgo') return renderInboxCargo();
+  if (window.__ibMode === 'unp') return renderInboxUnclear();
   $$('#page-title .ib-mode').forEach(x => x.remove()); $('#page-title').insertAdjacentHTML('beforeend', inboxModeBar());
   $('#topbar-actions').innerHTML = `<span id="ib-live" title="Reader status" style="font-size:11.5px;color:var(--text-mute);margin-right:8px">● checking…</span><span class="count-pill" id="ib-cnt">—</span><button class="primary" id="ib-approve-all" title="Approve every pending row that has an area/section (one by one, same rules as ✓)" style="margin-left:8px">✓ Approve all</button>`;
   // v108 (24 set): approva tutte le righe in sequenza, con le stesse regole del singolo ✓; le righe senza area/sezione restano in Inbox
@@ -10963,7 +11022,7 @@ function updateInboxBadge(n) {
 async function pollInboxBadge() {
   if (typeof CURRENT_USER_ROLE === 'undefined' || CURRENT_USER_ROLE !== 'admin') return;
   // v119: il badge conta solo cio' che ha bisogno di una mano (nave senza area e senza kind fissato/in house; carico senza sezione) — il resto va in lista da solo
-  try { const [a, b] = await Promise.all([sb.from('inbox_candidates').select('id', { count: 'exact', head: true }).eq('status', 'pending').is('area', null).or('kind.is.null,kind.eq.position'), sb.from('inbox_cargoes').select('id', { count: 'exact', head: true }).eq('status', 'pending').is('section', null)]); if (!a.error) updateInboxBadge((a.count || 0) + (b.error ? 0 : (b.count || 0))); } catch {}
+  try { const [a, b, u] = await Promise.all([sb.from('inbox_candidates').select('id', { count: 'exact', head: true }).eq('status', 'pending').is('area', null).or('kind.is.null,kind.eq.position'), sb.from('inbox_cargoes').select('id', { count: 'exact', head: true }).eq('status', 'pending').is('section', null), sb.from('inbox_unparsed').select('id', { count: 'exact', head: true }).eq('status', 'pending')]); window.__ibUnpN = u.error ? 0 : (u.count || 0); if (!a.error) updateInboxBadge((a.count || 0) + (b.error ? 0 : (b.count || 0)) + window.__ibUnpN); } catch {}
 }
 [1000, 3000, 6000, 10000].forEach(ms => setTimeout(pollInboxBadge, ms));   // primi tentativi finche' il ruolo non e' noto
 setInterval(pollInboxBadge, 60000);
@@ -11032,7 +11091,7 @@ if (AUTO_INBOX_FRAME) {
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v120'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v121'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
