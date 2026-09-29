@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v119 -->
+<!-- build: 20260903-inbox-v120 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -10976,9 +10976,13 @@ setInterval(pollInboxBadge, 60000);
 // pending→approved rende tutto idempotente anche con piu' admin collegati. Le righe che il ✓ rifiuterebbe
 // (area/sezione mancante) restano in Inbox: solo allora la voce Inbox ricompare nel menu, col numero.
 // ============================================================
+// v120 (29 set): se il BOT ha il suo approvatore headless acceso (heartbeat 'approver' < 3 min), l'iframe nella scheda non serve: resta come riserva
+let _approverAt = 0, _approverChk = 0;
 function ensureAutoInboxFrame() {
   if (AUTO_INBOX_FRAME || window.top !== window) return;
   if (typeof CURRENT_USER_ROLE === 'undefined' || CURRENT_USER_ROLE !== 'admin') return;
+  if (Date.now() - _approverChk > 60_000) { _approverChk = Date.now(); sb.from('scraper_heartbeat').select('at,info').eq('id', 'approver').maybeSingle().then(({ data }) => { _approverAt = (data && data.info && data.info.ok && data.at) ? Date.parse(data.at) : 0; }).catch(() => {}); }
+  if (Date.now() - _approverAt < 3 * 60_000) { const f = document.getElementById('auto-inbox-frame'); if (f) { f.remove(); console.log('[auto-inbox] approvatore del bot attivo: iframe spento'); } return; }
   const old = document.getElementById('auto-inbox-frame');
   if (old) { if (Date.now() - Number(old.dataset.t || 0) < 2 * 3600e3) return; old.remove(); }   // ogni 2 ore si ricrea da zero (sessione/scheda incastrata)
   const f = document.createElement('iframe');
@@ -11028,7 +11032,7 @@ if (AUTO_INBOX_FRAME) {
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v119'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v120'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
