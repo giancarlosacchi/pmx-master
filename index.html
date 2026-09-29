@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v115 -->
+<!-- build: 20260903-inbox-v116 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -5480,6 +5480,10 @@ async function ageIdeasMorning() {
       const t = String(c.notes).split(/(\s*\/\/\s*)/).map(sg => rollIdeasSeg(sg, age)).join('');
       if (t !== c.notes) { updCargo(c.id, { notes: t, update_date: c.update_date }); nC++; }
     }
+    // v116 (29 set): FRESH vale solo il giorno del messaggio → il mattino dopo lo stato torna vuoto (prima restava 'fresh' nel DB
+    // e il foglio/mirror lo mostrava in grassetto per sempre). Lo fa anche pg_cron alle 00:30 (job pmx-fresh-decade): qui e' la rete di sicurezza.
+    for (const v of (DATA.vessels || [])) if (v.status === 'fresh' && v.update_date && v.update_date < today) updVessel(v.id, { status: null, update_date: v.update_date });
+    for (const c of (DATA.cargoes || [])) if (c.status === 'fresh' && c.update_date && c.update_date < today) updCargo(c.id, { status: null, update_date: c.update_date });
     await sb.from('rundowns').upsert({ key: 'ideas_aged', text: today });
     if (nV || nC) { if (typeof cloudToast === 'function') cloudToast('Morning: ' + nV + ' vessel ideas and ' + nC + ' cargo notes aged (YDAY / LAST)', { kind: 'info', duration: 7000 }); try { setRoute(); } catch (e) {} }
   } catch (e) { console.warn('ageIdeasMorning:', e); }
@@ -5862,7 +5866,7 @@ function renderVesselRow(v, cbCols) {
     </button></td>
   </tr>`;
 }
-function openVesselForm(id, basin) {
+function openVesselForm(id, basin, defaults) {   // defaults (v116): campi precompilati per una nave nuova (es. area EMED dalla pagina BSEA)
   const isAtl = basin === 'ATL';
   const v = id ? DATA.vessels.find(x=>x.id===id) : {
     vessel:'', dwt_blt:'', open_port:'', open_from:'', open_to:'', ideas:'', yard:'',
@@ -5870,6 +5874,7 @@ function openVesselForm(id, basin) {
     area: '', subs:'', status:'fresh', basin,
     ukr_trader:0, rus_trader:0, iran_trader:0, scr_ftd:0, ex_our_cp:0,
     grain_clean:0, neo_pnm_ftd:0, scrbr_ftd:0, oz_grain:0, bhp:0, co2_ftd:0,
+    ...(defaults || {}),
   };
   const cbDefs = isAtl
     ? [['ukr_trader','UKR Trader'],['rus_trader','RUS Trader'],['iran_trader','Iran Trader'],['scr_ftd','SCR FTD'],['ex_our_cp','Ex our CP']]
@@ -6623,7 +6628,14 @@ function renderBseaRow(entry) {
 }
 routes['bsea-list'] = function() {
   $('#topbar-actions').innerHTML = `<div class="global-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="f-q" placeholder="Search vessel, ideas, owner…" /></div>
-    <button class="primary" id="bsea-copy" title="Copy the BSEA list as text (Teams / mail)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy list</button>`;
+    <button class="primary" id="bsea-copy" title="Copy the BSEA list as text (Teams / mail)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy list</button>
+    <button class="primary admin-only" id="bsea-new-vsl" title="Add a vessel to the Black Sea list (area EMED / BSEA — it also appears in ATL TNG)" style="display:none;margin-left:6px;align-items:center">+ Vessel</button>
+    <button class="primary admin-only" id="bsea-new-cgo" title="Add a cargo to the Black Sea list (section EMED / BSEA — it also appears in ATL CGO)" style="display:none;margin-left:4px;align-items:center">+ Cargo</button>`;
+  // v116 (29 set, Giancarlo): nella sezione BSEA si possono aggiungere righe intere; le celle delle righe esistenti si modificano
+  // con doppio click come nelle altre liste (stesso motore inlineEdit). Le righe nuove nascono gia' in EMED / BSEA.
+  { const bv = $('#bsea-new-vsl'), bc = $('#bsea-new-cgo');
+    if (bv) bv.onclick = () => openVesselForm(null, 'ATL', { area: 'EMED / BSEA' });
+    if (bc) bc.onclick = () => openCargoForm(null, 'ATL', { section: 'EMED / BSEA', area: 'EMED' }); }
   $('#content').innerHTML = `
     <div class="ecsa-layout bsea-layout ${localStorage.getItem('pmx-bsea-stack') === '1' ? 'stacked' : (localStorage.getItem('pmx-bsea-stack') === '0' ? 'force-side' : '')}" id="bsea-layout" style="${localStorage.getItem('pmx-bsea-cgo-w') ? '--bsea-cgo-w:' + localStorage.getItem('pmx-bsea-cgo-w') + 'px' : ''}">
       <div class="ecsa-list-col">
@@ -7027,9 +7039,9 @@ function renderCgoTable(rows) {
     <th>Notes / Rates</th><th>LS Brkr</th><th>Update</th><th>Status</th><th></th>
   </tr></thead><tbody>${rows.map(c => renderCgoRow(c)).join('')}</tbody></table>`;
 }
-function openCargoForm(id, basin) {
+function openCargoForm(id, basin, defaults) {   // defaults (v116): campi precompilati per un carico nuovo (es. sezione EMED / BSEA dalla pagina BSEA)
   const sections = basin === 'ATL' ? ATL_CGO_SECTIONS : PAC_CGO_SECTIONS;
-  const c = id ? DATA.cargoes.find(x=>x.id===id) : { date: todayIso(), chrtrs:'', laycan_from:'', laycan_to:'', load_port:'', disch_port:'', cgo:'', size:'', notes:'', update_date: todayIso(), ls_brkr:'', area: '', section: '', subs:'', status:'fresh', basin };
+  const c = id ? DATA.cargoes.find(x=>x.id===id) : { date: todayIso(), chrtrs:'', laycan_from:'', laycan_to:'', load_port:'', disch_port:'', cgo:'', size:'', notes:'', update_date: todayIso(), ls_brkr:'', area: '', section: '', subs:'', status:'fresh', basin, ...(defaults || {}) };
   const areas = sections;
   _ensureHistory();
   modal.open(id ? 'Edit cargo' : `New cargo ${basin}`, `
@@ -10986,7 +10998,7 @@ if (AUTO_INBOX_FRAME) {
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v115'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v116'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
