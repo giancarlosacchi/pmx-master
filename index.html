@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v122 -->
+<!-- build: 20260903-inbox-v123 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -10682,7 +10682,7 @@ routes['inbox'] = function() {
   const AREAS = ['ECSA','NCSA','PG','RSEA','WCI','ECI','SEASIA','SCHINA','NCHINA','UKC','WMED','EMED','USG','USEC / ECCA'];
   const AREA_ORDER = [...ATL_TNG_AREAS, ...PAC_TNG_AREAS.filter(a => !ATL_TNG_AREAS.includes(a))];
   const PAC_AREAS = new Set(['SEASIA','SCHINA','NCHINA']);
-  const KIND_LBL = { subs: ['FXD', 'var(--red,#dc2626)'], remove: ['IN HOUSE · DEL', 'var(--red,#dc2626)'], unsubs: ['F/F', 'var(--blue,#2563eb)'] };
+  const KIND_LBL = { subs: ['FXD', 'var(--red,#dc2626)'], remove: ['IN HOUSE · DEL', 'var(--red,#dc2626)'], unsubs: ['F/F', 'var(--blue,#2563eb)'], bid: ['BID', 'var(--blue,#2563eb)'] };   // v123: bid di un charterer sulla nave → si AGGIUNGE alle ideas
   const byId = {};
   const F = {};
   const norm = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -10737,7 +10737,7 @@ routes['inbox'] = function() {
   const render = () => {
     const wrap = $('#ib-tbl'); const sy = wrap ? wrap.scrollTop : 0;
     // v119: nella scheda visibile si vedono SOLO le navi senza area (quelle con area, o fissati/in house, vanno dritte in lista dall'iframe, in pochi secondi)
-    const rows = Object.values(byId).filter(r => AUTO_INBOX_FRAME || (!r.area && !kindOf(r)));
+    const rows = Object.values(byId).filter(r => AUTO_INBOX_FRAME || (!r.area && !kindOf(r)) || (kindOf(r) === 'bid' && !findV(r.vessel, r.dwt_blt)));   // v123: bid su nave che non e' in lista → la vede un umano
     const cnt = $('#ib-cnt'); if (cnt) cnt.textContent = rows.length + ' need an area';
     if (typeof pollInboxBadge === 'function') pollInboxBadge();
     if (!rows.length) { $('#ib-tbl').innerHTML = '<div id="ib-empty" style="padding:24px;color:var(--text-mute);font-size:12.5px">Nothing needs your attention. Positions with a known area go straight to ATL / PAC TNG.</div>'; return; }
@@ -10906,7 +10906,13 @@ routes['inbox'] = function() {
       { const cl = await sb.from('inbox_candidates').update({ status: 'approved' }).eq('id', r.id).eq('status', 'pending').select('id');
         if (cl.error) { handleErr('inbox approve')(cl); return; }
         if (!cl.data || !cl.data.length) { cloudToast('Already handled by a colleague.', { kind: 'info', duration: 3000 }); delete byId[r.id]; render(); return; } }
-      if (kind === 'remove') {
+      if (kind === 'bid') {
+        // v123 (5 ott, Nico: "fyg LDC rated via us Aquaruby at 22500…"): la nota BID si aggiunge in coda alle ideas della nave, senza toccare lo stato
+        if (!ex) { alert('Vessel not in the list: add it first.'); await sb.from('inbox_candidates').update({ status: 'pending' }).eq('id', r.id); return; }
+        const segs = String(ex.ideas || '').split(/\s*\/\/\s*/).filter(Boolean);
+        if (r.ideas && !segs.includes(r.ideas)) segs.push(r.ideas);
+        updVessel(ex.id, { ideas: segs.join(' // '), update_date: upd });
+      } else if (kind === 'remove') {
         if (ex) delVessel(ex.id);
       } else if (kind) {
         // fissato / tolti soggetti: cambia lo stato; gli altri campi solo se presenti (ideas solo se le hai modificate tu)
@@ -11114,7 +11120,7 @@ if (AUTO_INBOX_FRAME) {
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v122'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v123'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
