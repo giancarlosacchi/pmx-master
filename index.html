@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v121 -->
+<!-- build: 20260903-inbox-v122 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -5486,8 +5486,27 @@ async function ageIdeasMorning() {
     // e il foglio/mirror lo mostrava in grassetto per sempre). Lo fa anche pg_cron alle 00:30 (job pmx-fresh-decade): qui e' la rete di sicurezza.
     for (const v of (DATA.vessels || [])) if (v.status === 'fresh' && v.update_date && v.update_date < today) updVessel(v.id, { status: null, update_date: v.update_date });
     for (const c of (DATA.cargoes || [])) if (c.status === 'fresh' && c.update_date && c.update_date < today) updCargo(c.id, { status: null, update_date: c.update_date });
+    // v122 (5 ott, regola Giancarlo): la nave resta nel porto di apertura finche' non parte; passata la data di apertura, se nelle
+    // ideas c'e' "ETA ECSA d - d MON" va nella sezione ECSA alle date ETA (porto "ECSA"), e nelle offerte "DOP porto" diventa "RETRO porto".
+    let nM = 0;
+    for (const v of (DATA.vessels || [])) {
+      try {
+        if (v.bsea_only || v.area === 'ECSA' || v.basin !== 'ATL' || !v.open_to || v.open_to >= today || !v.ideas) continue;
+        const m = String(v.ideas).match(/\bETA\s+ECSA\s+(\d{1,2})(?:\s*[-\/]\s*(\d{1,2}))?\s*(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\b/i);
+        if (!m) continue;
+        const MON = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'].indexOf(m[3].toUpperCase()) + 1;
+        let y = Number(today.slice(0, 4)); const nowM = Number(today.slice(5, 7)); if (MON < nowM - 3) y++;
+        const iso = d => `${y}-${String(MON).padStart(2, '0')}-${String(Math.min(31, Math.max(1, Number(d)))).padStart(2, '0')}`;
+        const from = iso(m[1]), to = iso(m[2] || m[1]);
+        if (from < today) continue;   // ETA gia' passata: non e' piu' una posizione da spostare
+        const oldPort = String(v.open_port || '').replace(/^SLD\s+/i, '');
+        const ideas = String(v.ideas).replace(new RegExp('\\bDOP\\s+' + oldPort.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), 'RETRO ' + oldPort);
+        updVessel(v.id, { area: 'ECSA', basin: 'ATL', open_port: 'ECSA', open_from: from, open_to: to, ideas, update_date: v.update_date });
+        nM++;
+      } catch (e) {}
+    }
     await sb.from('rundowns').upsert({ key: 'ideas_aged', text: today });
-    if (nV || nC) { if (typeof cloudToast === 'function') cloudToast('Morning: ' + nV + ' vessel ideas and ' + nC + ' cargo notes aged (YDAY / LAST)', { kind: 'info', duration: 7000 }); try { setRoute(); } catch (e) {} }
+    if (nV || nC || nM) { if (typeof cloudToast === 'function') cloudToast('Morning: ' + nV + ' vessel ideas and ' + nC + ' cargo notes aged (YDAY / LAST)' + (nM ? ', ' + nM + ' sailed vessels moved to ECSA (ETA)' : ''), { kind: 'info', duration: 7000 }); try { setRoute(); } catch (e) {} }
   } catch (e) { console.warn('ageIdeasMorning:', e); }
 }
 function delVessel(id) {
@@ -6942,10 +6961,12 @@ function renderCargoList(basin) {
     }
     const bySec = {};
     for (const r of rows) (bySec[r.section || r.area || 'Other'] ??= []).push(r);
-    // ORDINE SEZIONI: usa row_order dal Sheet — Sheet è source of truth
+    // ORDINE SEZIONI (v122, 5 ott): ordine canonico delle sezioni (ECSA FH, ECSA TA, NCSA…); le sezioni fuori lista in coda per row_order.
+    // Prima si usava solo row_order: le righe nuove (Inbox) non ce l'hanno → Infinity-Infinity = NaN → ordine a caso ("ECSA FH sotto, ECSA TA in alto").
     const secMinRowOrder = {};
-    for (const s in bySec) secMinRowOrder[s] = Math.min(...bySec[s].map(r => r.row_order ?? Infinity));
-    const ordered = Object.keys(bySec).sort((a, b) => secMinRowOrder[a] - secMinRowOrder[b]);
+    for (const s in bySec) { const v = bySec[s].map(r => r.row_order).filter(x => x != null); secMinRowOrder[s] = v.length ? Math.min(...v) : 1e9; }
+    const canon = basin === 'ATL' ? ATL_CGO_SECTIONS : PAC_CGO_SECTIONS;
+    const ordered = Object.keys(bySec).sort((a, b) => { const ia = canon.indexOf(a), ib = canon.indexOf(b); if (ia >= 0 && ib >= 0) return ia - ib; if (ia >= 0) return -1; if (ib >= 0) return 1; return (secMinRowOrder[a] - secMinRowOrder[b]) || a.localeCompare(b); });
     const otherSecs = []; // tutto ordinato in `ordered` via row_order
     const html = [`<table class="grid"><thead><tr>
         <th class="th-filter col-c-chrtrs"><input data-col="chrtrs" placeholder="Chrtrs" value="${attr(F.chrtrs||'')}"></th>
@@ -10316,8 +10337,8 @@ function renderInboxCargo() {
   const render = () => {
     const wrap = $('#ib-tbl'); const sy = wrap ? wrap.scrollTop : 0;
     // v119: nella scheda visibile si vedono SOLO i carichi senza sezione (quelli con sezione vanno dritti in lista dall'iframe, in pochi secondi)
-    const rows = Object.values(byId).filter(r => AUTO_INBOX_FRAME || !r.section);
-    const cnt = $('#ib-cnt'); if (cnt) cnt.textContent = rows.length + ' need a section';
+    const rows = Object.values(byId).filter(r => AUTO_INBOX_FRAME || !r.section || r.review);   // v122: review = charterer mai visto → la decide un umano
+    const cnt = $('#ib-cnt'); if (cnt) cnt.textContent = rows.length + ' to check';
     if (typeof pollInboxBadge === 'function') pollInboxBadge();
     if (!rows.length) { $('#ib-tbl').innerHTML = '<div id="ib-empty" style="padding:24px;color:var(--text-mute);font-size:12.5px">Nothing needs your attention. Cargoes with a known section go straight to ATL / PAC CGO.</div>'; return; }
     const bySec = {};
@@ -10340,7 +10361,8 @@ function renderInboxCargo() {
     for (const sec of ordered) {
       const list = bySec[sec].sort(cmp);
       const label = sec === '?' ? 'SECTION TO BE CHOSEN (double-click the charterer)' : sec;
-      html.push(`<tr class="section-area ${sec === '?' ? 'area-red' : areaClass(sec)}"><td colspan="11">${esc(label)}<span class="area-count">${list.length}</span></td></tr>`);
+      const nRev = list.filter(r => r.review).length;   // v122: charterer mai visto → "CHECK" nell'etichetta di sezione
+      html.push(`<tr class="section-area ${sec === '?' ? 'area-red' : areaClass(sec)}"><td colspan="11">${esc(label)}${nRev ? ` <span style="font-size:10px;font-weight:700;color:#fff;background:var(--red,#dc2626);border-radius:8px;padding:0 6px;margin-left:6px" title="Unknown charterer: approve (✓) only if it is a real cargo">UNKNOWN CHARTERER · CHECK ${nRev}</span>` : ''}<span class="area-count">${list.length}</span></td></tr>`);
       for (const r of list) html.push(rowHtml(r));
     }
     html.push('</tbody></table>');
@@ -10468,6 +10490,7 @@ function renderInboxCargo() {
     if (e.target.closest('.ib-ok')) {
       if (!r.chrtrs) return;
       if (!r.section) { alert('Choose the section first (double-click the charterer).'); return; }
+      if (r.review && AUTO_INBOX_FRAME) { alert('Unknown charterer: needs a human.'); return; }   // v122: l'approvatore automatico salta le righe da controllare
       const st = stOf(r);
       const ex = findC(r);
       const upd = msgDay(r) || todayIso();
@@ -11022,7 +11045,7 @@ function updateInboxBadge(n) {
 async function pollInboxBadge() {
   if (typeof CURRENT_USER_ROLE === 'undefined' || CURRENT_USER_ROLE !== 'admin') return;
   // v119: il badge conta solo cio' che ha bisogno di una mano (nave senza area e senza kind fissato/in house; carico senza sezione) — il resto va in lista da solo
-  try { const [a, b, u] = await Promise.all([sb.from('inbox_candidates').select('id', { count: 'exact', head: true }).eq('status', 'pending').is('area', null).or('kind.is.null,kind.eq.position'), sb.from('inbox_cargoes').select('id', { count: 'exact', head: true }).eq('status', 'pending').is('section', null), sb.from('inbox_unparsed').select('id', { count: 'exact', head: true }).eq('status', 'pending')]); window.__ibUnpN = u.error ? 0 : (u.count || 0); if (!a.error) updateInboxBadge((a.count || 0) + (b.error ? 0 : (b.count || 0)) + window.__ibUnpN); } catch {}
+  try { const [a, b, u] = await Promise.all([sb.from('inbox_candidates').select('id', { count: 'exact', head: true }).eq('status', 'pending').is('area', null).or('kind.is.null,kind.eq.position'), sb.from('inbox_cargoes').select('id', { count: 'exact', head: true }).eq('status', 'pending').or('section.is.null,review.eq.true'), sb.from('inbox_unparsed').select('id', { count: 'exact', head: true }).eq('status', 'pending')]); window.__ibUnpN = u.error ? 0 : (u.count || 0); if (!a.error) updateInboxBadge((a.count || 0) + (b.error ? 0 : (b.count || 0)) + window.__ibUnpN); } catch {}
 }
 [1000, 3000, 6000, 10000].forEach(ms => setTimeout(pollInboxBadge, ms));   // primi tentativi finche' il ruolo non e' noto
 setInterval(pollInboxBadge, 60000);
@@ -11091,7 +11114,7 @@ if (AUTO_INBOX_FRAME) {
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v121'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v122'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
