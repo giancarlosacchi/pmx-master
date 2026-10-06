@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v123 -->
+<!-- build: 20260903-inbox-v124 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -417,6 +417,7 @@ body:not(.is-admin) [data-route="inbox"] { display: none !important; }
 .admin-form input, .admin-form select { padding: 6px 10px; font: inherit; font-size: 12px; border: 1px solid var(--line); border-radius: 4px; background: var(--bg-3); color: var(--text); }
 .admin-form input[name="email"] { min-width: 280px; }
 .admin-form input[name="name"]  { min-width: 180px; }
+body.view-only .admin-only, body.view-only .icon-btn, body.view-only button.primary#bsea-new-vsl, body.view-only button.primary#bsea-new-cgo { display: none !important; }
 table.admin-tbl { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; }
 table.admin-tbl thead th { text-align: left; padding: 8px 10px; background: var(--bg-1); border-bottom: 1px solid var(--line); text-transform: uppercase; font-size: 10px; letter-spacing: .05em; color: var(--text-mute); }
 table.admin-tbl tbody td { padding: 8px 10px; border-bottom: 1px solid var(--line-soft); }
@@ -2905,6 +2906,10 @@ const BSEA_USERS = new Set(['LCE', 'MPE', 'OPE', 'CPE', 'GSC']);
 function userCode(u) { u = u || CURRENT_USER; return String((u && u.email) || '').split('@')[0].toUpperCase(); }
 function canBsea(u) { return BSEA_USERS.has(userCode(u)); }
 let CURRENT_USER_ROLE = null;   // 'admin' | 'broker' (from allowed_users)
+const OWNER_EMAIL = 'gsc@lightshipchartering.com';   // v124: l'unico che decide chi puo' modificare (colonna Access)
+function isOwnerUser(u) { u = u || CURRENT_USER; return String((u && u.email) || '').toLowerCase() === OWNER_EMAIL; }
+window.CAN_EDIT = true;
+function denyEdit() { try { cloudToast('View only: ask Giancarlo for edit access.', { kind: 'info', duration: 3500 }); } catch (e) {} return false; }
 let CURRENT_USER_NAME = null;   // display_name (from allowed_users)
 window.CURRENT_USER = CURRENT_USER;
 
@@ -2919,6 +2924,9 @@ async function bootAppAfterAuth(user, allowedRow) {
   if (allowedRow) {
     CURRENT_USER_ROLE = allowedRow.role || 'broker';
     CURRENT_USER_NAME = allowedRow.display_name || null;
+    // v124 (6 ott, Giancarlo): colonna "Access" in allowed_users decisa SOLO da lui: Editor (puo' modificare) o View only. L'owner e' sempre editor.
+    window.CAN_EDIT = isOwnerUser(user) || allowedRow.can_edit !== false;
+    if (!window.CAN_EDIT) document.body.classList.add('view-only');
     window.CURRENT_USER_ROLE = CURRENT_USER_ROLE;
     window.CURRENT_USER_NAME = CURRENT_USER_NAME;
   }
@@ -4612,6 +4620,7 @@ const INLINE_TYPES = {
 };
 function inlineEdit(td, kind, id, field) {
   if (td.classList.contains('editing')) return;
+  if (window.CAN_EDIT === false) { denyEdit(); return; }
   const item = kind === 'v' ? DATA.vessels.find(x=>x.id===id) : DATA.cargoes.find(x=>x.id===id);
   if (!item) return;
   const original = td.innerHTML;
@@ -5385,6 +5394,7 @@ function lookupCargoHistory(chrtrs, load_port, disch_port) {
 }
 
 function addVessel(v) {
+  if (window.CAN_EDIT === false) { denyEdit(); return; }
   // ID temporaneo string: syncDirtyToCloud farà INSERT su Supabase, riceverà
   // l'ID definitivo (bigserial) e patchareà v.id. Questo evita collisioni tra
   // broker che aggiungono navi contemporaneamente.
@@ -5397,6 +5407,7 @@ function addVessel(v) {
   persist(); autoUpdateRundowns(); return v;
 }
 function updVessel(id, patch) {
+  if (window.CAN_EDIT === false) { denyEdit(); return; }
   const v = DATA.vessels.find(x=>x.id===id);
   if (v) {
     const before = { ...v };  // snapshot prima del cambio
@@ -5510,12 +5521,14 @@ async function ageIdeasMorning() {
   } catch (e) { console.warn('ageIdeasMorning:', e); }
 }
 function delVessel(id) {
+  if (window.CAN_EDIT === false) { denyEdit(); return; }
   const v = DATA.vessels.find(x=>x.id===id);
   if (v) logUserAction('del', 'vessels', id, v, null);
   DATA.vessels = DATA.vessels.filter(x=>x.id!==id);
   persist(); autoUpdateRundowns();
 }
 function addCargo(c) {
+  if (window.CAN_EDIT === false) { denyEdit(); return; }
   // ID temporaneo string — Postgres assegnerà il definitivo via syncDirtyToCloud
   c.id = 'tmp_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
   c.created_at = todayIso();
@@ -5526,6 +5539,7 @@ function addCargo(c) {
   persist(); autoUpdateRundowns(); return c;
 }
 function updCargo(id, patch) {
+  if (window.CAN_EDIT === false) { denyEdit(); return; }
   const c = DATA.cargoes.find(x=>x.id===id);
   if (c) {
     const before = { ...c };
@@ -5542,6 +5556,7 @@ function updCargo(id, patch) {
   return c;
 }
 function delCargo(id) {
+  if (window.CAN_EDIT === false) { denyEdit(); return; }
   const c = DATA.cargoes.find(x=>x.id===id);
   if (c) logUserAction('del', 'cargoes', id, c, null);
   DATA.cargoes = DATA.cargoes.filter(x=>x.id!==id);
@@ -11120,7 +11135,7 @@ if (AUTO_INBOX_FRAME) {
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v123'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v124'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
@@ -11166,6 +11181,7 @@ routes['admin'] = function() {
               <th>Name</th>
               <th>Role</th>
               <th>Status</th>
+              <th>Access</th>
               <th>Added</th>
               <th style="text-align:right;">Actions</th>
             </tr></thead>
@@ -11182,7 +11198,7 @@ async function loadAndRenderAdminTable() {
   try {
     const { data, error } = await sb
       .from('allowed_users')
-      .select('id, email, role, display_name, active, added_at, added_by')
+      .select('id, email, role, display_name, active, added_at, added_by, can_edit')
       .order('added_at', { ascending: false });
     if (error) throw error;
     renderAdminTable(data || []);
@@ -11195,7 +11211,7 @@ function renderAdminTable(rows) {
   const tbody = $('#admin-tbl tbody');
   if (!tbody) return;
   if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--text-mute);">No users yet.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--text-mute);">No users yet.</td></tr>';
     return;
   }
   tbody.innerHTML = rows.map(r => {
@@ -11210,6 +11226,7 @@ function renderAdminTable(rows) {
       <td>${esc(r.display_name || '')}</td>
       <td>${roleChip}</td>
       <td>${statusChip}</td>
+      <td>${r.can_edit === false ? '<span class="admin-chip inactive">view only</span>' : '<span class="admin-chip admin" style="background:rgba(37,99,235,.12); color:#2563eb;">editor</span>'}${isOwnerUser() && !isSelf ? ` <button data-act="edit" data-id="${r.id}" data-can="${r.can_edit !== false}" style="margin-left:6px">${r.can_edit === false ? 'Allow edit' : 'View only'}</button>` : ''}</td>
       <td style="color:var(--text-mute);">${added}</td>
       <td class="admin-actions" style="text-align:right; white-space:nowrap;">
         ${isSelf ? '<span style="color:var(--text-mute); font-size:10px;">(you)</span>' : `
@@ -11228,6 +11245,7 @@ function renderAdminTable(rows) {
       if (act === 'toggle') adminToggleActive(id, btn.dataset.active !== 'true');
       else if (act === 'role') adminToggleRole(id, btn.dataset.role === 'admin' ? 'broker' : 'admin');
       else if (act === 'delete') adminDeleteUser(id, btn.dataset.email);
+      else if (act === 'edit') adminToggleCanEdit(id, btn.dataset.can !== 'true');
     };
   });
 }
@@ -11278,6 +11296,16 @@ async function adminToggleActive(id, newActive) {
   }
 }
 
+// v124: solo l'owner (gsc) decide chi puo' modificare le liste; gli altri vedono soltanto
+async function adminToggleCanEdit(id, canEdit) {
+  if (!isOwnerUser()) { setAdminMsg('Only Giancarlo can change edit access.', 'error'); return; }
+  try {
+    const { error } = await sb.from('allowed_users').update({ can_edit: !!canEdit }).eq('id', id);
+    if (error) throw error;
+    setAdminMsg(canEdit ? 'Edit access granted ✓' : 'User set to view only ✓', 'ok');
+    loadAndRenderAdminTable();
+  } catch (err) { setAdminMsg('Error: ' + (err.message || err), 'error'); }
+}
 async function adminToggleRole(id, newRole) {
   try {
     const { error } = await sb.from('allowed_users').update({ role: newRole }).eq('id', id);
