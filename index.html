@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v124 -->
+<!-- build: 20260903-inbox-v125 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -10752,7 +10752,7 @@ routes['inbox'] = function() {
   const render = () => {
     const wrap = $('#ib-tbl'); const sy = wrap ? wrap.scrollTop : 0;
     // v119: nella scheda visibile si vedono SOLO le navi senza area (quelle con area, o fissati/in house, vanno dritte in lista dall'iframe, in pochi secondi)
-    const rows = Object.values(byId).filter(r => AUTO_INBOX_FRAME || (!r.area && !kindOf(r)) || (kindOf(r) === 'bid' && !findV(r.vessel, r.dwt_blt)));   // v123: bid su nave che non e' in lista → la vede un umano
+    const rows = Object.values(byId).filter(r => AUTO_INBOX_FRAME || (!r.area && !kindOf(r)) || r.review || (kindOf(r) === 'bid' && !findV(r.vessel, r.dwt_blt)));   // v123: bid su nave che non e' in lista → la vede un umano; v125: review = letta dall'AI → la conferma un umano
     const cnt = $('#ib-cnt'); if (cnt) cnt.textContent = rows.length + ' need an area';
     if (typeof pollInboxBadge === 'function') pollInboxBadge();
     if (!rows.length) { $('#ib-tbl').innerHTML = '<div id="ib-empty" style="padding:24px;color:var(--text-mute);font-size:12.5px">Nothing needs your attention. Positions with a known area go straight to ATL / PAC TNG.</div>'; return; }
@@ -10777,7 +10777,8 @@ routes['inbox'] = function() {
     for (const area of ordered) {
       const list = byArea[area].sort(cmp);
       const label = area === '?' ? 'AREA TO BE CHOSEN (double-click the vessel name)' : area;
-      html.push(`<tr class="section-area ${area === '?' ? 'area-red' : areaClass(area)}"><td colspan="12">${esc(label)}<span class="area-count">${list.length}</span></td></tr>`);
+      const nRevV = list.filter(r => r.review).length;   // v125: posizione letta dall'AI (regole non l'hanno capita) → "CHECK"
+      html.push(`<tr class="section-area ${area === '?' ? 'area-red' : areaClass(area)}"><td colspan="12">${esc(label)}${nRevV ? ` <span style="font-size:10px;font-weight:700;color:#fff;background:var(--red,#dc2626);border-radius:8px;padding:0 6px;margin-left:6px" title="Read by AI, not by the rules: check the fields, then approve (✓) or discard">AI READ · CHECK ${nRevV}</span>` : ''}<span class="area-count">${list.length}</span></td></tr>`);
       for (const r of list) html.push(rowHtml(r));
     }
     html.push('</tbody></table>');
@@ -10918,6 +10919,7 @@ routes['inbox'] = function() {
       const upd = (r.msg_time || '').slice(0, 10) || todayIso();
       const area = r.area || null;
       if (!kind && !area) { alert('Choose the area first (double-click the vessel name).'); return; }
+      if (r.review && AUTO_INBOX_FRAME) { alert('AI-read position: needs a human.'); return; }   // v125: l'approvatore automatico non tocca le righe lette dall'AI
       { const cl = await sb.from('inbox_candidates').update({ status: 'approved' }).eq('id', r.id).eq('status', 'pending').select('id');
         if (cl.error) { handleErr('inbox approve')(cl); return; }
         if (!cl.data || !cl.data.length) { cloudToast('Already handled by a colleague.', { kind: 'info', duration: 3000 }); delete byId[r.id]; render(); return; } }
@@ -11066,7 +11068,7 @@ function updateInboxBadge(n) {
 async function pollInboxBadge() {
   if (typeof CURRENT_USER_ROLE === 'undefined' || CURRENT_USER_ROLE !== 'admin') return;
   // v119: il badge conta solo cio' che ha bisogno di una mano (nave senza area e senza kind fissato/in house; carico senza sezione) — il resto va in lista da solo
-  try { const [a, b, u] = await Promise.all([sb.from('inbox_candidates').select('id', { count: 'exact', head: true }).eq('status', 'pending').is('area', null).or('kind.is.null,kind.eq.position'), sb.from('inbox_cargoes').select('id', { count: 'exact', head: true }).eq('status', 'pending').or('section.is.null,review.eq.true'), sb.from('inbox_unparsed').select('id', { count: 'exact', head: true }).eq('status', 'pending')]); window.__ibUnpN = u.error ? 0 : (u.count || 0); if (!a.error) updateInboxBadge((a.count || 0) + (b.error ? 0 : (b.count || 0)) + window.__ibUnpN); } catch {}
+  try { const [a, b, u] = await Promise.all([sb.from('inbox_candidates').select('id', { count: 'exact', head: true }).eq('status', 'pending').or('and(area.is.null,or(kind.is.null,kind.eq.position)),review.eq.true'), sb.from('inbox_cargoes').select('id', { count: 'exact', head: true }).eq('status', 'pending').or('section.is.null,review.eq.true'), sb.from('inbox_unparsed').select('id', { count: 'exact', head: true }).eq('status', 'pending')]); window.__ibUnpN = u.error ? 0 : (u.count || 0); if (!a.error) updateInboxBadge((a.count || 0) + (b.error ? 0 : (b.count || 0)) + window.__ibUnpN); } catch {}
 }
 [1000, 3000, 6000, 10000].forEach(ms => setTimeout(pollInboxBadge, ms));   // primi tentativi finche' il ruolo non e' noto
 setInterval(pollInboxBadge, 60000);
@@ -11135,7 +11137,7 @@ if (AUTO_INBOX_FRAME) {
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v124'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20260903-inbox-v125'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
