@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20260903-inbox-v127 -->
+<!-- build: 20261019-sheet-v128 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -410,6 +410,8 @@ body.is-admin .admin-only { display: flex !important; }
 body:not(.is-gsc) [data-route="vsl-descr"] { display: none !important; }
 body:not(.can-bsea) [data-route="bsea"] { display: none !important; }
 body:not(.is-admin) [data-route="inbox"] { display: none !important; }
+body.sheet-mode [data-route="inbox"] { display: none !important; }
+.sheet-banner { position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 9000; background: #0b4f6c; color: #fff; font: 600 12px/1.3 system-ui, sans-serif; padding: 6px 14px; border-radius: 999px; box-shadow: 0 4px 14px rgba(0,0,0,.25); opacity: .92; pointer-events: none; }
 
 /* Admin page styles */
 .admin-panel { padding: 18px; }
@@ -2909,6 +2911,19 @@ let CURRENT_USER_ROLE = null;   // 'admin' | 'broker' (from allowed_users)
 const OWNER_EMAIL = 'gsc@lightshipchartering.com';   // v124: l'unico che decide chi puo' modificare (colonna Access)
 function isOwnerUser(u) { u = u || CURRENT_USER; return String((u && u.email) || '').toLowerCase() === OWNER_EMAIL; }
 window.CAN_EDIT = true;
+// v128 (19 ott 2026, Giancarlo: "rifai tutto come era prima: niente bot Teams, il sito e' una copia del Google Sheet"):
+// SHEET_MODE = le liste ATL/PAC (navi e carichi) arrivano SOLO dal foglio LS WORK (Apps Script ogni 5 min) e sul sito sono in sola
+// lettura. Resta modificabile solo la pagina Black Sea (righe bsea_only), che vive solo sul sito.
+const SHEET_MODE = true;
+function sheetLocked(kind, id) {
+  if (!SHEET_MODE) return false;
+  if (/bsea|black/i.test(String(location.hash || ''))) return false;
+  const arr = kind === 'cargo' ? (DATA.cargoes || []) : (DATA.vessels || []);
+  const r = id != null ? arr.find(x => x.id === id) : null;
+  if (r && r.bsea_only) return false;
+  try { cloudToast('Lists come from the Google Sheet (LS WORK): edit the sheet, the site follows within 5 minutes.', { kind: 'info', duration: 4500 }); } catch (e) {}
+  return true;
+}
 function denyEdit() { try { cloudToast('View only: ask Giancarlo for edit access.', { kind: 'info', duration: 3500 }); } catch (e) {} return false; }
 let CURRENT_USER_NAME = null;   // display_name (from allowed_users)
 window.CURRENT_USER = CURRENT_USER;
@@ -2932,7 +2947,8 @@ async function bootAppAfterAuth(user, allowedRow) {
   }
   document.body.classList.add('logged-in');
   if (CURRENT_USER_ROLE === 'admin') document.body.classList.add('is-admin');
-  if (CURRENT_USER_ROLE === 'admin' && typeof pollInboxBadge === 'function') { pollInboxBadge(); setTimeout(pollInboxBadge, 2500); }   // badge Inbox subito dopo il login, da qualsiasi pagina
+  if (SHEET_MODE) { document.body.classList.add('sheet-mode'); try { const b = document.createElement('div'); b.className = 'sheet-banner'; b.textContent = 'Lists mirrored from Google Sheet "LS WORK" every 5 min — read only (Black Sea page editable)'; document.body.appendChild(b); } catch (e) {} }
+  if (!SHEET_MODE && CURRENT_USER_ROLE === 'admin' && typeof pollInboxBadge === 'function') { pollInboxBadge(); setTimeout(pollInboxBadge, 2500); }   // badge Inbox subito dopo il login, da qualsiasi pagina
   if (String((user && user.email) || '').toLowerCase() === 'gsc@lightshipchartering.com') document.body.classList.add('is-gsc');
   if (canBsea(user)) document.body.classList.add('can-bsea');   // v91: hub BSEA solo per LCE/MPE/OPE/CPE/GSC (Giancarlo 16 set)
   renderUserChip(user);
@@ -4619,6 +4635,7 @@ const INLINE_TYPES = {
   load_port:'text', disch_port:'text', laycan_from:'date', laycan_to:'date', date:'date'
 };
 function inlineEdit(td, kind, id, field) {
+  if (sheetLocked(kind === 'cargo' || kind === 'cargoes' ? 'cargo' : 'vessel', id)) return;
   if (td.classList.contains('editing')) return;
   if (window.CAN_EDIT === false) { denyEdit(); return; }
   const item = kind === 'v' ? DATA.vessels.find(x=>x.id===id) : DATA.cargoes.find(x=>x.id===id);
@@ -5395,6 +5412,7 @@ function lookupCargoHistory(chrtrs, load_port, disch_port) {
 
 function addVessel(v) {
   if (window.CAN_EDIT === false) { denyEdit(); return; }
+  if (sheetLocked('vessel', v && v.bsea_only ? null : undefined)) return;
   // ID temporaneo string: syncDirtyToCloud farà INSERT su Supabase, riceverà
   // l'ID definitivo (bigserial) e patchareà v.id. Questo evita collisioni tra
   // broker che aggiungono navi contemporaneamente.
@@ -5408,6 +5426,7 @@ function addVessel(v) {
 }
 function updVessel(id, patch) {
   if (window.CAN_EDIT === false) { denyEdit(); return; }
+  if (sheetLocked('vessel', id)) return;
   const v = DATA.vessels.find(x=>x.id===id);
   if (v) {
     const before = { ...v };  // snapshot prima del cambio
@@ -5426,6 +5445,7 @@ function updVessel(id, patch) {
 // Regola Giancarlo 10 set 2026: le navi ON SUBS spariscono dalla lista dopo 2 giorni (data dell'ultimo aggiornamento).
 // Gira solo per l'admin, una volta per sessione, dopo il primo sync; le cancellazioni vanno in cloud come quelle manuali.
 function purgeOldSubs() {
+  if (SHEET_MODE) return;   // v128: il foglio comanda
   try {
     if (CURRENT_USER_ROLE !== 'admin' || window._restoring || window._cloudLoadFailed) return;
     const cut = new Date(); cut.setUTCDate(cut.getUTCDate() - 2); const cutIso = cut.toISOString().slice(0, 10);
@@ -5447,6 +5467,7 @@ function businessDaysAgoIso(n) {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
 async function purgeStale() {
+  if (SHEET_MODE) return;   // v128
   try {
     if (CURRENT_USER_ROLE !== 'admin' || window._restoring || window._cloudLoadFailed) return;
     const today = todayIso(); let doneKey = null; try { doneKey = localStorage.getItem('purgeStaleDone'); } catch (e) {}
@@ -5475,6 +5496,7 @@ async function purgeStale() {
 // delle righe non aggiornate oggi: OFFERS/GUIDE/IDEA/BID/SEEN/HOLDING/AIMING/HEARD → YDAY … (1 giorno) → LAST … (2+ giorni, o lunedi).
 // update_date NON cambia. Cosi' un messaggio senza offerta approvato dopo (che azzera la data) non fa tornare "nuova" un'offerta vecchia (REACHY).
 async function ageIdeasMorning() {
+  if (SHEET_MODE) return;   // v128: niente YDAY/LAST automatici, il testo e' quello del foglio
   try {
     if (CURRENT_USER_ROLE !== 'admin' || window._restoring || window._cloudLoadFailed) return;
     const today = todayIso();
@@ -5522,6 +5544,7 @@ async function ageIdeasMorning() {
 }
 function delVessel(id) {
   if (window.CAN_EDIT === false) { denyEdit(); return; }
+  if (sheetLocked('vessel', id)) return;
   const v = DATA.vessels.find(x=>x.id===id);
   if (v) logUserAction('del', 'vessels', id, v, null);
   DATA.vessels = DATA.vessels.filter(x=>x.id!==id);
@@ -5529,6 +5552,7 @@ function delVessel(id) {
 }
 function addCargo(c) {
   if (window.CAN_EDIT === false) { denyEdit(); return; }
+  if (sheetLocked('cargo', c && c.bsea_only ? null : undefined)) return;
   // ID temporaneo string — Postgres assegnerà il definitivo via syncDirtyToCloud
   c.id = 'tmp_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
   c.created_at = todayIso();
@@ -5540,6 +5564,7 @@ function addCargo(c) {
 }
 function updCargo(id, patch) {
   if (window.CAN_EDIT === false) { denyEdit(); return; }
+  if (sheetLocked('cargo', id)) return;
   const c = DATA.cargoes.find(x=>x.id===id);
   if (c) {
     const before = { ...c };
@@ -5557,6 +5582,7 @@ function updCargo(id, patch) {
 }
 function delCargo(id) {
   if (window.CAN_EDIT === false) { denyEdit(); return; }
+  if (sheetLocked('cargo', id)) return;
   const c = DATA.cargoes.find(x=>x.id===id);
   if (c) logUserAction('del', 'cargoes', id, c, null);
   DATA.cargoes = DATA.cargoes.filter(x=>x.id!==id);
@@ -11084,6 +11110,7 @@ setInterval(pollInboxBadge, 60000);
 // v120 (29 set): se il BOT ha il suo approvatore headless acceso (heartbeat 'approver' < 3 min), l'iframe nella scheda non serve: resta come riserva
 let _approverAt = 0, _approverChk = 0;
 function ensureAutoInboxFrame() {
+  if (SHEET_MODE) return;   // v128: niente approvatore
   if (AUTO_INBOX_FRAME || window.top !== window) return;
   if (typeof CURRENT_USER_ROLE === 'undefined' || CURRENT_USER_ROLE !== 'admin') return;
   if (Date.now() - _approverChk > 60_000) { _approverChk = Date.now(); sb.from('scraper_heartbeat').select('at,info').eq('id', 'approver').maybeSingle().then(({ data }) => { _approverAt = (data && data.info && data.info.ok && data.at) ? Date.parse(data.at) : 0; }).catch(() => {}); }
@@ -11137,7 +11164,7 @@ if (AUTO_INBOX_FRAME) {
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20260903-inbox-v127'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20261019-sheet-v128'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
