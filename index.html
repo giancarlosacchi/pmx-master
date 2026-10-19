@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20261019-sheet-v130 -->
+<!-- build: 20261019-sheet-v131 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -6766,8 +6766,8 @@ function renderBseaRow(entry) {
 routes['bsea-list'] = function() {
   $('#topbar-actions').innerHTML = `<div class="global-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="f-q" placeholder="Search vessel, ideas, owner…" /></div>
     <button class="primary" id="bsea-copy" title="Copy the BSEA list as text (Teams / mail)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy list</button>
-    <button class="primary admin-only" id="bsea-new-vsl" title="Add a vessel to the Black Sea list (area EMED / BSEA — it also appears in ATL TNG)" style="display:none;margin-left:6px;align-items:center">+ Vessel</button>
-    <button class="primary admin-only" id="bsea-new-cgo" title="Add a cargo to the Black Sea list (section EMED / BSEA — it also appears in ATL CGO)" style="display:none;margin-left:4px;align-items:center">+ Cargo</button>
+    <button class="primary admin-only" id="bsea-new-vsl" title="Add a vessel to the Black Sea list only (not in ATL TNG / sheet)" style="display:none;margin-left:6px;align-items:center">+ Vessel</button>
+    <button class="primary admin-only" id="bsea-new-cgo" title="Add a cargo to the Black Sea list only (not in ATL CGO / sheet)" style="display:none;margin-left:4px;align-items:center">+ Cargo</button>
     <button class="primary admin-only" id="bsea-hidden" title="Rows hidden in Black Sea only (restore here)" style="display:${bseaHiddenRows().length ? 'inline-flex' : 'none'};margin-left:4px;align-items:center;opacity:.8">Hidden (${bseaHiddenRows().length})</button>`;
   { const bh = $('#bsea-hidden'); if (bh) bh.onclick = openBseaHidden; }
   // v116 (29 set, Giancarlo): nella sezione BSEA si possono aggiungere righe intere; le celle delle righe esistenti si modificano
@@ -11239,7 +11239,7 @@ if (AUTO_INBOX_FRAME) {
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20261019-sheet-v130'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20261019-sheet-v131'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
