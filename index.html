@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20261019-sheet-v128 -->
+<!-- build: 20261019-sheet-v129 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2904,7 +2904,7 @@ window.sb = sb;
 // Currently signed-in user (set after successful login)
 let CURRENT_USER = null;
 // v91: chi vede l'hub BSEA (List / Rundown / Agents / Fixtures) — codice = parte prima della @ della mail di login
-const BSEA_USERS = new Set(['LCE', 'MPE', 'OPE', 'CPE', 'GSC']);
+const BSEA_USERS = new Set(['LCE', 'MPE', 'OPE', 'CPE', 'CPA', 'GSC']);   // v129: CPA = Cristina (Giancarlo 19 ott)
 function userCode(u) { u = u || CURRENT_USER; return String((u && u.email) || '').split('@')[0].toUpperCase(); }
 function canBsea(u) { return BSEA_USERS.has(userCode(u)); }
 let CURRENT_USER_ROLE = null;   // 'admin' | 'broker' (from allowed_users)
@@ -2968,8 +2968,7 @@ async function bootAppAfterAuth(user, allowedRow) {
   // 5) Snapshot orario per la version history (fire-and-forget)
   setTimeout(() => maybeTakeHourlySnapshot(), 3000);
   // 6) Allarme "Teams reader offline": visibile a TUTTI, su ogni pagina (controllo ogni 60s)
-  setTimeout(checkReaderBanner, 4000);
-  setInterval(checkReaderBanner, 60000);
+  if (!SHEET_MODE) { setTimeout(checkReaderBanner, 4000); setInterval(checkReaderBanner, 60000); }   // v129: bot spento, niente allarme
 }
 
 // ============================================================
@@ -2985,6 +2984,7 @@ function setReaderBanner(text) {
 }
 async function checkReaderBanner() {
   try {
+    if (SHEET_MODE) { setReaderBanner(''); return; }
     if (!document.body.classList.contains('logged-in')) return;
     const { data, error } = await sb.from('scraper_heartbeat').select('id,at,info').in('id', ['teams', 'broker']);
     if (error) return;
@@ -11164,7 +11164,7 @@ if (AUTO_INBOX_FRAME) {
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20261019-sheet-v128'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20261019-sheet-v129'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
