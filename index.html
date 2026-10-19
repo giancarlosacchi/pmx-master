@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20261019-sheet-v129 -->
+<!-- build: 20261019-sheet-v130 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2924,6 +2924,71 @@ function sheetLocked(kind, id) {
   try { cloudToast('Lists come from the Google Sheet (LS WORK): edit the sheet, the site follows within 5 minutes.', { kind: 'info', duration: 4500 }); } catch (e) {}
   return true;
 }
+// v130 (Giancarlo 19 ott): la pagina Black Sea e' "a parte". Mostra tutto cio' che e' in ATL TNG/ATL CGO (zona EMED/BSEA/RSEA)
+// MA ogni modifica fatta li' su una riga del foglio crea una COPIA PRIVATA (bsea_only) che prende il posto dell'originale
+// SOLO in Black Sea: l'originale resta intatto in ATL TNG e nel foglio. Cancellare in Black Sea = copia privata con
+// status 'bsea_hidden' (nascosta solo li'; si ripristina dal bottone "Hidden"). Le copie sopravvivono al sync del foglio (bsea_only).
+const BSEA_HIDDEN = 'bsea_hidden';
+function onBseaPage() { return /bsea|black/i.test(String(location.hash || '')); }
+function bseaKeyV(v) { return String((v && v.vessel) || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
+function bseaKeyC(c) { return [c && c.chrtrs, c && c.load_port, c && c.laycan_from].map(x => String(x || '').toUpperCase().replace(/[^A-Z0-9]/g, '')).join('|'); }
+function bseaOverrides(kind) {   // key → copia privata (bsea_only) del bacino ATL
+  const arr = kind === 'cargo' ? (DATA.cargoes || []) : (DATA.vessels || []);
+  const keyOf = kind === 'cargo' ? bseaKeyC : bseaKeyV;
+  const m = new Map();
+  for (const r of arr) if (r.bsea_only && r.basin === 'ATL') m.set(keyOf(r), r);
+  return m;
+}
+function bseaFork(kind, id, patch, hide) {
+  const arr = kind === 'cargo' ? DATA.cargoes : DATA.vessels;
+  const src = arr.find(x => x.id === id); if (!src) return null;
+  const copy = { ...src };
+  for (const k of ['id', 'created_at', 'updated_at', 'created_by', 'updated_by', 'sync_id', 'row_order', '__sessionNew']) delete copy[k];
+  copy.bsea_only = true;
+  Object.assign(copy, patch || {});
+  if (hide) copy.status = BSEA_HIDDEN;
+  const out = kind === 'cargo' ? addCargo(copy) : addVessel(copy);
+  if (out) { out.__sessionNew = false; try { cloudToast(hide ? 'Hidden in Black Sea only (still in the sheet / ATL list).' : 'Saved in Black Sea only — the sheet / ATL list is unchanged.', { kind: 'info', duration: 3500 }); } catch (e) {} }
+  return out;
+}
+// true = la modifica e' stata deviata sulla copia privata (il chiamante deve fermarsi)
+function bseaDivert(kind, id, patch, isDelete) {
+  if (!SHEET_MODE || !onBseaPage()) return false;
+  const arr = kind === 'cargo' ? (DATA.cargoes || []) : (DATA.vessels || []);
+  const r = arr.find(x => x.id === id); if (!r) return false;
+  const keyOf = kind === 'cargo' ? bseaKeyC : bseaKeyV;
+  const upd = kind === 'cargo' ? updCargo : updVessel;
+  const viaSkip = (fid, p) => { bseaDivert._skip = true; try { upd(fid, p); } finally { bseaDivert._skip = false; } };
+  if (!r.bsea_only) {   // riga del foglio: mai toccarla da qui
+    if (r.basin !== 'ATL') return false;
+    const ex = bseaOverrides(kind).get(keyOf(r));
+    if (ex) { viaSkip(ex.id, isDelete ? { status: BSEA_HIDDEN } : patch); return true; }
+    bseaFork(kind, id, patch, !!isDelete); return true;
+  }
+  if (isDelete && r.status !== BSEA_HIDDEN) {   // copia privata cancellata: se nel foglio c'e' ancora l'originale, nascondi invece di cancellare (altrimenti ricomparirebbe)
+    const k = keyOf(r);
+    if (arr.some(x => !x.bsea_only && x.basin === 'ATL' && keyOf(x) === k)) { viaSkip(id, { status: BSEA_HIDDEN }); return true; }
+  }
+  return false;
+}
+function bseaHiddenRows() {
+  const V = (DATA.vessels || []).filter(x => x.bsea_only && x.status === BSEA_HIDDEN).map(x => ({ kind: 'vessel', id: x.id, label: x.vessel || '' }));
+  const C = (DATA.cargoes || []).filter(x => x.bsea_only && x.status === BSEA_HIDDEN).map(x => ({ kind: 'cargo', id: x.id, label: [x.chrtrs, x.load_port, x.laycan_from].filter(Boolean).join(' · ') }));
+  return V.concat(C);
+}
+function bseaRestore(kind, id) {   // ripristina = elimina la copia nascosta → torna a vedersi l'originale del foglio
+  const arr = kind === 'cargo' ? DATA.cargoes : DATA.vessels;
+  const r = arr.find(x => x.id === id); if (!r) return;
+  logUserAction('del', kind === 'cargo' ? 'cargoes' : 'vessels', id, r, null);
+  if (kind === 'cargo') DATA.cargoes = DATA.cargoes.filter(x => x.id !== id); else DATA.vessels = DATA.vessels.filter(x => x.id !== id);
+  persist();
+}
+function openBseaHidden() {
+  const rows = bseaHiddenRows();
+  if (!rows.length) { try { cloudToast('Nothing hidden in Black Sea.', { kind: 'info', duration: 2500 }); } catch (e) {} return; }
+  modal.open('Hidden in Black Sea', '<div style="max-height:60vh;overflow:auto">' + rows.map(r => `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border,#eee)"><span><b>${r.kind === 'cargo' ? 'CGO' : 'VSL'}</b> ${esc(r.label)}</span><button class="primary" data-bsea-restore="${r.kind}:${r.id}">Restore</button></div>`).join('') + '</div>');
+  $('#modal-body').querySelectorAll('[data-bsea-restore]').forEach(b => b.onclick = () => { const [k, id] = b.getAttribute('data-bsea-restore').split(':'); bseaRestore(k, /^\d+$/.test(id) ? +id : id); modal.close(); setRoute(); });
+}
 function denyEdit() { try { cloudToast('View only: ask Giancarlo for edit access.', { kind: 'info', duration: 3500 }); } catch (e) {} return false; }
 let CURRENT_USER_NAME = null;   // display_name (from allowed_users)
 window.CURRENT_USER = CURRENT_USER;
@@ -3174,8 +3239,8 @@ async function loadDataFromCloud() {
 async function migrateLocalToCloud(local) {
   cloudToast('Migrating ' + ((local.vessels||[]).length + (local.cargoes||[]).length) + ' records to cloud…', { spinner: true });
   // Allowed columns per table — extra fields in localStorage are dropped
-  const VESSEL_COLS = ['vessel','dwt_blt','open_port','open_from','open_to','ideas','ows_brkr','bunker','ls_brkr','update_date','area','basin','status','subs','yard','copy_text','ukr_trader','rus_trader','iran_trader','scr_ftd','ex_our_cp','grain_clean','neo_pnm_ftd','scrbr_ftd','oz_grain','bhp','co2_ftd'];
-  const CARGO_COLS  = ['chrtrs','laycan_from','laycan_to','load_port','disch_port','cgo','size','notes','ls_brkr','update_date','date','area','section','basin','status','copy_text'];
+  const VESSEL_COLS = ['vessel','dwt_blt','open_port','open_from','open_to','ideas','ows_brkr','bunker','ls_brkr','update_date','area','basin','status','subs','yard','copy_text','ukr_trader','rus_trader','iran_trader','scr_ftd','ex_our_cp','grain_clean','neo_pnm_ftd','scrbr_ftd','oz_grain','bhp','co2_ftd','bsea_only'];
+  const CARGO_COLS  = ['chrtrs','laycan_from','laycan_to','load_port','disch_port','cgo','size','notes','ls_brkr','update_date','date','area','section','basin','status','copy_text','bsea_only'];
   const ACCOUNT_COLS= ['col','city','broker','clients'];
 
   const pick = (obj, cols) => {
@@ -3255,8 +3320,8 @@ async function syncDirtyToCloud() {
   if (!_lastSyncSnapshot) return;
   if (window._restoring) return;
   if (window._cloudLoadFailed) return;
-  const VESSEL_COLS = ['vessel','dwt_blt','open_port','open_from','open_to','ideas','ows_brkr','bunker','ls_brkr','update_date','area','basin','status','subs','yard','copy_text','ukr_trader','rus_trader','iran_trader','scr_ftd','ex_our_cp','grain_clean','neo_pnm_ftd','scrbr_ftd','oz_grain','bhp','co2_ftd'];
-  const CARGO_COLS  = ['chrtrs','laycan_from','laycan_to','load_port','disch_port','cgo','size','notes','ls_brkr','update_date','date','area','section','basin','status','copy_text'];
+  const VESSEL_COLS = ['vessel','dwt_blt','open_port','open_from','open_to','ideas','ows_brkr','bunker','ls_brkr','update_date','area','basin','status','subs','yard','copy_text','ukr_trader','rus_trader','iran_trader','scr_ftd','ex_our_cp','grain_clean','neo_pnm_ftd','scrbr_ftd','oz_grain','bhp','co2_ftd','bsea_only'];
+  const CARGO_COLS  = ['chrtrs','laycan_from','laycan_to','load_port','disch_port','cgo','size','notes','ls_brkr','update_date','date','area','section','basin','status','copy_text','bsea_only'];
   const dropped = window._dedupeDropped || new Set();
   const tasks = [];
   let failed = 0;
@@ -5426,6 +5491,7 @@ function addVessel(v) {
 }
 function updVessel(id, patch) {
   if (window.CAN_EDIT === false) { denyEdit(); return; }
+  if (!bseaDivert._skip && bseaDivert('vessel', id, patch, false)) return DATA.vessels.find(x => x.id === id);
   if (sheetLocked('vessel', id)) return;
   const v = DATA.vessels.find(x=>x.id===id);
   if (v) {
@@ -5544,6 +5610,7 @@ async function ageIdeasMorning() {
 }
 function delVessel(id) {
   if (window.CAN_EDIT === false) { denyEdit(); return; }
+  if (!bseaDivert._skip && bseaDivert('vessel', id, null, true)) return;
   if (sheetLocked('vessel', id)) return;
   const v = DATA.vessels.find(x=>x.id===id);
   if (v) logUserAction('del', 'vessels', id, v, null);
@@ -5564,6 +5631,7 @@ function addCargo(c) {
 }
 function updCargo(id, patch) {
   if (window.CAN_EDIT === false) { denyEdit(); return; }
+  if (!bseaDivert._skip && bseaDivert('cargo', id, patch, false)) return DATA.cargoes.find(x => x.id === id);
   if (sheetLocked('cargo', id)) return;
   const c = DATA.cargoes.find(x=>x.id===id);
   if (c) {
@@ -5582,6 +5650,7 @@ function updCargo(id, patch) {
 }
 function delCargo(id) {
   if (window.CAN_EDIT === false) { denyEdit(); return; }
+  if (!bseaDivert._skip && bseaDivert('cargo', id, null, true)) return;
   if (sheetLocked('cargo', id)) return;
   const c = DATA.cargoes.find(x=>x.id===id);
   if (c) logUserAction('del', 'cargoes', id, c, null);
@@ -6620,7 +6689,10 @@ function _bseaAreaOf(v) {
 }
 function buildBseaEntries() {
   const entries = [];
+  const over = bseaOverrides('vessel');   // v130: copia privata al posto della riga del foglio
   for (const v of DATA.vessels.filter(x => x.basin === 'ATL')) {
+    if (v.bsea_only) { if (v.status === BSEA_HIDDEN) continue; }
+    else if (over.has(bseaKeyV(v))) continue;
     const area = _bseaAreaOf(v);
     if (!area) continue;
     const offset = BSEA_OFFSETS[area];
@@ -6634,7 +6706,8 @@ function buildBseaEntries() {
   return entries;
 }
 function bseaCargoes() {
-  return DATA.cargoes.filter(c => c.basin === 'ATL' && (String(c.section || '').toUpperCase().replace(/\s*\/\s*/g, ' / ') === 'EMED / BSEA' || /^(EMED|BSEA)$/i.test(String(c.area || ''))))
+  const over = bseaOverrides('cargo');   // v130
+  return DATA.cargoes.filter(c => c.basin === 'ATL' && (c.bsea_only ? c.status !== BSEA_HIDDEN : !over.has(bseaKeyC(c))) && (String(c.section || '').toUpperCase().replace(/\s*\/\s*/g, ' / ') === 'EMED / BSEA' || /^(EMED|BSEA)$/i.test(String(c.area || ''))))
     .sort((a, b) => String(a.laycan_from || '9999').localeCompare(String(b.laycan_from || '9999')));
 }
 // Testo da incollare (come "Copy" della ECSA list): una riga per nave, poi i carichi
@@ -6694,7 +6767,9 @@ routes['bsea-list'] = function() {
   $('#topbar-actions').innerHTML = `<div class="global-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="f-q" placeholder="Search vessel, ideas, owner…" /></div>
     <button class="primary" id="bsea-copy" title="Copy the BSEA list as text (Teams / mail)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy list</button>
     <button class="primary admin-only" id="bsea-new-vsl" title="Add a vessel to the Black Sea list (area EMED / BSEA — it also appears in ATL TNG)" style="display:none;margin-left:6px;align-items:center">+ Vessel</button>
-    <button class="primary admin-only" id="bsea-new-cgo" title="Add a cargo to the Black Sea list (section EMED / BSEA — it also appears in ATL CGO)" style="display:none;margin-left:4px;align-items:center">+ Cargo</button>`;
+    <button class="primary admin-only" id="bsea-new-cgo" title="Add a cargo to the Black Sea list (section EMED / BSEA — it also appears in ATL CGO)" style="display:none;margin-left:4px;align-items:center">+ Cargo</button>
+    <button class="primary admin-only" id="bsea-hidden" title="Rows hidden in Black Sea only (restore here)" style="display:${bseaHiddenRows().length ? 'inline-flex' : 'none'};margin-left:4px;align-items:center;opacity:.8">Hidden (${bseaHiddenRows().length})</button>`;
+  { const bh = $('#bsea-hidden'); if (bh) bh.onclick = openBseaHidden; }
   // v116 (29 set, Giancarlo): nella sezione BSEA si possono aggiungere righe intere; le celle delle righe esistenti si modificano
   // con doppio click come nelle altre liste (stesso motore inlineEdit). Le righe nuove nascono gia' in EMED / BSEA.
   { const bv = $('#bsea-new-vsl'), bc = $('#bsea-new-cgo');
@@ -10154,8 +10229,8 @@ async function restoreSnapshot(id) {
     if (r2.error) throw new Error('Clear cargoes: ' + r2.error.message);
     if (r3.error) throw new Error('Clear accounts: ' + r3.error.message);
     // 4) Inserisci i dati dallo snapshot
-    const VESSEL_COLS = ['id','vessel','dwt_blt','open_port','open_from','open_to','ideas','ows_brkr','bunker','ls_brkr','update_date','area','basin','status','subs','yard','copy_text','ukr_trader','rus_trader','iran_trader','scr_ftd','ex_our_cp','grain_clean','neo_pnm_ftd','scrbr_ftd','oz_grain','bhp','co2_ftd'];
-    const CARGO_COLS  = ['id','chrtrs','laycan_from','laycan_to','load_port','disch_port','cgo','size','notes','ls_brkr','update_date','date','area','section','basin','status','copy_text'];
+    const VESSEL_COLS = ['id','vessel','dwt_blt','open_port','open_from','open_to','ideas','ows_brkr','bunker','ls_brkr','update_date','area','basin','status','subs','yard','copy_text','ukr_trader','rus_trader','iran_trader','scr_ftd','ex_our_cp','grain_clean','neo_pnm_ftd','scrbr_ftd','oz_grain','bhp','co2_ftd','bsea_only'];
+    const CARGO_COLS  = ['id','chrtrs','laycan_from','laycan_to','load_port','disch_port','cgo','size','notes','ls_brkr','update_date','date','area','section','basin','status','copy_text','bsea_only'];
     const ACCOUNT_COLS= ['id','col','city','broker','clients'];
     const pick = (obj, cols) => { const o = {}; for (const k of cols) if (obj[k] !== undefined && obj[k] !== null) o[k] = obj[k]; return o; };
     const vs = (restored.vessels || []).map(v => pick(v, VESSEL_COLS));
@@ -11164,7 +11239,7 @@ if (AUTO_INBOX_FRAME) {
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20261019-sheet-v129'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20261019-sheet-v130'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
