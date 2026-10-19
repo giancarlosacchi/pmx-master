@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20261019-sheet-v131 -->
+<!-- build: 20261019-sheet-v132 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -911,6 +911,21 @@ pre.rundown { white-space: pre-wrap; font-family: inherit;
   background: var(--bg-3); color: var(--text); padding: 16px 18px; border-radius: 0 0 var(--radius-lg) var(--radius-lg);
   font-size: 12px; line-height: 1.65; max-height: 65vh; overflow: auto; margin: 0; border-top: 1px solid var(--line-soft); }
 /* Textarea per le pagine Rundown: stile coerente con il resto + flex per riempire il pannello */
+/* ===== BSEA Post-it board (v132) ===== */
+.postit-board { position: relative; min-height: calc(100vh - 170px); border-radius: 12px; background: var(--bg-2, #fff); background-image: radial-gradient(rgba(0,0,0,.08) 1px, transparent 1px); background-size: 18px 18px; overflow: auto; }
+.postit-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--muted, #888); font-size: 14px; pointer-events: none; }
+.postit { position: absolute; width: 210px; min-height: 210px; padding: 0 0 6px; box-shadow: 2px 4px 12px rgba(0,0,0,.22); color: #222; display: flex; flex-direction: column; transition: box-shadow .15s; }
+.postit.focus, .postit.drag { box-shadow: 4px 8px 22px rgba(0,0,0,.32); z-index: 5; }
+.postit.drag { cursor: grabbing; }
+.postit-bar { height: 26px; display: flex; align-items: center; justify-content: space-between; padding: 0 6px 0 8px; cursor: grab; background: rgba(0,0,0,.06); }
+.postit-colors { display: flex; gap: 4px; opacity: 0; transition: opacity .15s; }
+.postit:hover .postit-colors { opacity: 1; }
+.postit-colors i { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0,0,0,.25); cursor: pointer; display: inline-block; }
+.postit-colors i.on { outline: 2px solid rgba(0,0,0,.45); outline-offset: 1px; }
+.postit-del { border: 0; background: transparent; color: rgba(0,0,0,.45); font-size: 13px; cursor: pointer; line-height: 1; padding: 2px 4px; border-radius: 4px; }
+.postit-del:hover { background: rgba(0,0,0,.12); color: #000; }
+.postit-text { flex: 1; width: 100%; border: 0; background: transparent; resize: none; outline: none; padding: 8px 10px; font: 15px/1.35 'Segoe Print', 'Bradley Hand', 'Comic Sans MS', cursive; color: #222; min-height: 160px; }
+.postit-meta { font-size: 9.5px; color: rgba(0,0,0,.45); padding: 0 10px; text-align: right; letter-spacing: .3px; }
 /* ===== BSEA hub: segmented control (v88) ===== */
 .seg-ctl-wrap { display: flex; justify-content: center; margin: 0 0 12px; animation: none !important; }
 .seg-ctl { display: inline-flex; gap: 4px; padding: 4px; background: var(--bg-3); border: 1px solid var(--line); border-radius: 999px; box-shadow: inset 0 1px 2px rgba(0,0,0,.05); }
@@ -9199,9 +9214,83 @@ routes['rundown-natl'] = () => renderRundown('natl', 'N. Atlantic Rundown');
 routes['rundown-pac']  = () => renderRundown('pac',  'Pacific Rundown');
 // ===== BSEA HUB (v88, Giancarlo 16 set 2026): una sola pagina in Tools con 3 tasti — List / Rundown / Agents =====
 const renderBseaList = routes['bsea-list'];
+// ============== BSEA POST-IT (v132, Giancarlo 19 ott): bacheca di note adesive condivise ==============
+// Salvate in Supabase nella tabella rundowns (key 'bsea_postits', text = JSON) → stesse policy del rundown,
+// realtime gia' attivo (applyRtRundown + _RT_ROUTES 'bsea'). Ogni nota: {id, x, y, text, color, rot, by, at}.
+const POSTIT_KEY = 'bsea_postits';
+const POSTIT_COLORS = { yellow: '#FFF176', pink: '#F8BBD0', blue: '#B3E5FC', green: '#C8E6C9', orange: '#FFCC80', purple: '#E1BEE7' };
+let _postits = null, _postitSaveT = null, _postitEditingId = null;
+function postitLoad() {
+  const raw = (DATA.rundowns || {})[POSTIT_KEY];
+  let arr = []; try { arr = JSON.parse(raw || '[]'); } catch (e) { arr = []; }
+  if (!Array.isArray(arr)) arr = [];
+  if (_postits && _postitEditingId) {   // sto scrivendo: la mia nota vince sulla copia cloud
+    const mine = _postits.find(n => n.id === _postitEditingId);
+    if (mine) { const i = arr.findIndex(n => n.id === mine.id); if (i >= 0) arr[i] = mine; else arr.push(mine); }
+  }
+  _postits = arr;
+  return _postits;
+}
+function postitSave(now) {
+  DATA.rundowns = DATA.rundowns || {};
+  const text = JSON.stringify(_postits || []);
+  DATA.rundowns[POSTIT_KEY] = text;
+  try { saveData(DATA); } catch (e) {}
+  if (_postitSaveT) clearTimeout(_postitSaveT);
+  const push = () => { _postitSaveT = null; if (window._cloudSyncActive && !window._cloudLoadFailed) sb.from('rundowns').upsert({ key: POSTIT_KEY, text }).then(r => { if (r && r.error) cloudToast('Post-it not saved to cloud: ' + r.error.message, { kind: 'error', duration: 5000 }); }); };
+  if (now) push(); else _postitSaveT = setTimeout(push, 600);
+}
+function renderPostits() {
+  const canEdit = window.CAN_EDIT !== false;
+  $('#topbar-actions').innerHTML = canEdit ? `<button class="primary" id="postit-add" title="Add a sticky note">+ Post-it</button>` : '';
+  const notes = postitLoad();
+  $('#content').innerHTML = `<div class="postit-board" id="postit-board">${notes.length ? '' : '<div class="postit-empty">No notes yet' + (canEdit ? ' — click <b>+ Post-it</b> to stick one here.' : '.') + '</div>'}</div>`;
+  const board = $('#postit-board');
+  const esc2 = esc;
+  for (const n of notes) {
+    const el = document.createElement('div');
+    el.className = 'postit'; el.dataset.id = n.id;
+    el.style.left = (n.x || 20) + 'px'; el.style.top = (n.y || 20) + 'px';
+    el.style.background = POSTIT_COLORS[n.color] || POSTIT_COLORS.yellow;
+    el.style.transform = `rotate(${n.rot || 0}deg)`;
+    el.innerHTML = `<div class="postit-bar">
+        <span class="postit-colors">${Object.keys(POSTIT_COLORS).map(c => `<i data-c="${c}" style="background:${POSTIT_COLORS[c]}" class="${c === (n.color || 'yellow') ? 'on' : ''}"></i>`).join('')}</span>
+        <button class="postit-del" title="Delete note">✕</button></div>
+      <textarea class="postit-text" ${canEdit ? '' : 'readonly'} placeholder="Write here…">${esc2(n.text || '')}</textarea>
+      <div class="postit-meta">${esc2((n.by || '').split('@')[0].toUpperCase())}${n.at ? ' · ' + esc2(n.at.slice(5, 10).split('-').reverse().join('/')) : ''}</div>`;
+    board.appendChild(el);
+    if (!canEdit) { el.querySelector('.postit-bar').style.display = 'none'; continue; }
+    const ta = el.querySelector('.postit-text');
+    ta.addEventListener('focus', () => { _postitEditingId = n.id; el.classList.add('focus'); });
+    ta.addEventListener('blur', () => { el.classList.remove('focus'); _postitEditingId = null; postitSave(true); });
+    ta.addEventListener('input', () => { n.text = ta.value; n.at = todayIso(); n.by = (CURRENT_USER && CURRENT_USER.email) || n.by; postitSave(false); });
+    el.querySelector('.postit-del').onclick = (e) => { e.stopPropagation(); if (n.text && n.text.trim() && !confirm('Delete this note?')) return; _postits = _postits.filter(x => x.id !== n.id); _postitEditingId = null; postitSave(true); renderPostits(); };
+    el.querySelectorAll('.postit-colors i').forEach(i => i.onclick = (e) => { e.stopPropagation(); n.color = i.dataset.c; el.style.background = POSTIT_COLORS[n.color]; el.querySelectorAll('.postit-colors i').forEach(j => j.classList.toggle('on', j === i)); postitSave(false); });
+    // trascinamento dalla barra in alto (o dal bordo): pointer events
+    const bar = el.querySelector('.postit-bar');
+    bar.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('button,i')) return;
+      e.preventDefault(); bar.setPointerCapture(e.pointerId);
+      const br = board.getBoundingClientRect(); const sx = e.clientX - (n.x || 20), sy = e.clientY - (n.y || 20);
+      el.classList.add('drag'); board.appendChild(el);   // in primo piano
+      const mv = (ev) => { n.x = Math.max(0, Math.min(br.width - 60, ev.clientX - sx)); n.y = Math.max(0, Math.min(br.height - 40, ev.clientY - sy)); el.style.left = n.x + 'px'; el.style.top = n.y + 'px'; };
+      const up = () => { bar.removeEventListener('pointermove', mv); bar.removeEventListener('pointerup', up); bar.removeEventListener('pointercancel', up); el.classList.remove('drag'); postitSave(true); };
+      bar.addEventListener('pointermove', mv); bar.addEventListener('pointerup', up); bar.addEventListener('pointercancel', up);
+    });
+  }
+  const add = $('#postit-add');
+  if (add) add.onclick = () => {
+    const k = (_postits || []).length;
+    const colors = Object.keys(POSTIT_COLORS);
+    const n = { id: 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), x: 24 + (k % 5) * 230, y: 24 + Math.floor(k / 5) * 230, text: '', color: colors[k % colors.length], rot: Math.round((Math.random() * 4 - 2) * 10) / 10, by: (CURRENT_USER && CURRENT_USER.email) || '', at: todayIso() };
+    _postits.push(n); postitSave(true); renderPostits();
+    const el = board.querySelector(`.postit[data-id="${n.id}"] textarea`) || document.querySelector(`.postit[data-id="${n.id}"] textarea`); if (el) el.focus();
+  };
+}
 const BSEA_TABS = [
   ['list', 'List', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>'],
   ['rundown', 'Rundown', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3v6h6"/><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M8 13h8M8 17h8"/></svg>'],
+  ['postit', 'Post-it', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v11l-5 5H4z"/><path d="M15 20v-5h5"/></svg>'],
   ['agents', 'Agents', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/><path d="M9 10h.01M15 10h.01M12 13h.01"/></svg>'],  ['fixtures', 'Fixtures', '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/><path d="M3 3h18v4H3z" opacity=".35"/></svg>'],
 ];
 function bseaTab() { let t = null; try { t = localStorage.getItem('pmx-bsea-tab'); } catch (e) {} return BSEA_TABS.some(x => x[0] === t) ? t : 'list'; }
@@ -9209,16 +9298,18 @@ function setBseaTab(t) { try { localStorage.setItem('pmx-bsea-tab', t); } catch 
 routes['bsea'] = function() {
   if (CURRENT_USER && !canBsea()) { if (typeof cloudToast === 'function') cloudToast('BSEA section is restricted.', { kind: 'info', duration: 3000 }); location.hash = '#/atl-tng'; return; }   // v91; v93: prima del login (setRoute dalla cache) non si rimbalza
   const tab = bseaTab();
+  if (tab === 'postit' && _postitEditingId && $('#postit-board')) { postitLoad(); return; }   // v132: realtime (anche l'eco del mio salvataggio) non deve rifare la bacheca mentre scrivo
   if (tab === 'list') renderBseaList();
   else if (tab === 'rundown') { renderRundown('bsea', 'Black Sea Rundown'); const ta = $('#rd-text'); if (ta) ta.style.height = 'calc(100% - 54px)'; }
   else if (tab === 'fixtures') renderFixtures();
+  else if (tab === 'postit') renderPostits();
   else renderAgents();
   const bar = document.createElement('div');
   bar.className = 'seg-ctl-wrap';
   bar.innerHTML = `<div class="seg-ctl" role="tablist">${BSEA_TABS.map(([k, l, ic]) => `<button type="button" class="seg-btn${k === tab ? ' active' : ''}" data-tab="${k}" role="tab" aria-selected="${k === tab}">${ic}<span>${l}</span></button>`).join('')}</div>`;
   $('#content').prepend(bar);
   bar.querySelectorAll('.seg-btn').forEach(b => b.onclick = () => { if (b.dataset.tab === bseaTab()) return; setBseaTab(b.dataset.tab); _lastRoute = null; setRoute(); });
-  const subs = { list: 'Ukr/Russia candidates spot onw + BSEA cargoes', rundown: 'Black Sea Rundown', agents: 'Port agents — Black Sea and beyond', fixtures: 'Black Sea fixtures — filter any column, click a header to sort' };
+  const subs = { list: 'Ukr/Russia candidates spot onw + BSEA cargoes', rundown: 'Black Sea Rundown', agents: 'Port agents — Black Sea and beyond', fixtures: 'Black Sea fixtures — filter any column, click a header to sort', postit: 'Sticky notes — shared with the Black Sea team, drag them around, delete when done' };
   $('#page-title').textContent = 'BSEA'; $('#page-sub').textContent = subs[tab];
 };
 // vecchi link → hub (stesso contenuto, un solo posto)
@@ -11239,7 +11330,7 @@ if (AUTO_INBOX_FRAME) {
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20261019-sheet-v131'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20261019-sheet-v132'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
