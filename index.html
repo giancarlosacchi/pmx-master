@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20261019-sheet-v133 -->
+<!-- build: 20261020-sheet-v134 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2947,41 +2947,80 @@ const BSEA_HIDDEN = 'bsea_hidden';
 function onBseaPage() { return /bsea|black/i.test(String(location.hash || '')); }
 function bseaKeyV(v) { return String((v && v.vessel) || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
 function bseaKeyC(c) { return [c && c.chrtrs, c && c.load_port, c && c.laycan_from].map(x => String(x || '').toUpperCase().replace(/[^A-Z0-9]/g, '')).join('|'); }
-function bseaOverrides(kind) {   // key → copia privata (bsea_only) del bacino ATL
+// v134 (20 ott 2026, Giancarlo: "in Black Sea l'unica differenza rispetto all'ATL TNG puo' essere lo stato off market e le idee/info;
+// nome, dwt, porto, date restano quelli del foglio; la riga non si deve sdoppiare"). La copia privata e' solo un "velo" (override):
+// in Black Sea la nave del foglio viene mostrata UNA volta, con ideas/status presi dalla copia se c'e'. Tutto il resto viene sempre
+// dalla riga del foglio (che il sync rinnova). Le copie-velo hanno bsea_of = chiave della nave (se la colonna esiste); se la riga
+// del foglio sparisce o cambia nome, il velo orfano non si vede (niente doppioni). Le righe create da "+ Vessel"/"+ Cargo" in
+// Black Sea (bsea_only senza bsea_of e senza originale) restano righe proprie come prima.
+const BSEA_OVERLAY_V = ['ideas', 'status', 'update_date'];
+const BSEA_OVERLAY_C = ['notes', 'status', 'update_date'];
+function bseaHasOfCol(kind) { const arr = kind === 'cargo' ? (DATA.cargoes || []) : (DATA.vessels || []); return arr.some(r => r && ('bsea_of' in r)); }
+function bseaOverrides(kind) {   // key → copia privata (velo) del bacino ATL
   const arr = kind === 'cargo' ? (DATA.cargoes || []) : (DATA.vessels || []);
   const keyOf = kind === 'cargo' ? bseaKeyC : bseaKeyV;
   const m = new Map();
-  for (const r of arr) if (r.bsea_only && r.basin === 'ATL') m.set(keyOf(r), r);
+  for (const r of arr) if (r.bsea_only && r.basin === 'ATL') { const k = r.bsea_of || keyOf(r); if (k) m.set(String(k), r); }
   return m;
+}
+// la riga del foglio "vestita" col velo: ideas/status della copia, tutto il resto dell'originale; id = originale (le modifiche
+// in Black Sea passano da bseaDivert e finiscono sul velo)
+function bseaMerge(kind, base, ov) {
+  if (!ov) return base;
+  const fields = kind === 'cargo' ? BSEA_OVERLAY_C : BSEA_OVERLAY_V;
+  const m = { ...base, __bseaOv: ov.id };
+  for (const f of fields) if (ov[f] !== null && ov[f] !== undefined) m[f] = ov[f];
+  return m;
+}
+// true = questa riga bsea_only e' un velo (non una riga propria): ha bsea_of, oppure (senza colonna) esiste l'originale con la stessa chiave
+function bseaIsVeil(kind, r) {
+  if (!r || !r.bsea_only) return false;
+  if (r.bsea_of) return true;
+  const arr = kind === 'cargo' ? (DATA.cargoes || []) : (DATA.vessels || []);
+  const keyOf = kind === 'cargo' ? bseaKeyC : bseaKeyV; const k = keyOf(r);
+  return !!k && arr.some(x => !x.bsea_only && x.basin === 'ATL' && keyOf(x) === k);
 }
 function bseaFork(kind, id, patch, hide) {
   const arr = kind === 'cargo' ? DATA.cargoes : DATA.vessels;
   const src = arr.find(x => x.id === id); if (!src) return null;
-  const copy = { ...src };
-  for (const k of ['id', 'created_at', 'updated_at', 'created_by', 'updated_by', 'sync_id', 'row_order', '__sessionNew']) delete copy[k];
-  copy.bsea_only = true;
-  Object.assign(copy, patch || {});
+  const keyOf = kind === 'cargo' ? bseaKeyC : bseaKeyV;
+  const keepV = ['vessel', 'dwt_blt', 'open_port', 'open_from', 'open_to', 'area', 'basin', 'ls_brkr', 'ideas', 'status', 'update_date'];
+  const keepC = ['chrtrs', 'laycan_from', 'laycan_to', 'load_port', 'disch_port', 'cgo', 'size', 'area', 'section', 'basin', 'ls_brkr', 'notes', 'status', 'update_date', 'date'];
+  const copy = {}; for (const k of (kind === 'cargo' ? keepC : keepV)) if (src[k] !== undefined) copy[k] = src[k];
+  copy.bsea_only = true; copy.copy_text = null;   // niente copy_text: la dedupe per contenuto non deve mai confondere velo e originale
+  if (bseaHasOfCol(kind)) copy.bsea_of = keyOf(src);
+  const fields = kind === 'cargo' ? BSEA_OVERLAY_C : BSEA_OVERLAY_V;
+  for (const k of Object.keys(patch || {})) if (fields.includes(k)) copy[k] = patch[k];
   if (hide) copy.status = BSEA_HIDDEN;
   const out = kind === 'cargo' ? addCargo(copy) : addVessel(copy);
   if (out) { out.__sessionNew = false; try { cloudToast(hide ? 'Hidden in Black Sea only (still in the sheet / ATL list).' : 'Saved in Black Sea only — the sheet / ATL list is unchanged.', { kind: 'info', duration: 3500 }); } catch (e) {} }
   return out;
 }
-// true = la modifica e' stata deviata sulla copia privata (il chiamante deve fermarsi)
+// true = la modifica e' stata deviata sul velo (il chiamante deve fermarsi)
 function bseaDivert(kind, id, patch, isDelete) {
   if (!SHEET_MODE || !onBseaPage()) return false;
   const arr = kind === 'cargo' ? (DATA.cargoes || []) : (DATA.vessels || []);
   const r = arr.find(x => x.id === id); if (!r) return false;
   const keyOf = kind === 'cargo' ? bseaKeyC : bseaKeyV;
   const upd = kind === 'cargo' ? updCargo : updVessel;
+  const fields = kind === 'cargo' ? BSEA_OVERLAY_C : BSEA_OVERLAY_V;
   const viaSkip = (fid, p) => { bseaDivert._skip = true; try { upd(fid, p); } finally { bseaDivert._skip = false; } };
   if (!r.bsea_only) {   // riga del foglio: mai toccarla da qui
     if (r.basin !== 'ATL') return false;
+    if (!isDelete) {
+      const bad = Object.keys(patch || {}).filter(k => !fields.includes(k));
+      if (bad.length) { try { cloudToast('In Black Sea you can change only Ideas and Status: name, dwt, port and dates come from the sheet (LS WORK).', { kind: 'info', duration: 4500 }); } catch (e) {} return true; }
+    }
     const ex = bseaOverrides(kind).get(keyOf(r));
     if (ex) { viaSkip(ex.id, isDelete ? { status: BSEA_HIDDEN } : patch); return true; }
     bseaFork(kind, id, patch, !!isDelete); return true;
   }
-  if (isDelete && r.status !== BSEA_HIDDEN) {   // copia privata cancellata: se nel foglio c'e' ancora l'originale, nascondi invece di cancellare (altrimenti ricomparirebbe)
-    const k = keyOf(r);
+  if (bseaIsVeil(kind, r) && !isDelete) {   // velo modificato direttamente: solo i campi ammessi
+    const bad = Object.keys(patch || {}).filter(k => !fields.includes(k));
+    if (bad.length) { try { cloudToast('In Black Sea you can change only Ideas and Status: name, dwt, port and dates come from the sheet (LS WORK).', { kind: 'info', duration: 4500 }); } catch (e) {} return true; }
+  }
+  if (isDelete && r.status !== BSEA_HIDDEN) {   // velo cancellato: se nel foglio c'e' ancora l'originale, nascondi invece di cancellare (altrimenti ricomparirebbe)
+    const k = r.bsea_of || keyOf(r);
     if (arr.some(x => !x.bsea_only && x.basin === 'ATL' && keyOf(x) === k)) { viaSkip(id, { status: BSEA_HIDDEN }); return true; }
   }
   return false;
@@ -3142,6 +3181,7 @@ function dedupeData(){
       return (Number(a.id)||0) > (Number(b.id)||0);
     };
     arr.forEach(function(r){
+      if (r && r.bsea_only) return;   // v134: i veli Black Sea non partecipano alla dedupe (non devono mai nascondere l'originale del foglio)
       var key = String((r && r.copy_text) || '').trim().toLowerCase().replace(/\s+/g,' ');
       if (!key) return;
       var cur = best[key];
@@ -3150,6 +3190,7 @@ function dedupeData(){
     });
     var before = arr.length;
     var kept = arr.filter(function(r){
+      if (r && r.bsea_only) return true;   // v134
       var key = String((r && r.copy_text) || '').trim().toLowerCase().replace(/\s+/g,' ');
       if (!key) return true;
       return best[key] === r;
@@ -4718,8 +4759,10 @@ function inlineEdit(td, kind, id, field) {
   if (sheetLocked(kind === 'cargo' || kind === 'cargoes' ? 'cargo' : 'vessel', id)) return;
   if (td.classList.contains('editing')) return;
   if (window.CAN_EDIT === false) { denyEdit(); return; }
-  const item = kind === 'v' ? DATA.vessels.find(x=>x.id===id) : DATA.cargoes.find(x=>x.id===id);
+  let item = kind === 'v' ? DATA.vessels.find(x=>x.id===id) : DATA.cargoes.find(x=>x.id===id);
   if (!item) return;
+  // v134: in Black Sea la riga del foglio puo' avere un velo (ideas/status propri): l'editor parte dal testo che si vede, non da quello del foglio
+  if (typeof onBseaPage === 'function' && onBseaPage() && !item.bsea_only) { try { const ov = bseaOverrides(kind === 'v' ? 'vessel' : 'cargo').get(kind === 'v' ? bseaKeyV(item) : bseaKeyC(item)); if (ov) item = bseaMerge(kind === 'v' ? 'vessel' : 'cargo', item, ov); } catch (e) {} }
   const original = td.innerHTML;
   const rawVal = item[field] || '';
   // Per ideas/notes: pre-popolo l'editor col testo visualizzato (YDAY/LAST OFFERS…)
@@ -6704,10 +6747,10 @@ function _bseaAreaOf(v) {
 }
 function buildBseaEntries() {
   const entries = [];
-  const over = bseaOverrides('vessel');   // v130: copia privata al posto della riga del foglio
-  for (const v of DATA.vessels.filter(x => x.basin === 'ATL')) {
-    if (v.bsea_only) { if (v.status === BSEA_HIDDEN) continue; }
-    else if (over.has(bseaKeyV(v))) continue;
+  const over = bseaOverrides('vessel');   // v134: il velo (ideas/status) si posa sulla riga del foglio; i veli orfani non si vedono
+  for (let v of DATA.vessels.filter(x => x.basin === 'ATL')) {
+    if (v.bsea_only) { if (v.status === BSEA_HIDDEN || bseaIsVeil('vessel', v)) continue; }
+    else { const ov = over.get(bseaKeyV(v)); if (ov) { if (ov.status === BSEA_HIDDEN) continue; v = bseaMerge('vessel', v, ov); } }
     const area = _bseaAreaOf(v);
     if (!area) continue;
     const offset = BSEA_OFFSETS[area];
@@ -6722,7 +6765,8 @@ function buildBseaEntries() {
 }
 function bseaCargoes() {
   const over = bseaOverrides('cargo');   // v130
-  return DATA.cargoes.filter(c => c.basin === 'ATL' && (c.bsea_only ? c.status !== BSEA_HIDDEN : !over.has(bseaKeyC(c))) && (String(c.section || '').toUpperCase().replace(/\s*\/\s*/g, ' / ') === 'EMED / BSEA' || /^(EMED|BSEA)$/i.test(String(c.area || ''))))
+  return DATA.cargoes.filter(c => c.basin === 'ATL' && (c.bsea_only ? (c.status !== BSEA_HIDDEN && !bseaIsVeil('cargo', c)) : !(over.get(bseaKeyC(c)) && over.get(bseaKeyC(c)).status === BSEA_HIDDEN)) && (String(c.section || '').toUpperCase().replace(/\s*\/\s*/g, ' / ') === 'EMED / BSEA' || /^(EMED|BSEA)$/i.test(String(c.area || ''))))
+    .map(c => c.bsea_only ? c : bseaMerge('cargo', c, over.get(bseaKeyC(c))))   // v134: velo notes/status sulla riga del foglio
     .sort((a, b) => String(a.laycan_from || '9999').localeCompare(String(b.laycan_from || '9999')));
 }
 // Testo da incollare (come "Copy" della ECSA list): una riga per nave, poi i carichi
@@ -11330,7 +11374,7 @@ if (AUTO_INBOX_FRAME) {
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20261019-sheet-v133'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20261020-sheet-v134'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
