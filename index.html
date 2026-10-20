@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20261020-sheet-v134 -->
+<!-- build: 20261020-sheet-v135 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -810,6 +810,13 @@ body:not(.is-admin) [data-route="history"] {
 body:not(.is-admin) td.editable {
   cursor: default !important;
 }
+/* v135: Editor di Black Sea (non admin) sulla pagina Black Sea: stesse mani di un admin, solo li' */
+body.bsea-editor.on-bsea:not(.is-admin) td.editable { cursor: pointer !important; }
+body.bsea-editor.on-bsea:not(.is-admin) td.editable::after { display: inline !important; }
+body.bsea-editor.on-bsea:not(.is-admin) .status-menu, body.bsea-editor.on-bsea:not(.is-admin) .flag-chip { pointer-events: auto !important; cursor: pointer !important; }
+body.bsea-editor.on-bsea:not(.is-admin) .status-pill, body.bsea-editor.on-bsea:not(.is-admin) .pill { cursor: pointer !important; }
+body.bsea-editor.on-bsea:not(.is-admin) #bsea-new-vsl, body.bsea-editor.on-bsea:not(.is-admin) #bsea-new-cgo, body.bsea-editor.on-bsea:not(.is-admin) #bsea-hidden { display: inline-flex !important; }
+body.bsea-editor.on-bsea:not(.is-admin) #bsea-layout .col-del, body.bsea-editor.on-bsea:not(.is-admin) #bsea-layout .row-del, body.bsea-editor.on-bsea:not(.is-admin) #bsea-layout .c-del, body.bsea-editor.on-bsea:not(.is-admin) #bsea-layout .btn-del { display: revert !important; }
 body:not(.is-admin) td.editable::after { display: none !important; }
 body:not(.is-admin) .status-menu,
 body:not(.is-admin) .area-menu,
@@ -2945,6 +2952,8 @@ function sheetLocked(kind, id) {
 // status 'bsea_hidden' (nascosta solo li'; si ripristina dal bottone "Hidden"). Le copie sopravvivono al sync del foglio (bsea_only).
 const BSEA_HIDDEN = 'bsea_hidden';
 function onBseaPage() { return /bsea|black/i.test(String(location.hash || '')); }
+// v135: admin ovunque; Editor non admin che vede Black Sea → solo sulla pagina Black Sea
+function canEditHere() { const b = document.body.classList; return b.contains('is-admin') || (b.contains('bsea-editor') && b.contains('on-bsea')); }
 function bseaKeyV(v) { return String((v && v.vessel) || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
 function bseaKeyC(c) { return [c && c.chrtrs, c && c.load_port, c && c.laycan_from].map(x => String(x || '').toUpperCase().replace(/[^A-Z0-9]/g, '')).join('|'); }
 // v134 (20 ott 2026, Giancarlo: "in Black Sea l'unica differenza rispetto all'ATL TNG puo' essere lo stato off market e le idee/info;
@@ -2955,6 +2964,34 @@ function bseaKeyC(c) { return [c && c.chrtrs, c && c.load_port, c && c.laycan_fr
 // Black Sea (bsea_only senza bsea_of e senza originale) restano righe proprie come prima.
 const BSEA_OVERLAY_V = ['ideas', 'status', 'update_date'];
 const BSEA_OVERLAY_C = ['notes', 'status', 'update_date'];
+// v135 (20 ott 2026, Giancarlo, "opzione A"): quello che si cambia in Black Sea sui campi CONDIVISI (dwt, porto, date, owner, bunker,
+// broker, flag UKR/RUS; per i carichi laycan, porti, merce, taglia) vale anche in ATL TNG / ATL CGO — sul sito. Il velo tiene il
+// nuovo valore e, in copy_text ("BSEA:{...}"), il valore che aveva il foglio al momento della modifica: finche' il foglio ha ancora
+// quel valore, il sito mostra ovunque quello di Black Sea; se nel foglio quel campo cambia, vince il foglio. Idee/Info e stato
+// restano SOLO di Black Sea. Il foglio LS WORK non viene scritto (opzione B, se servira': script Google).
+const BSEA_SHARED_V = ['dwt_blt', 'open_port', 'open_from', 'open_to', 'ows_brkr', 'bunker', 'ls_brkr', 'ukr_trader', 'rus_trader'];
+const BSEA_SHARED_C = ['laycan_from', 'laycan_to', 'load_port', 'disch_port', 'cgo', 'size', 'ls_brkr'];
+function bseaSnap(ov) { try { const t = String((ov && ov.copy_text) || ''); if (t.startsWith('BSEA:')) return JSON.parse(t.slice(5)) || {}; } catch (e) {} return {}; }
+function bseaSnapText(snap) { return 'BSEA:' + JSON.stringify(snap || {}); }
+const _sv = x => (x === null || x === undefined) ? '' : String(x);
+// applica in memoria, sulle righe del foglio, i campi condivisi cambiati in Black Sea (dopo il caricamento e dopo ogni realtime)
+function applyBseaShared() {
+  try {
+    for (const [kind, table, fields, keyOf] of [['vessel', 'vessels', BSEA_SHARED_V, bseaKeyV], ['cargo', 'cargoes', BSEA_SHARED_C, bseaKeyC]]) {
+      const arr = DATA[table] || []; const over = bseaOverrides(kind); if (!over.size) continue;
+      for (const r of arr) {
+        if (!r || r.bsea_only || r.basin !== 'ATL') continue;
+        const ov = over.get(keyOf(r)); if (!ov) continue;
+        const snap = bseaSnap(ov); let changed = false;
+        for (const f of fields) {
+          if (!(f in snap)) continue;
+          if (_sv(r[f]) === _sv(snap[f]) && _sv(r[f]) !== _sv(ov[f])) { r[f] = ov[f]; changed = true; }   // foglio immutato → vale Black Sea
+        }
+        if (changed && _lastSyncSnapshot && _lastSyncSnapshot[table]) _lastSyncSnapshot[table].set(r.id, _hash(r));   // non e' una modifica da mandare in cloud
+      }
+    }
+  } catch (e) { try { console.warn('[bsea] applyBseaShared', e); } catch (_) {} }
+}
 function bseaHasOfCol(kind) { const arr = kind === 'cargo' ? (DATA.cargoes || []) : (DATA.vessels || []); return arr.some(r => r && ('bsea_of' in r)); }
 function bseaOverrides(kind) {   // key → copia privata (velo) del bacino ATL
   const arr = kind === 'cargo' ? (DATA.cargoes || []) : (DATA.vessels || []);
@@ -2990,7 +3027,13 @@ function bseaFork(kind, id, patch, hide) {
   copy.bsea_only = true; copy.copy_text = null;   // niente copy_text: la dedupe per contenuto non deve mai confondere velo e originale
   if (bseaHasOfCol(kind)) copy.bsea_of = keyOf(src);
   const fields = kind === 'cargo' ? BSEA_OVERLAY_C : BSEA_OVERLAY_V;
-  for (const k of Object.keys(patch || {})) if (fields.includes(k)) copy[k] = patch[k];
+  const shared = kind === 'cargo' ? BSEA_SHARED_C : BSEA_SHARED_V;
+  const snap = {};
+  for (const k of Object.keys(patch || {})) {
+    if (fields.includes(k)) copy[k] = patch[k];
+    else if (shared.includes(k)) { snap[k] = src[k] === undefined ? null : src[k]; copy[k] = patch[k]; src[k] = patch[k]; }   // v135: campo condiviso → vale anche in ATL (in memoria subito)
+  }
+  if (Object.keys(snap).length) { copy.copy_text = bseaSnapText(snap); if (_lastSyncSnapshot && _lastSyncSnapshot[kind === 'cargo' ? 'cargoes' : 'vessels']) _lastSyncSnapshot[kind === 'cargo' ? 'cargoes' : 'vessels'].set(src.id, _hash(src)); }
   if (hide) copy.status = BSEA_HIDDEN;
   const out = kind === 'cargo' ? addCargo(copy) : addVessel(copy);
   if (out) { out.__sessionNew = false; try { cloudToast(hide ? 'Hidden in Black Sea only (still in the sheet / ATL list).' : 'Saved in Black Sea only — the sheet / ATL list is unchanged.', { kind: 'info', duration: 3500 }); } catch (e) {} }
@@ -3005,19 +3048,28 @@ function bseaDivert(kind, id, patch, isDelete) {
   const upd = kind === 'cargo' ? updCargo : updVessel;
   const fields = kind === 'cargo' ? BSEA_OVERLAY_C : BSEA_OVERLAY_V;
   const viaSkip = (fid, p) => { bseaDivert._skip = true; try { upd(fid, p); } finally { bseaDivert._skip = false; } };
+  const shared = kind === 'cargo' ? BSEA_SHARED_C : BSEA_SHARED_V;
+  const table = kind === 'cargo' ? 'cargoes' : 'vessels';
+  const NAME_MSG = kind === 'cargo' ? 'The charterer name comes from the sheet (LS WORK): change it there.' : 'The vessel name comes from the sheet (LS WORK): change it there.';
   if (!r.bsea_only) {   // riga del foglio: mai toccarla da qui
     if (r.basin !== 'ATL') return false;
     if (!isDelete) {
-      const bad = Object.keys(patch || {}).filter(k => !fields.includes(k));
-      if (bad.length) { try { cloudToast('In Black Sea you can change only Ideas and Status: name, dwt, port and dates come from the sheet (LS WORK).', { kind: 'info', duration: 4500 }); } catch (e) {} return true; }
+      const bad = Object.keys(patch || {}).filter(k => !fields.includes(k) && !shared.includes(k));
+      if (bad.length) { try { cloudToast(NAME_MSG, { kind: 'info', duration: 4500 }); } catch (e) {} return true; }
     }
     const ex = bseaOverrides(kind).get(keyOf(r));
-    if (ex) { viaSkip(ex.id, isDelete ? { status: BSEA_HIDDEN } : patch); return true; }
+    if (ex) {
+      if (isDelete) { viaSkip(ex.id, { status: BSEA_HIDDEN }); return true; }
+      const p = { ...patch }; const snap = bseaSnap(ex); let sharedTouched = false;
+      for (const k of Object.keys(p)) if (shared.includes(k)) { if (!(k in snap) || _sv(snap[k]) !== _sv(r[k]) && _sv(r[k]) !== _sv(ex[k])) snap[k] = r[k] === undefined ? null : r[k]; r[k] = p[k]; sharedTouched = true; }   // v135
+      if (sharedTouched) { p.copy_text = bseaSnapText(snap); if (_lastSyncSnapshot && _lastSyncSnapshot[table]) _lastSyncSnapshot[table].set(r.id, _hash(r)); try { cloudToast('Saved: shown in Black Sea and ATL list (the sheet LS WORK is not changed).', { kind: 'info', duration: 3500 }); } catch (e) {} }
+      viaSkip(ex.id, p); return true;
+    }
     bseaFork(kind, id, patch, !!isDelete); return true;
   }
   if (bseaIsVeil(kind, r) && !isDelete) {   // velo modificato direttamente: solo i campi ammessi
-    const bad = Object.keys(patch || {}).filter(k => !fields.includes(k));
-    if (bad.length) { try { cloudToast('In Black Sea you can change only Ideas and Status: name, dwt, port and dates come from the sheet (LS WORK).', { kind: 'info', duration: 4500 }); } catch (e) {} return true; }
+    const bad = Object.keys(patch || {}).filter(k => !fields.includes(k) && !shared.includes(k));
+    if (bad.length) { try { cloudToast(NAME_MSG, { kind: 'info', duration: 4500 }); } catch (e) {} return true; }
   }
   if (isDelete && r.status !== BSEA_HIDDEN) {   // velo cancellato: se nel foglio c'e' ancora l'originale, nascondi invece di cancellare (altrimenti ricomparirebbe)
     const k = r.bsea_of || keyOf(r);
@@ -3069,7 +3121,8 @@ async function bootAppAfterAuth(user, allowedRow) {
   if (SHEET_MODE) { document.body.classList.add('sheet-mode'); try { const b = document.createElement('div'); b.className = 'sheet-banner'; b.textContent = 'Lists mirrored from Google Sheet "LS WORK" every 5 min — read only (Black Sea page editable)'; document.body.appendChild(b); } catch (e) {} }
   if (!SHEET_MODE && CURRENT_USER_ROLE === 'admin' && typeof pollInboxBadge === 'function') { pollInboxBadge(); setTimeout(pollInboxBadge, 2500); }   // badge Inbox subito dopo il login, da qualsiasi pagina
   if (String((user && user.email) || '').toLowerCase() === 'gsc@lightshipchartering.com') document.body.classList.add('is-gsc');
-  if (canBsea(user)) document.body.classList.add('can-bsea');   // v91: hub BSEA solo per LCE/MPE/OPE/CPE/GSC (Giancarlo 16 set)
+  if (canBsea(user)) document.body.classList.add('can-bsea');
+  if (canBsea(user) && window.CAN_EDIT !== false) document.body.classList.add('bsea-editor');   // v135: chi vede Black Sea ed e' Editor la modifica anche se non e' admin (Luca/Michele/Oscar)   // v91: hub BSEA solo per LCE/MPE/OPE/CPE/GSC (Giancarlo 16 set)
   renderUserChip(user);
   // 1) Load latest data from cloud (with auto-migration if cloud empty)
   await loadDataFromCloud();
@@ -3265,6 +3318,7 @@ async function loadDataFromCloud() {
       DATA.cargoes = cloudC;
       DATA.cargoes.forEach(normCgoSection);
       dedupeData();
+      applyBseaShared();   // v135
       DATA.accounts = dedupeAccounts(a.data || []);
       if (r.data && r.data.length) {
         DATA.rundowns = DATA.rundowns || {};
@@ -3820,6 +3874,7 @@ function applyRtRow(table, payload) {
     }
     if (_lastSyncSnapshot && _lastSyncSnapshot[table]) _lastSyncSnapshot[table].set(row.id, _hash(row));
     if (wasInsert) dedupeData(); // un nuovo INSERT potrebbe essere un doppione: unifica
+    if (table === 'vessels' || table === 'cargoes') applyBseaShared();   // v135: il sync del foglio ricrea le righe → rimetto i campi cambiati in Black Sea
     saveData(DATA);
     if (wasMine) return; // marker: salta il re-render scheduler upstream
   }
@@ -4421,7 +4476,7 @@ function openStatusPopup(chip) {
 }
 document.addEventListener('click', (e) => {
   const chip = e.target.closest('.status-wrap .status-chip');
-  if (!chip || !document.body.classList.contains('is-admin')) return;
+  if (!chip || !canEditHere()) return;
   e.stopPropagation(); e.preventDefault();
   openStatusPopup(chip);
 }, true);
@@ -4891,8 +4946,8 @@ setRoute(); }, 150);
 }
 // Delegation globale dblclick
 document.addEventListener('dblclick', (e) => {
-  // Read-only mode per non-admin: blocca inline edit
-  if (!document.body.classList.contains('is-admin')) return;
+  // Read-only mode per non-admin: blocca inline edit (v135: tranne gli Editor di Black Sea, sulla pagina Black Sea)
+  if (!canEditHere()) return;
   const td = e.target.closest('td.editable');
   if (!td) return;
   const kind = td.dataset.kind, id = rowId(td.dataset.id), field = td.dataset.field;
@@ -5771,6 +5826,7 @@ function setRoute() {
   }
   $$('.nav a').forEach(a => a.classList.toggle('active', a.dataset.route === route));
   const fn = routes[route] || routes['atl-tng'];
+  document.body.classList.toggle('on-bsea', /^(bsea|rundown-bsea)/.test(route));   // v135
   const [t, s] = PAGES[route] || PAGES['atl-tng'];
   $('#page-title').textContent = t; $('#page-sub').textContent = s;
   if (!sameRoute) $('#topbar-actions').innerHTML = '';
@@ -11374,7 +11430,7 @@ if (AUTO_INBOX_FRAME) {
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20261020-sheet-v134'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20261020-sheet-v135'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
