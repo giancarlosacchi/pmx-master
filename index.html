@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20261020-sheet-v135 -->
+<!-- build: 20261022-sheet-v136 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -817,6 +817,9 @@ body.bsea-editor.on-bsea:not(.is-admin) .status-menu, body.bsea-editor.on-bsea:n
 body.bsea-editor.on-bsea:not(.is-admin) .status-pill, body.bsea-editor.on-bsea:not(.is-admin) .pill { cursor: pointer !important; }
 body.bsea-editor.on-bsea:not(.is-admin) #bsea-new-vsl, body.bsea-editor.on-bsea:not(.is-admin) #bsea-new-cgo, body.bsea-editor.on-bsea:not(.is-admin) #bsea-hidden { display: inline-flex !important; }
 body.bsea-editor.on-bsea:not(.is-admin) #bsea-layout .col-del, body.bsea-editor.on-bsea:not(.is-admin) #bsea-layout .row-del, body.bsea-editor.on-bsea:not(.is-admin) #bsea-layout .c-del, body.bsea-editor.on-bsea:not(.is-admin) #bsea-layout .btn-del { display: revert !important; }
+/* v136: anche chi e' View only altrove, in Black Sea vede cestini e pulsanti */
+body.view-only.bsea-editor.on-bsea #bsea-layout .icon-btn, body.view-only.bsea-editor.on-bsea #bsea-layout .col-del { display: revert !important; }
+body.view-only.bsea-editor.on-bsea button.primary#bsea-new-vsl, body.view-only.bsea-editor.on-bsea button.primary#bsea-new-cgo, body.view-only.bsea-editor.on-bsea #bsea-hidden { display: inline-flex !important; }
 body:not(.is-admin) td.editable::after { display: none !important; }
 body:not(.is-admin) .status-menu,
 body:not(.is-admin) .area-menu,
@@ -2171,7 +2174,7 @@ tr.status-subs .status-menu .opt { text-decoration: none; }
 /* colonne strette quanto la cella piu' larga (width:1px + nowrap), tutto lo spazio che avanza va a Notes */
 .bsea-cgo-col #ca-tbl th:not(.col-ideas), .bsea-cgo-col #ca-tbl td:not(.col-ideas) { width: 1px !important; max-width: none !important; white-space: nowrap; }
 .bsea-cgo-col #ca-tbl th.th-filter { min-width: 0 !important; }
-.bsea-cgo-col #ca-tbl .col-del { display: none !important; }   /* niente cestino: si cancella dalla ATL CGO */
+/* v136: cestino anche sui carichi in Black Sea (= nascosto solo li', il foglio/ATL CGO non cambiano) */
 .bsea-cgo-col #ca-tbl th.th-filter input { width: 100%; min-width: 48px; }
 .bsea-cgo-col #ca-tbl .col-ideas { width: 100% !important; min-width: 220px !important; max-width: none !important; white-space: normal; }
 .bsea-cgo-col #ca-tbl .col-ideas .ideas-text { white-space: normal; overflow: visible; text-overflow: clip; max-width: none; }
@@ -2954,6 +2957,7 @@ const BSEA_HIDDEN = 'bsea_hidden';
 function onBseaPage() { return /bsea|black/i.test(String(location.hash || '')); }
 // v135: admin ovunque; Editor non admin che vede Black Sea → solo sulla pagina Black Sea
 function canEditHere() { const b = document.body.classList; return b.contains('is-admin') || (b.contains('bsea-editor') && b.contains('on-bsea')); }
+function bseaFreeEdit() { try { return typeof canBsea === 'function' && canBsea() && onBseaPage(); } catch (e) { return false; } }   // v136: in Black Sea gli utenti BSEA modificano anche se View only
 function bseaKeyV(v) { return String((v && v.vessel) || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); }
 function bseaKeyC(c) { return [c && c.chrtrs, c && c.load_port, c && c.laycan_from].map(x => String(x || '').toUpperCase().replace(/[^A-Z0-9]/g, '')).join('|'); }
 // v134 (20 ott 2026, Giancarlo: "in Black Sea l'unica differenza rispetto all'ATL TNG puo' essere lo stato off market e le idee/info;
@@ -3122,7 +3126,7 @@ async function bootAppAfterAuth(user, allowedRow) {
   if (!SHEET_MODE && CURRENT_USER_ROLE === 'admin' && typeof pollInboxBadge === 'function') { pollInboxBadge(); setTimeout(pollInboxBadge, 2500); }   // badge Inbox subito dopo il login, da qualsiasi pagina
   if (String((user && user.email) || '').toLowerCase() === 'gsc@lightshipchartering.com') document.body.classList.add('is-gsc');
   if (canBsea(user)) document.body.classList.add('can-bsea');
-  if (canBsea(user) && window.CAN_EDIT !== false) document.body.classList.add('bsea-editor');   // v135: chi vede Black Sea ed e' Editor la modifica anche se non e' admin (Luca/Michele/Oscar)   // v91: hub BSEA solo per LCE/MPE/OPE/CPE/GSC (Giancarlo 16 set)
+  if (canBsea(user)) document.body.classList.add('bsea-editor');   // v136 (Giancarlo 22 ott): tutti quelli che vedono Black Sea (GSC, CPA, LCE, MPE, OPE) la modificano, anche se altrove sono View only   // v135: chi vede Black Sea ed e' Editor la modifica anche se non e' admin (Luca/Michele/Oscar)   // v91: hub BSEA solo per LCE/MPE/OPE/CPE/GSC (Giancarlo 16 set)
   renderUserChip(user);
   // 1) Load latest data from cloud (with auto-migration if cloud empty)
   await loadDataFromCloud();
@@ -4813,7 +4817,7 @@ const INLINE_TYPES = {
 function inlineEdit(td, kind, id, field) {
   if (sheetLocked(kind === 'cargo' || kind === 'cargoes' ? 'cargo' : 'vessel', id)) return;
   if (td.classList.contains('editing')) return;
-  if (window.CAN_EDIT === false) { denyEdit(); return; }
+  if (window.CAN_EDIT === false && !bseaFreeEdit()) { denyEdit(); return; }
   let item = kind === 'v' ? DATA.vessels.find(x=>x.id===id) : DATA.cargoes.find(x=>x.id===id);
   if (!item) return;
   // v134: in Black Sea la riga del foglio puo' avere un velo (ideas/status propri): l'editor parte dal testo che si vede, non da quello del foglio
@@ -5589,7 +5593,7 @@ function lookupCargoHistory(chrtrs, load_port, disch_port) {
 }
 
 function addVessel(v) {
-  if (window.CAN_EDIT === false) { denyEdit(); return; }
+  if (window.CAN_EDIT === false && !bseaFreeEdit()) { denyEdit(); return; }
   if (sheetLocked('vessel', v && v.bsea_only ? null : undefined)) return;
   // ID temporaneo string: syncDirtyToCloud farà INSERT su Supabase, riceverà
   // l'ID definitivo (bigserial) e patchareà v.id. Questo evita collisioni tra
@@ -5603,7 +5607,7 @@ function addVessel(v) {
   persist(); autoUpdateRundowns(); return v;
 }
 function updVessel(id, patch) {
-  if (window.CAN_EDIT === false) { denyEdit(); return; }
+  if (window.CAN_EDIT === false && !bseaFreeEdit()) { denyEdit(); return; }
   if (!bseaDivert._skip && bseaDivert('vessel', id, patch, false)) return DATA.vessels.find(x => x.id === id);
   if (sheetLocked('vessel', id)) return;
   const v = DATA.vessels.find(x=>x.id===id);
@@ -5722,7 +5726,7 @@ async function ageIdeasMorning() {
   } catch (e) { console.warn('ageIdeasMorning:', e); }
 }
 function delVessel(id) {
-  if (window.CAN_EDIT === false) { denyEdit(); return; }
+  if (window.CAN_EDIT === false && !bseaFreeEdit()) { denyEdit(); return; }
   if (!bseaDivert._skip && bseaDivert('vessel', id, null, true)) return;
   if (sheetLocked('vessel', id)) return;
   const v = DATA.vessels.find(x=>x.id===id);
@@ -5731,7 +5735,7 @@ function delVessel(id) {
   persist(); autoUpdateRundowns();
 }
 function addCargo(c) {
-  if (window.CAN_EDIT === false) { denyEdit(); return; }
+  if (window.CAN_EDIT === false && !bseaFreeEdit()) { denyEdit(); return; }
   if (sheetLocked('cargo', c && c.bsea_only ? null : undefined)) return;
   // ID temporaneo string — Postgres assegnerà il definitivo via syncDirtyToCloud
   c.id = 'tmp_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
@@ -5743,7 +5747,7 @@ function addCargo(c) {
   persist(); autoUpdateRundowns(); return c;
 }
 function updCargo(id, patch) {
-  if (window.CAN_EDIT === false) { denyEdit(); return; }
+  if (window.CAN_EDIT === false && !bseaFreeEdit()) { denyEdit(); return; }
   if (!bseaDivert._skip && bseaDivert('cargo', id, patch, false)) return DATA.cargoes.find(x => x.id === id);
   if (sheetLocked('cargo', id)) return;
   const c = DATA.cargoes.find(x=>x.id===id);
@@ -5762,7 +5766,7 @@ function updCargo(id, patch) {
   return c;
 }
 function delCargo(id) {
-  if (window.CAN_EDIT === false) { denyEdit(); return; }
+  if (window.CAN_EDIT === false && !bseaFreeEdit()) { denyEdit(); return; }
   if (!bseaDivert._skip && bseaDivert('cargo', id, null, true)) return;
   if (sheetLocked('cargo', id)) return;
   const c = DATA.cargoes.find(x=>x.id===id);
@@ -6876,6 +6880,7 @@ function renderBseaRow(entry) {
         <div class="opt none ${!v.status?'current':''}" data-id="${v.id}" data-status="">Empty</div>
       </div>
     </div></td>
+    <td class="col-del"><button class="icon-btn row-del" data-id="${v.id}" title="Delete from Black Sea (stays hidden here; ATL list / sheet untouched)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg></button></td>
   </tr>`;
 }
 routes['bsea-list'] = function() {
@@ -7010,14 +7015,15 @@ routes['bsea-list'] = function() {
       <th data-col="ls_brkr" class="th-filter"><input data-col="ls_brkr" placeholder="LS" value="${attr(F.ls_brkr||'')}">${colBtn('ls_brkr')}</th>
       <th data-col="update_date" class="th-filter"><input class="filter-date-range" type="text" readonly data-col="update_date" placeholder="Update" title="Click — pick 1 or 2 dates" value="${attr(fmtFilterDateRange(F.update_from, F.update_to))}">${colBtn('update_date')}</th>
       <th data-col="status" class="th-filter"><input data-col="status" placeholder="Status" value="${attr(F.status||'')}">${colBtn('status')}</th>
+      <th class="col-del"></th>
     </tr></thead><tbody>`];
     let lastBucket = null;
     for (const e of entries) {
       const b = bucketFor(e.adjFrom);
-      if (b !== lastBucket) { html.push(`<tr class="section-half area-blue"><td colspan="11">${esc(b)}<span class="half-count">(&thinsp;${bucketCounts[b] || 0}&thinsp;)</span></td></tr>`); lastBucket = b; }
+      if (b !== lastBucket) { html.push(`<tr class="section-half area-blue"><td colspan="12">${esc(b)}<span class="half-count">(&thinsp;${bucketCounts[b] || 0}&thinsp;)</span></td></tr>`); lastBucket = b; }
       html.push(renderBseaRow(e));
     }
-    if (!entries.length) html.push('<tr><td colspan="11" class="muted" style="padding:14px">No vessels in EMED / BSEA or RSEA</td></tr>');
+    if (!entries.length) html.push('<tr><td colspan="12" class="muted" style="padding:14px">No vessels in EMED / BSEA or RSEA</td></tr>');
     html.push('</tbody></table>');
     $('#tbl').innerHTML = html.join('');
     $$('#tbl [data-col]').forEach(el => { if (el.tagName !== 'INPUT') el.style.display = hiddenCols.has(el.dataset.col) ? 'none' : ''; });
@@ -11430,7 +11436,7 @@ if (AUTO_INBOX_FRAME) {
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20261020-sheet-v135'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20261022-sheet-v136'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
