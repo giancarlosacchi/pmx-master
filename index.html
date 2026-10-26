@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20261022-sheet-v136 -->
+<!-- build: 20261026-sheet-v137 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -3122,7 +3122,7 @@ async function bootAppAfterAuth(user, allowedRow) {
   }
   document.body.classList.add('logged-in');
   if (CURRENT_USER_ROLE === 'admin') document.body.classList.add('is-admin');
-  if (SHEET_MODE) { document.body.classList.add('sheet-mode'); try { const b = document.createElement('div'); b.className = 'sheet-banner'; b.textContent = 'Lists mirrored from Google Sheet "LS WORK" every 5 min — read only (Black Sea page editable)'; document.body.appendChild(b); } catch (e) {} }
+  if (SHEET_MODE) { document.body.classList.add('sheet-mode'); }   // v137 (26 ott, Giancarlo): tolta la scritta fissa in basso "Lists mirrored from Google Sheet…" (resta il toast quando si prova a modificare una lista bloccata)
   if (!SHEET_MODE && CURRENT_USER_ROLE === 'admin' && typeof pollInboxBadge === 'function') { pollInboxBadge(); setTimeout(pollInboxBadge, 2500); }   // badge Inbox subito dopo il login, da qualsiasi pagina
   if (String((user && user.email) || '').toLowerCase() === 'gsc@lightshipchartering.com') document.body.classList.add('is-gsc');
   if (canBsea(user)) document.body.classList.add('can-bsea');
@@ -11436,7 +11436,7 @@ if (AUTO_INBOX_FRAME) {
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20261022-sheet-v136'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20261026-sheet-v137'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
