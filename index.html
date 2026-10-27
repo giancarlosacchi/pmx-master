@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20261027-sheet-v138 -->
+<!-- build: 20261027-sheet-v139 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -2920,7 +2920,7 @@ body:not(.logged-in) .app { visibility: hidden; }
 // SUPABASE CLOUD LAYER — auth + (future) realtime data sync
 // ============================================================
 const SUPABASE_URL = 'https://oazkctzwmzbxdfcaamaf.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9hemtjdHp3bXpieGRmY2FhbWFmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAxNzIyNjksImV4cCI6MjEwNTc0ODI2OX0.TWnazcp-D1rAM43LZdeGuoMLKDDfIazOXaeSiwDVT2A';
+const SUPABASE_ANON_KEY = 'sb_publishable_YzJtLjl7fEElYtp9g5JBaw_iTUX7UyW';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'implicit' }
 });
@@ -11436,7 +11436,7 @@ if (AUTO_INBOX_FRAME) {
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20261027-sheet-v138'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20261027-sheet-v139'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
