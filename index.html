@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20261027-sheet-v139 -->
+<!-- build: 20261116-sheet-v140 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -9094,12 +9094,15 @@ function generateEcsaRundown(refIso) {
   lines.push('FIXTURES');
   lines.push("<<INSERT TODAY'S FIXTURES HERE>>");
   lines.push('');
+  // v140 (16 nov 2026, Giancarlo): nel rundown ECSA i carichi BASE VIAGGIO (es. "63/10 SANTOS/CHINA") entrano come i time charter:
+  // prima i TC, poi i base viaggio, nella stessa lista TA / FH (prima venivano scartati).
   const isVoyageRate = (c) => /\b\d{2,3}(-\d{2,3})?\/10\b/.test(String(c || ''));
+  const tcFirst = (arr) => arr.filter(c => !isVoyageRate(c)).concat(arr.filter(c => isVoyageRate(c)));
   lines.push('TA');
-  ta.filter(c => !isVoyageRate(c)).forEach(c => lines.push(transformCargoTextR_(c)));
+  tcFirst(ta).forEach(c => lines.push(transformCargoTextR_(c)));
   lines.push('');
   lines.push('FH');
-  fh.filter(c => !isVoyageRate(c)).forEach(c => lines.push(transformCargoTextR_(c)));
+  tcFirst(fh).forEach(c => lines.push(transformCargoTextR_(c)));
   lines.push('');
   lines.push('63/10 SANTOS/CHINA 13M - OFFERS/GUIDES IN VALUE ORDER (HSFO xxx VLSFO xxx purely as guidance for calc purposes)');
   lines.push(weekdayNameR_() + ' ECSA P6 (xx,xxx)   <-- REPLACE xx,xxx WITH TODAY\'S VALUE');
@@ -11436,7 +11439,7 @@ if (AUTO_INBOX_FRAME) {
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20261027-sheet-v139'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20261116-sheet-v140'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
