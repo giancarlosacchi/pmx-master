@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20261116-sheet-v140 -->
+<!-- build: 20261116-sheet-v141 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -3017,6 +3017,7 @@ function bseaMerge(kind, base, ov) {
 function bseaIsVeil(kind, r) {
   if (!r || !r.bsea_only) return false;
   if (r.bsea_of) return true;
+  if (String(r.copy_text || '').startsWith('BSEA:')) return true;   // v141: il velo si riconosce da solo → se la nave sparisce dal foglio, sparisce anche da Black Sea (caso XIN SHUN, 16 nov)
   const arr = kind === 'cargo' ? (DATA.cargoes || []) : (DATA.vessels || []);
   const keyOf = kind === 'cargo' ? bseaKeyC : bseaKeyV; const k = keyOf(r);
   return !!k && arr.some(x => !x.bsea_only && x.basin === 'ATL' && keyOf(x) === k);
@@ -3028,7 +3029,7 @@ function bseaFork(kind, id, patch, hide) {
   const keepV = ['vessel', 'dwt_blt', 'open_port', 'open_from', 'open_to', 'area', 'basin', 'ls_brkr', 'ideas', 'status', 'update_date'];
   const keepC = ['chrtrs', 'laycan_from', 'laycan_to', 'load_port', 'disch_port', 'cgo', 'size', 'area', 'section', 'basin', 'ls_brkr', 'notes', 'status', 'update_date', 'date'];
   const copy = {}; for (const k of (kind === 'cargo' ? keepC : keepV)) if (src[k] !== undefined) copy[k] = src[k];
-  copy.bsea_only = true; copy.copy_text = null;   // niente copy_text: la dedupe per contenuto non deve mai confondere velo e originale
+  copy.bsea_only = true; copy.copy_text = bseaSnapText({});   // v141: marchio 'BSEA:' sempre (anche senza campi condivisi) cosi' il velo e' riconoscibile anche senza la colonna bsea_of
   if (bseaHasOfCol(kind)) copy.bsea_of = keyOf(src);
   const fields = kind === 'cargo' ? BSEA_OVERLAY_C : BSEA_OVERLAY_V;
   const shared = kind === 'cargo' ? BSEA_SHARED_C : BSEA_SHARED_V;
@@ -11439,7 +11440,7 @@ if (AUTO_INBOX_FRAME) {
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20261116-sheet-v140'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20261116-sheet-v141'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
