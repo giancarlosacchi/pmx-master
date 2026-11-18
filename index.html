@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20261116-sheet-v141 -->
+<!-- build: 20261118-sheet-v142 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -6831,25 +6831,35 @@ function bseaCargoes() {
     .sort((a, b) => String(a.laycan_from || '9999').localeCompare(String(b.laycan_from || '9999')));
 }
 // Testo da incollare (come "Copy" della ECSA list): una riga per nave, poi i carichi
-function generateBseaListText() {
+// v142 (18 nov 2026, Giancarlo): "Copy list" di Black Sea → intestazioni BSEA TNG / BSEA CGO e "Eta Bsea …" in GRASSETTO
+// per le navi che partono dal Mar Rosso (copia con formattazione: text/html + text/plain di riserva).
+function buildBseaListParts() {
   const tc = (x) => String(x || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
-  const lines = ['UKR/RUSSIA CANDIDATES SPOT ONW', ''];
+  const sq = (x) => String(x || '').replace(/\s+/g, ' ').trim();
+  const rows = [{ t: 'BSEA TNG', h: '<b>BSEA TNG</b>' }];
   for (const e of buildBseaEntries()) {
     const v = e.v;
     if (v.status === 'on_subs') continue;
-    let line = `Mv ${tc(v.vessel)} ${v.dwt_blt || ''}`;
-    if (e.offset > 0) line += ` Eta Bsea ${_fmtRangeLower(e.adjFrom, e.adjTo)} - ${tc(v.open_port || '')} ${_fmtRangeLower(v.open_from, v.open_to)}`;
-    else line += ` ${tc(v.open_port || '')} ${_fmtRangeLower(v.open_from, v.open_to)}`;
+    const head = `Mv ${tc(v.vessel)} ${v.dwt_blt || ''}`;
+    let mid, midH;
+    if (e.offset > 0) { const eta = `Eta Bsea ${_fmtRangeLower(e.adjFrom, e.adjTo)}`; mid = ` ${eta} - ${tc(v.open_port || '')} ${_fmtRangeLower(v.open_from, v.open_to)}`; midH = ` <b>${esc(eta)}</b> - ${esc(tc(v.open_port || ''))} ${esc(_fmtRangeLower(v.open_from, v.open_to))}`; }
+    else { mid = ` ${tc(v.open_port || '')} ${_fmtRangeLower(v.open_from, v.open_to)}`; midH = esc(mid); }
+    let tail = '';
     const flags = [v.ukr_trader ? 'Ukr ok' : '', v.rus_trader ? 'Rus ok' : ''].filter(Boolean).join(' / ');
-    if (flags) line += ` (${flags})`;
-    if (v.ideas) line += ` - ${String(v.ideas).trim()}`;
-    if (v.ows_brkr) line += ` - ${tc(v.ows_brkr)}`;
-    lines.push(line.replace(/\s+/g, ' ').trim());
+    if (flags) tail += ` (${flags})`;
+    if (v.ideas) tail += ` - ${String(v.ideas).trim()}`;
+    if (v.ows_brkr) tail += ` - ${tc(v.ows_brkr)}`;
+    rows.push({ t: sq(head + mid + tail), h: sq(esc(head) + midH + esc(tail)) });
   }
   const cg = bseaCargoes().filter(c => c.status !== 'on_subs');
-  if (cg.length) { lines.push('', 'BSEA CGOS'); for (const c of cg) lines.push((c.copy_text || buildCargoCopyText(c)).replace(/\s+/g, ' ').trim()); }
-  return lines.join('\n');
+  if (cg.length) {
+    rows.push({ t: '', h: '' }, { t: 'BSEA CGO', h: '<b>BSEA CGO</b>' });
+    for (const c of cg) { const t = sq(c.copy_text || buildCargoCopyText(c)); rows.push({ t, h: esc(t) }); }
+  }
+  return rows;
 }
+function generateBseaListText() { return buildBseaListParts().map(r => r.t).join('\n'); }
+function generateBseaListHtml() { return '<div style="font-family:Calibri,Arial,sans-serif;font-size:11pt">' + buildBseaListParts().map(r => r.h || '&nbsp;').join('<br>') + '</div>'; }
 function renderBseaRow(entry) {
   const v = entry.v;
   const cls = (!v.status ? '' : v.status === 'on_subs' ? 'status-subs' : v.status === 'off_mkt' ? 'status-off' : 'status-fresh') + (entry.offset > 0 ? ' bsea-ballast' : '');
@@ -7062,7 +7072,7 @@ routes['bsea-list'] = function() {
     const up = () => { div.classList.remove('dragging'); document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); const w = parseInt(getComputedStyle(lay).getPropertyValue('--bsea-cgo-w')) || 0; if (w) try { localStorage.setItem('pmx-bsea-cgo-w', String(w)); } catch(e){} };
     document.addEventListener('mousemove', move); document.addEventListener('mouseup', up); };
   div.ondblclick = () => { lay.style.removeProperty('--bsea-cgo-w'); try { localStorage.removeItem('pmx-bsea-cgo-w'); } catch(e){} };
-  $('#bsea-copy').onclick = () => { copyToClipboard(generateBseaListText()); const b = $('#bsea-copy'); const old = b.innerHTML; b.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied!`; setTimeout(() => b.innerHTML = old, 1300); };
+  $('#bsea-copy').onclick = () => { copyRichText(generateBseaListText(), generateBseaListHtml()); const b = $('#bsea-copy'); const old = b.innerHTML; b.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied!`; setTimeout(() => b.innerHTML = old, 1300); };
   refresh();
 };
 
@@ -11440,7 +11450,7 @@ if (AUTO_INBOX_FRAME) {
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20261116-sheet-v141'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20261118-sheet-v142'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
