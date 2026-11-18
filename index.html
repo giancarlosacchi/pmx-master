@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20261118-sheet-v144 -->
+<!-- build: 20261118-sheet-v145 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -6847,7 +6847,7 @@ function buildBseaListParts() {
     let tail = '';
     const flags = [v.ukr_trader ? 'Ukr ok' : '', v.rus_trader ? 'Rus ok' : ''].filter(Boolean).join(' / ');
     if (flags) tail += ` (${flags})`;
-    if (v.ideas) tail += ` - ${String(v.ideas).trim()}`;
+    if (v.ideas) tail += ` - ${String(v.ideas).trim().toLowerCase()}`; /* v145: idee/info in minuscolo */
     if (v.ows_brkr) tail += ` - ${tc(v.ows_brkr)}`;
     rows.push({ t: sq(head + mid + tail), h: sq(esc(head) + midH + esc(tail)) });
   }
@@ -11450,7 +11450,7 @@ if (AUTO_INBOX_FRAME) {
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20261118-sheet-v144'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20261118-sheet-v145'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
