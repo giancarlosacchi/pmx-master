@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20261118-sheet-v142 -->
+<!-- build: 20261118-sheet-v143 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -6842,7 +6842,7 @@ function buildBseaListParts() {
     if (v.status === 'on_subs') continue;
     const head = `Mv ${tc(v.vessel)} ${v.dwt_blt || ''}`;
     let mid, midH;
-    if (e.offset > 0) { const eta = `Eta Bsea ${_fmtRangeLower(e.adjFrom, e.adjTo)}`; mid = ` ${eta} - ${tc(v.open_port || '')} ${_fmtRangeLower(v.open_from, v.open_to)}`; midH = ` <b>${esc(eta)}</b> - ${esc(tc(v.open_port || ''))} ${esc(_fmtRangeLower(v.open_from, v.open_to))}`; }
+    if (e.offset > 0) { const eta = `Eta Bsea ${_fmtRangeLower(e.adjFrom, e.adjTo)}`; mid = ` *${eta}* - ${tc(v.open_port || '')} ${_fmtRangeLower(v.open_from, v.open_to)}`;   // v143: asterischi = grassetto in Teams/WhatsApp midH = ` <b>${esc(eta)}</b> - ${esc(tc(v.open_port || ''))} ${esc(_fmtRangeLower(v.open_from, v.open_to))}`; }
     else { mid = ` ${tc(v.open_port || '')} ${_fmtRangeLower(v.open_from, v.open_to)}`; midH = esc(mid); }
     let tail = '';
     const flags = [v.ukr_trader ? 'Ukr ok' : '', v.rus_trader ? 'Rus ok' : ''].filter(Boolean).join(' / ');
@@ -7072,7 +7072,7 @@ routes['bsea-list'] = function() {
     const up = () => { div.classList.remove('dragging'); document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); const w = parseInt(getComputedStyle(lay).getPropertyValue('--bsea-cgo-w')) || 0; if (w) try { localStorage.setItem('pmx-bsea-cgo-w', String(w)); } catch(e){} };
     document.addEventListener('mousemove', move); document.addEventListener('mouseup', up); };
   div.ondblclick = () => { lay.style.removeProperty('--bsea-cgo-w'); try { localStorage.removeItem('pmx-bsea-cgo-w'); } catch(e){} };
-  $('#bsea-copy').onclick = () => { copyRichText(generateBseaListText(), generateBseaListHtml()); const b = $('#bsea-copy'); const old = b.innerHTML; b.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied!`; setTimeout(() => b.innerHTML = old, 1300); };
+  $('#bsea-copy').onclick = () => { copyToClipboard(generateBseaListText());   // v143: solo testo, con *asterischi* (Teams li rende in grassetto) const b = $('#bsea-copy'); const old = b.innerHTML; b.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied!`; setTimeout(() => b.innerHTML = old, 1300); };
   refresh();
 };
 
@@ -11450,7 +11450,7 @@ if (AUTO_INBOX_FRAME) {
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20261118-sheet-v142'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20261118-sheet-v143'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
