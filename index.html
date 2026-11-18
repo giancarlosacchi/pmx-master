@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20261118-sheet-v147 -->
+<!-- build: 20261118-sheet-v148 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -6836,7 +6836,7 @@ function bseaCargoes() {
 function buildBseaListParts() {
   const tc = (x) => String(x || '').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
   const sq = (x) => String(x || '').replace(/\s+/g, ' ').trim();
-  const rows = [{ t: 'BSEA TNG', h: '<b>BSEA TNG</b>' }];
+  const rows = [{ t: '*BSEA TNG*', h: '<b>BSEA TNG</b>' }]; /* v148: titoli con asterischi = grassetto */
   for (const e of buildBseaEntries()) {
     const v = e.v;
     if (v.status === 'on_subs') continue;
@@ -6853,7 +6853,7 @@ function buildBseaListParts() {
   }
   const cg = bseaCargoes().filter(c => c.status !== 'on_subs');
   if (cg.length) {
-    rows.push({ t: '', h: '' }, { t: 'BSEA CGO', h: '<b>BSEA CGO</b>' });
+    rows.push({ t: '', h: '' }, { t: '*BSEA CGO*', h: '<b>BSEA CGO</b>' });
     for (const c of cg) {   /* v144: senza il broker che segue il carico; v146: note/idee in minuscolo */
       let t = buildCargoCopyText(c, new Set(['ls_brkr', 'notes', 'update_date']));
       const extra = []; if (c.notes) extra.push(String(c.notes).trim().toLowerCase()); /* v147: senza la data di update */
@@ -11455,7 +11455,7 @@ if (AUTO_INBOX_FRAME) {
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20261118-sheet-v147'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20261118-sheet-v148'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
