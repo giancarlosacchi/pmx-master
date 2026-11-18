@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- build: 20261118-sheet-v143 -->
+<!-- build: 20261118-sheet-v144 -->
 <script type="application/json" id="cowork-artifact-meta">
 {
   "name": "Ls Pmx Master",
@@ -6854,7 +6854,7 @@ function buildBseaListParts() {
   const cg = bseaCargoes().filter(c => c.status !== 'on_subs');
   if (cg.length) {
     rows.push({ t: '', h: '' }, { t: 'BSEA CGO', h: '<b>BSEA CGO</b>' });
-    for (const c of cg) { const t = sq(c.copy_text || buildCargoCopyText(c)); rows.push({ t, h: esc(t) }); }
+    for (const c of cg) { const t = sq(buildCargoCopyText(c, new Set(['ls_brkr']))); rows.push({ t, h: esc(t) }); }   /* v144: senza il broker che segue il carico (MEM, MPE…) */
   }
   return rows;
 }
@@ -11450,7 +11450,7 @@ if (AUTO_INBOX_FRAME) {
 // v72: una scheda lasciata aperta per giorni resta sulla versione vecchia (regole Inbox diverse). Ogni 5 min controlla il marker
 // di build: se ne e' uscita una nuova, ricarica da sola quando non si sta scrivendo (altrimenti avvisa).
 (function buildWatch() {
-  const cur = 'BUILD_MARKER: 20261118-sheet-v143'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
+  const cur = 'BUILD_MARKER: 20261118-sheet-v144'.slice(14);   // aggiornare insieme al commento <!-- build: … --> a ogni deploy
   let warned = false;
   const check = async () => {
     try {
